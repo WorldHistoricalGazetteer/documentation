@@ -20,14 +20,18 @@ Click the green **"Code"** button and select the **"Codespaces"** tab to launch 
 
 Once the Codespace loads, you can:
 
-1.  **Edit existing documentation** files (`.md` or `.rst`) or add new ones.
-2.  **Start the live preview** (which automatically rebuilds the docs when files change):
+1.  **Edit existing documentation** files (`.md` or `.rst`) or add new ones. The console has settings (set with the buttons top-right of the editing pane) which generate a preview as you type.
+
+>> ![alt text](image.png)  
+
+
+3.  **Start the live preview** which automatically rebuilds the entire documentation site when files change:
     ```bash
     ./start_preview.sh
     ```
-3.  **View the preview:** The Codespace will automatically prompt you to open a **"Simple Browser"** to view the documentation on port 8000.
-4.  **Exit Preview:** Before committing changes, press **`Ctrl + C`** in the terminal to **stop the preview server and regain control of the command line**.
-5.  **Stop Working:** When you are completely finished, remember to **stop the Codespace** (using the **`Codespaces: Stop Current Codespace`** command in the Command Palette or the "Stop" button on the GitHub Codespaces page) to avoid unnecessary charges.
+4.  **View the preview:** The Codespace will automatically prompt you to open a **"Simple Browser"** to view the assembled documentation on port 8000.
+5.  **Exit Preview:** Before committing changes, press **`Ctrl + C`** in the terminal to **stop the preview server and regain control of the command line**.
+6.  **Stop Working:** When you are completely finished, remember to **stop the Codespace** (using the **`Codespaces: Stop Current Codespace`** command in the Command Palette or the "Stop" button on the GitHub Codespaces page) to avoid unnecessary charges.
 
 ### 3. Commit and Deploy (Direct to Main)
 
@@ -44,9 +48,8 @@ Once the Codespace loads, you can:
 
 As this is a public repository, Codespaces usage is billed to the **individual collaborator's GitHub account**.
 
-* **Free Usage:** All GitHub Free and Pro accounts receive a generous monthly quota of Codespaces usage (e.g., **60 hours on a 2-core machine**). For casual documentation updates, your usage will almost certainly remain within this free limit, resulting in **zero cost** to you.
-* **Cost Avoidance:** The key to avoiding charges is to **stop your Codespace** when you are finished working (see step 2.5 above). While Codespaces automatically times out after a period of inactivity, explicitly stopping it saves your free compute hours.
-* **Storage Cost:** Note that **storage costs** ($\$0.07$ per GB-month) continue as long as the Codespace exists, even if it's stopped. To completely eliminate all future charges, you must **delete the Codespace** entirely (but only after pushing all your changes!).
+* **Free Usage:** All GitHub Free accounts receive a generous 120-hour monthly quota of compute time and 15GB of storage in Codespaces. For casual documentation updates, your usage will almost certainly remain within this free limit, resulting in **zero cost** to you. Details [here](https://docs.github.com/en/billing/concepts/product-billing/github-codespaces).
+* **Cost Avoidance:** The key to avoiding charges is to **stop your Codespace** when you are finished working (see step 2.5 above). While Codespaces automatically times out after a 30 minutes of inactivity, explicitly stopping it can save your free compute hours.
 
 ---
 
