@@ -21,20 +21,20 @@ Click the "Code" button and select **"Open with Codespaces"** to launch a new, r
 Once the Codespace loads, you can:
 
 1.  **Edit existing documentation** files (Markdown or reStructuredText) or add new ones.
-2.  **Build the documentation** from the terminal:
+2.  **Start the live preview** (which automatically rebuilds the docs when files change):
     ```bash
-    make clean
-    make html
+    ./start_preview.sh
     ```
-3.  **Preview changes:** The Codespace will automatically detect the build output and prompt you to open a **"Simple Browser"** to view `_build/html/index.html`. If not, go to the **"Ports"** tab, find port `8000`, and click **"Open in Browser"**.
+3.  **View the preview:** The script uses `sphinx-autobuild` on port 8000. The Codespace will automatically prompt you to open a **"Simple Browser"** to view the documentation.
 
 ### 3. Commit and Push
 
-1.  Use the **Source Control** view in the sidebar to stage and commit your changes.
+1.  After making and previewing your changes, use the helper script to stage, commit, and push them to the `main` branch:
     ```bash
-    git commit -m "Describe your documentation updates"
+    ./git_push_docs.sh
     ```
-2.  Push your changes and create a **Pull Request** on GitHub to merge into the `main` branch.
+2.  The script will automatically create a detailed commit message with a timestamp and the files changed.
+3.  Once the push is complete, go to GitHub to create a **Pull Request** to merge your changes into `main`.
 
 ---
 
@@ -46,6 +46,8 @@ Once the Codespace loads, you can:
 | `conf.py` | Sphinx configuration file. |
 | `Makefile` | Minimal Sphinx build commands (`make html`, `make clean`). |
 | `requirements.txt` | Python dependencies required for building the documentation. |
+| `start_preview.sh` | Script to run `sphinx-autobuild` for live preview in Codespace. |
+| `git_push_docs.sh` | Script to stage, commit, and push documentation updates. |
 | `_templates/` | Sphinx templates (optional for custom themes). |
 | `_static/` | Static assets (CSS, images, etc.). |
 | `.github/workflows/` | GitHub Actions workflow for building and deployment. |
@@ -56,7 +58,7 @@ Once the Codespace loads, you can:
 
 ## Local Development (Alternative)
 
-If you prefer to work locally, ensure you have Python 3.9+ and Git installed.
+If you prefer to work locally, ensure you have Python 3.9+ and Git installed, and install the dependencies from `requirements.txt`.
 
 1.  **Clone the repository and create a branch:**
     ```bash
