@@ -1,0 +1,14 @@
+{
+  "name": "WHG Docs",
+  "image": "mcr.microsoft.com/vscode/devcontainers/python:3.11",
+  "features": {
+    "git": "latest"
+  },
+  "postCreateCommand": "pip install -r requirements.txt",
+  "forwardPorts": [8000],
+  "workspaceFolder": "/workspace",
+  "extensions": [
+    "yzhang.markdown-all-in-one",
+    "lextudio.restructuredtext"
+  ]
+}

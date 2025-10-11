@@ -1,0 +1,41 @@
+# =====================
+# Python artifacts
+# =====================
+__pycache__/
+*.py[cod]
+*.egg-info/
+env/
+venv/
+
+# =====================
+# Sphinx build artifacts
+# =====================
+_build/
+*.doctree
+*.log
+
+# =====================
+# OS-specific files
+# =====================
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# =====================
+# Editor / IDE files
+# =====================
+.vscode/
+*~
+*.swp
+
+# =====================
+# Codespaces / devcontainer
+# =====================
+.devcontainer/.vscode-test/   # temporary test folder Codespaces sometimes creates
+.devcontainer/.codespaces/    # Codespaces internal files
+
+# =====================
+# Optional caches
+# =====================
+.pytest_cache/
+.mypy_cache/
