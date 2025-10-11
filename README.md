@@ -31,8 +31,6 @@ Once the Codespace loads, you can:
 
 ### 3. Commit and Deploy (Direct to Main)
 
-**Note:** This step requires the **Write** permission granted to WHG Team Collaborators.
-
 1.  After making and previewing your changes, use the helper script to stage, commit, and push them **directly to the `main` branch**:
     ```bash
     ./git_push_docs.sh
