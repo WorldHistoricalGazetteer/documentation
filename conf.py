@@ -16,7 +16,14 @@ release = '0.0.1'
 import os
 import sys
 
-extensions = ['myst_parser', 'sphinx_panels', 'sphinx_copybutton', 'sphinx.ext.autodoc', 'sphinx.ext.napoleon']
+extensions = [
+    'myst_parser', 
+    'sphinx_panels', 
+    'sphinx_copybutton', 
+    'sphinx.ext.autodoc', 
+    'sphinx.ext.napoleon',
+    'sphinx_mermaid',
+]
 
 myst_enable_extensions = [
     "amsmath",         # for math support
@@ -46,6 +53,17 @@ html_logo = "_static/whg_logo.png"
 html_css_files = [
     'css/custom.css',
 ]
+
+html_js_files = [
+    'https://unpkg.com/mermaid/dist/mermaid.min.js',
+]
+
+# Configure mermaid to initialize when the page loads
+mermaid_init_js = '''
+mermaid.initialize({startOnLoad:true});
+'''
+# mermaid_output_format = 'svg'
+# mermaid_version = 'latest'
 
 # Plausible Analytics tracking
 PLAUSIBLE_DOMAIN = "whgazetteer.org"

@@ -4,7 +4,7 @@
 All entities — *Places, Groups, Toponyms,* and *Geometries* — have intrinsic validity ranges.  
 **Attestations** record temporal evidence of relationships between them (names, extents, memberships).
 
-```mermaid
+```{mermaid}
 erDiagram
     PLACE ||--|{ TOPONYM : "has label(s)"
     PLACE ||--|{ GEOMETRY : "has shape(s)"

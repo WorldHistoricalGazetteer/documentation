@@ -1,9 +1,8 @@
 #!/bin/bash
-
 # Exit immediately if a command fails
 set -e
 
-# Navigate to the repo root (optional, in case run from elsewhere)
+# Navigate to the repo root
 cd "$(dirname "$0")"
 
 # Stage all changes
@@ -21,4 +20,3 @@ fi
 git push origin main
 
 echo "Changes pushed successfully to the 'documentation' repo!"
-
