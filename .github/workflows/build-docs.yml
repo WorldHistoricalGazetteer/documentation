@@ -6,20 +6,17 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
-  pages: write
-  id-token: write
+  contents: write   # allow pushing commits
+  pages: write      # allow Pages deployment
+  id-token: write   # optional, harmless here
 
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
     permissions:
-      contents: write
-      pages: write
-      id-token: write
-    concurrency:
-      group: "pages"
-      cancel-in-progress: false
+     contents: write 
+     pages: write 
+     id-token: write
 
     steps:
       # 1. Checkout the repository
@@ -49,13 +46,11 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      # 5. Build the documentation
+      # 5. Build the Sphinx documentation
       - name: Build Sphinx docs
-        run: |
-          make clean
-          make html
+        run: make html
 
-      # 6. Deploy to GitHub Pages 
+      # 6. Deploy to GitHub Pages
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v4
         with:
