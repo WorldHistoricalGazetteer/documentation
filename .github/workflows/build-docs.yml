@@ -59,4 +59,4 @@ jobs:
           publish_branch: gh-pages
           user_name: 'GitHub Actions'
           user_email: 'actions@github.com'
-          commit_message: 'Deploy documentation${{ github.event.inputs.version_tag && format(" (version {0})", github.event.inputs.version_tag) }}'
+          commit_message: ${{ github.event.inputs.version_tag && format('Deploy documentation (version {0})', github.event.inputs.version_tag) || 'Deploy documentation' }}
