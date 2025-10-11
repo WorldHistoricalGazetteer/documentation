@@ -53,11 +53,10 @@ jobs:
 
       # Step 6: Deploy built HTML to GitHub Pages (/root)
       - name: Deploy to GitHub Pages
-        uses: peaceiris/actions-gh-pages@v4
+        uses: peaceiris/actions-gh-pages@v6
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ${{ github.event.inputs.target_dir }}
           publish_branch: gh-pages
           user_name: 'GitHub Actions'
           user_email: 'actions@github.com'
-          commit_message: ${{ github.event.inputs.version_tag && format('Deploy documentation (version {0})', github.event.inputs.version_tag) || 'Deploy documentation' }}
+          commit_message: 'Deploy documentation${{ github.event.inputs.version_tag && format(" (version {0})", github.event.inputs.version_tag) }}'
