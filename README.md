@@ -26,6 +26,8 @@ Once the Codespace loads, you can:
     ./start_preview.sh
     ```
 3.  **View the preview:** The Codespace will automatically prompt you to open a **"Simple Browser"** to view the documentation on port 8000.
+4.  **Exit Preview:** Before committing changes, press **`Ctrl + C`** in the terminal to **stop the preview server and regain control of the command line**.
+5.  **Stop Working:** When you are completely finished, remember to **stop the Codespace** (using the **`Codespaces: Stop Current Codespace`** command in the Command Palette or the "Stop" button on the GitHub Codespaces page) to avoid unnecessary charges.
 
 ### 3. Commit and Deploy (Direct to Main)
 
@@ -42,11 +44,11 @@ Once the Codespace loads, you can:
 
 ## ⚠️ Codespaces Billing Note
 
-**For WHG Team Members (Collaborators):**
+As this is a public repository, Codespaces usage is billed to the **individual collaborator's GitHub account**.
 
-As this is a public repository, Codespaces usage is billed to the **individual collaborator's GitHub account** (not to the repository owner).
-
-**The good news:** All GitHub Free and Pro accounts receive a generous monthly quota of Codespaces usage (**120-180 core hours and 15-20 GB storage**). For casual documentation updates, your usage will almost certainly remain within this free limit, resulting in **zero cost** to you. If you are concerned about exceeding this quota, you can set a spending limit on your personal GitHub billing page.
+* **Free Usage:** All GitHub Free and Pro accounts receive a generous monthly quota of Codespaces usage (e.g., **60 hours on a 2-core machine**). For casual documentation updates, your usage will almost certainly remain within this free limit, resulting in **zero cost** to you.
+* **Cost Avoidance:** The key to avoiding charges is to **stop your Codespace** when you are finished working (see step 2.5 above). While Codespaces automatically times out after a period of inactivity, explicitly stopping it saves your free compute hours.
+* **Storage Cost:** Note that **storage costs** ($\$0.07$ per GB-month) continue as long as the Codespace exists, even if it's stopped. To completely eliminate all future charges, you must **delete the Codespace** entirely (but only after pushing all your changes!).
 
 ---
 
