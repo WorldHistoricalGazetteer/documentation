@@ -7,12 +7,6 @@ We assume that Ingress is managed centrally by CRC (e.g. via an institutional NG
 *not* plan to deploy our own Ingress controller within the cluster. We also assume that TLS termination will be handled
 upstream.
 
-> ### ⚠️ QUESTION:
-> During initial testing and development, would it be practical to use `pitt.whgazetteer.org` as the base domain for the
-> public frontend, with all related subdomains nested under it (e.g., `admin.pitt.whgazetteer.org`,
-> `test.pitt.whgazetteer.org`), rather than deploying directly under `whgazetteer.org`? This would allow us to maintain
-> our existing site without unnecessary complications until we are ready to fully transition to the new setup.
-
 ## Proposed Subdomain Mapping
 
 | Subdomain                    | Purpose                      | Kubernetes Service | Port  | Access Scope  |
