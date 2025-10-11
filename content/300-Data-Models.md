@@ -1,6 +1,6 @@
 ### 🧭 WHG Core Temporal Model (Simplified)
 
-**Concept:**  
+**Concept:**
 All entities — *Places, Groups, Toponyms,* and *Geometries* — have intrinsic validity ranges.  
 **Attestations** record temporal evidence of relationships between them (names, extents, memberships).
 

@@ -3,6 +3,7 @@
 
    content/001-Introduction.md
    content/100-Tutorials.md
+   content/300-Data-models.md
    content/400-Technical.md
    content/500-System.md
    content/600-Technical-Administration.md
