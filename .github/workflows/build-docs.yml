@@ -1,4 +1,4 @@
-name: Build and Deploy Documentation
+name: Build and Deploy Documentation to GitHub Pages
 
 on:
   push:
@@ -6,17 +6,16 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write   # allow pushing commits
-  pages: write      # allow Pages deployment
-  id-token: write   # optional, harmless here
+  contents: write
+  pages: write
+  id-token: write
 
 jobs:
-  build-and-deploy:
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
-    permissions:
-     contents: write 
-     pages: write 
-     id-token: write
 
     steps:
       # 1. Checkout the repository
@@ -27,36 +26,33 @@ jobs:
 
       # 2. Set up Python
       - name: Set up Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v3
         with:
-          python-version: "3.9"
+          python-version: 3.9
 
-      # 3. Cache pip packages
-      - name: Cache pip
-        uses: actions/cache@v3
-        with:
-          path: ~/.cache/pip
-          key: ${{ runner.os }}-pip-${{ hashFiles('requirements.txt') }}
-          restore-keys: |
-            ${{ runner.os }}-pip-
-
-      # 4. Install dependencies
+      # 3. Install dependencies
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      # 5. Build the Sphinx documentation
-      - name: Build Sphinx docs
-        run: make html
+      # 4. Build the documentation
+      - name: Build documentation
+        run: |
+          make clean
+          make html
 
-      # 6. Deploy to GitHub Pages
-      - name: Deploy to GitHub Pages
-        uses: peaceiris/actions-gh-pages@v4
+      # 5. Configure Pages
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+
+      # 6. Upload the built HTML files
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: _build/html
-          publish_branch: gh-pages
-          user_name: "GitHub Actions"
-          user_email: "actions@github.com"
-          commit_message: ${{ github.event.inputs.version_tag && format('Deploy documentation (version {0})', github.event.inputs.version_tag) || 'Deploy documentation' }}
+          path: _build/html
+
+      # 7. Deploy to GitHub Pages
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
