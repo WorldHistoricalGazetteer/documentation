@@ -8,33 +8,45 @@ The documentation is written in **Markdown** and **reStructuredText**, built wit
 
 ---
 
-## Getting Started (Recommended)
+## Getting Started (WHG Team Members)
 
 The easiest way to contribute is by using a **GitHub Codespace**, which provides a pre-configured development environment with all dependencies already installed.
 
 ### 1. Launch Codespace
 
-Click the "Code" button and select **"Open with Codespaces"** to launch a new, ready-to-use environment directly in your browser.
+Click the green **"Code"** button and select the **"Codespaces"** tab to launch a new, ready-to-use development environment directly in your browser.
 
 ### 2. Edit and Preview
 
 Once the Codespace loads, you can:
 
-1.  **Edit existing documentation** files (Markdown or reStructuredText) or add new ones.
+1.  **Edit existing documentation** files (`.md` or `.rst`) or add new ones.
 2.  **Start the live preview** (which automatically rebuilds the docs when files change):
     ```bash
     ./start_preview.sh
     ```
-3.  **View the preview:** The script uses `sphinx-autobuild` on port 8000. The Codespace will automatically prompt you to open a **"Simple Browser"** to view the documentation.
+3.  **View the preview:** The Codespace will automatically prompt you to open a **"Simple Browser"** to view the documentation on port 8000.
 
-### 3. Commit and Push
+### 3. Commit and Deploy (Direct to Main)
 
-1.  After making and previewing your changes, use the helper script to stage, commit, and push them to the `main` branch:
+**Note:** This step requires the **Write** permission granted to WHG Team Collaborators.
+
+1.  After making and previewing your changes, use the helper script to stage, commit, and push them **directly to the `main` branch**:
     ```bash
     ./git_push_docs.sh
     ```
-2.  The script will automatically create a detailed commit message with a timestamp and the files changed.
-3.  Once the push is complete, go to GitHub to create a **Pull Request** to merge your changes into `main`.
+2.  The script automatically generates a commit message and pushes the changes.
+3.  The push will immediately trigger the GitHub Action, and the live documentation site will update automatically shortly after.
+
+---
+
+## ⚠️ Codespaces Billing Note
+
+**For WHG Team Members (Collaborators):**
+
+As this is a public repository, Codespaces usage is billed to the **individual collaborator's GitHub account** (not to the repository owner).
+
+**The good news:** All GitHub Free and Pro accounts receive a generous monthly quota of Codespaces usage (**120-180 core hours and 15-20 GB storage**). For casual documentation updates, your usage will almost certainly remain within this free limit, resulting in **zero cost** to you. If you are concerned about exceeding this quota, you can set a spending limit on your personal GitHub billing page.
 
 ---
 
@@ -47,7 +59,7 @@ Once the Codespace loads, you can:
 | `Makefile` | Minimal Sphinx build commands (`make html`, `make clean`). |
 | `requirements.txt` | Python dependencies required for building the documentation. |
 | `start_preview.sh` | Script to run `sphinx-autobuild` for live preview in Codespace. |
-| `git_push_docs.sh` | Script to stage, commit, and push documentation updates. |
+| `git_push_docs.sh` | Script to stage, commit, and push documentation updates directly to `main`. |
 | `_templates/` | Sphinx templates (optional for custom themes). |
 | `_static/` | Static assets (CSS, images, etc.). |
 | `.github/workflows/` | GitHub Actions workflow for building and deployment. |
@@ -60,25 +72,22 @@ Once the Codespace loads, you can:
 
 If you prefer to work locally, ensure you have Python 3.9+ and Git installed, and install the dependencies from `requirements.txt`.
 
-1.  **Clone the repository and create a branch:**
+1.  **Clone the repository:**
     ```bash
     git clone [https://github.com/WorldHistoricalGazetteer/documentation.git](https://github.com/WorldHistoricalGazetteer/documentation.git)
     cd documentation
-    git checkout -b my-doc-updates
     ```
-
 2.  **Install dependencies:**
     ```bash
     pip install -r requirements.txt
     ```
-
 3.  **Build and view:**
     ```bash
     make clean
     make html
     # Open _build/html/index.html in your browser to check edits
     ```
-4.  **Commit and push** your changes, then create a Pull Request.
+4.  **Commit and push** your changes to `main`.
 
 ---
 
@@ -87,8 +96,8 @@ If you prefer to work locally, ensure you have Python 3.9+ and Git installed, an
 Once changes are merged into `main`:
 
 * **GitHub Actions automatically:**
-    1. Installs dependencies.
-    2. Builds the Sphinx documentation.
-    3. Deploys `_build/html` to the `gh-pages` branch.
-    4. Updates the live GitHub Pages site.
+    1.  Installs dependencies.
+    2.  Builds the Sphinx documentation.
+    3.  Deploys `_build/html` to the `gh-pages` branch.
+    4.  Updates the live GitHub Pages site.
 * **No manual deployment is needed.**
