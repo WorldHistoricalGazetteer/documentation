@@ -51,7 +51,7 @@ jobs:
           make clean
           make html
 
-      # Step 6: Deploy built HTML to GitHub Pages (serve from `/root`)
+      # Step 6: Deploy built HTML to GitHub Pages
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v4
         with:
