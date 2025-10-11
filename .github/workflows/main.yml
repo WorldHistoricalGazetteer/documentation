@@ -1,0 +1,62 @@
+name: Build and Deploy Documentation
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      target_dir:
+        description: 'Target directory for build'
+        default: '_build/html'
+      version_tag:
+        description: 'Optional version tag for deployment'
+        required: false
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      # Step 1: Checkout repository
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      # Step 2: Cache pip packages
+      - name: Cache pip
+        uses: actions/cache@v3
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+
+      # Step 3: Set up Python
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: 3.11
+
+      # Step 4: Install dependencies
+      - name: Install Sphinx dependencies
+        run: pip install --upgrade pip && pip install -r requirements.txt
+
+      # Step 5: Build documentation
+      - name: Build documentation
+        run: |
+          make clean
+          make html
+
+      # Step 6: Deploy built HTML to GitHub Pages
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v6
+        with:
+          publish_dir: ${{ github.event.inputs.target_dir }}
+          publish_branch: gh-pages
+          user_name: 'GitHub Actions'
+          user_email: 'actions@github.com'
+          commit_message: 'Deploy documentation${{ github.event.inputs.version_tag && format(" (version {0})", github.event.inputs.version_tag) }}'
