@@ -8,6 +8,36 @@ The documentation is written in **Markdown** and **reStructuredText**, built wit
 
 ---
 
+## Getting Started (Recommended)
+
+The easiest way to contribute is by using a **GitHub Codespace**, which provides a pre-configured development environment with all dependencies already installed.
+
+### 1. Launch Codespace
+
+Click the "Code" button and select **"Open with Codespaces"** to launch a new, ready-to-use environment directly in your browser.
+
+### 2. Edit and Preview
+
+Once the Codespace loads, you can:
+
+1.  **Edit existing documentation** files (Markdown or reStructuredText) or add new ones.
+2.  **Build the documentation** from the terminal:
+    ```bash
+    make clean
+    make html
+    ```
+3.  **Preview changes:** The Codespace will automatically detect the build output and prompt you to open a **"Simple Browser"** to view `_build/html/index.html`. If not, go to the **"Ports"** tab, find port `8000`, and click **"Open in Browser"**.
+
+### 3. Commit and Push
+
+1.  Use the **Source Control** view in the sidebar to stage and commit your changes.
+    ```bash
+    git commit -m "Describe your documentation updates"
+    ```
+2.  Push your changes and create a **Pull Request** on GitHub to merge into the `main` branch.
+
+---
+
 ## Repository Structure
 
 | File/Folder | Description |
@@ -24,85 +54,39 @@ The documentation is written in **Markdown** and **reStructuredText**, built wit
 
 ---
 
-## Updating the Documentation
+## Local Development (Alternative)
 
-Your changes can be made locally or via the GitHub web interface.
+If you prefer to work locally, ensure you have Python 3.9+ and Git installed.
 
-### 1. Locally (recommended)
-
-1.  **Clone the repository:**
+1.  **Clone the repository and create a branch:**
     ```bash
     git clone [https://github.com/WorldHistoricalGazetteer/documentation.git](https://github.com/WorldHistoricalGazetteer/documentation.git)
     cd documentation
-    ```
-
-2.  **Create a new branch for your changes:**
-    ```bash
     git checkout -b my-doc-updates
     ```
 
-3.  **Edit existing Markdown files or add new ones.** Ensure the main landing page is named `index.md` (or `index.rst`).
-
-4.  **Install dependencies** (if you haven't already):
+2.  **Install dependencies:**
     ```bash
     pip install -r requirements.txt
     ```
 
-5.  **Build the documentation locally to preview changes:**
+3.  **Build and view:**
     ```bash
     make clean
     make html
+    # Open _build/html/index.html in your browser to check edits
     ```
-    Open `_build/html/index.html` in your browser to check your edits.
-
-6.  **Commit and push your changes:**
-    ```bash
-    git add .
-    git commit -m "Update documentation"
-    git push origin my-doc-updates
-    ```
-
-7.  **Create a pull request** on GitHub to merge your changes into `main`.
+4.  **Commit and push** your changes, then create a Pull Request.
 
 ---
 
-### 2. GitHub Actions Deployment
+## GitHub Actions Deployment
 
 Once changes are merged into `main`:
 
 * **GitHub Actions automatically:**
-    1.  Installs dependencies.
-    2.  Builds the Sphinx documentation.
-    3.  Deploys `_build/html` to the `gh-pages` branch.
-    4.  Updates the live GitHub Pages site.
+    1. Installs dependencies.
+    2. Builds the Sphinx documentation.
+    3. Deploys `_build/html` to the `gh-pages` branch.
+    4. Updates the live GitHub Pages site.
 * **No manual deployment is needed.**
-
----
-
-### 3. Notes for Contributors
-
-* Ensure your root document is named **`index.md`** or **`index.rst`**.
-* Avoid committing **`_build/html/`** — it is generated automatically and ignored.
-* Use consistent Markdown / reStructuredText formatting.
-* Check the live preview locally before submitting pull requests.
-
----
-
-### 4. Requirements
-
-* Python 3.9+
-* Sphinx (installed via `requirements.txt`)
-* Git
-
----
-
-### 5. Helpful Commands
-
-| Command | Description |
-| :--- | :--- |
-| `make html` | Build the documentation into `_build/html`. |
-| `make clean` | Remove previous build files. |
-| `git checkout -b <name>` | Create a new branch for your edits. |
-| `git push origin <branch>` | Push changes to GitHub. |
-
-This workflow ensures that all contributors can edit, preview, and deploy documentation safely and consistently.
