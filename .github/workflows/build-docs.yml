@@ -51,7 +51,7 @@ jobs:
           make clean
           make html
 
-      # 6. Deploy to GitHub Pages
+      # 6. Deploy to GitHub Pages 
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v4
         with:
