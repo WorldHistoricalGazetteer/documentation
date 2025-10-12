@@ -1,6 +1,4 @@
-# V4: Target Release 2026
-
-Outline of the core concepts for the planned Version 4 release.
+# Data Model
 
 ```{toctree}
 :maxdepth: 2
@@ -13,6 +11,3 @@ Outline of the core concepts for the planned Version 4 release.
 706_whg_model_usecases.md
 707_whg_model_implementation.md
 708_whg_model_summary.md
-500-System.md
-600-Technical-Administration.md
-650-Service-Configuration.md
