@@ -1,7 +1,6 @@
-# World Historical Gazetteer: Data Model
-## Part 1: Overview & Core Entities
+# Part 1: Data Model Overview & Core Entities
 
-## Overview
+#### Overview
 
 This data model separates **conceptual entities** (Subject, Name, Geometry, Timespan) from their **attestations**—the evidentiary claims about those entities. All historical claims—including names, locations, classifications, memberships, temporal bounds, and spatial extents—are recorded as **Attestation records** with explicit source attribution.
 
