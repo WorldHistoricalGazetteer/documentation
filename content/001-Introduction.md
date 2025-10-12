@@ -1,10 +1,10 @@
 # Introduction
 
-## Vision
+### Vision
 
 Empowering discovery by connecting place names across time and language.
 
-## Mission
+### Mission
 
 The mission of the World Historical Gazetteer is to build a platform for open linked historical place data in order to
 foster deeper understanding of place history and to improve discovery of places that have had many names over time. The
@@ -12,9 +12,9 @@ WHG place index is accessible through tools and services that permit users to se
 places, augment and contribute their own place records, assemble and publish information about places, and use
 information about places in teaching and communication.
 
-# Workbench Pathways
+## Workbench Pathways
 
-## Individual datasets
+### Individual datasets
 
 The first step for working with your own data in WHG is to prepare an upload file in one of two formats: Linked Places
 format (LPF) if your data is relatively complex, or LP-TSV, a simpler delimited file format (e.g. a spreadsheet, CSV, or
@@ -76,7 +76,7 @@ After making that choice, the steps are as follows:
       for the same places where possible. That said, it remains a distinct, published dataset within the platform,
       discoverable in the WHG publications gallery and browsable and searchable in its own publication page.
 
-## Multiple datasets
+### Multiple datasets
 
 The **Dataset Collection** feature in WHG allows an individual or collaborative group to create a historical gazetteer
 resource from multiple datasets, linking those records that refer to the same place. Some examples, currently at various
@@ -96,13 +96,13 @@ Note that in order for a dataset to be added to a Dataset Collection, it must ha
 union index. See the "[WHG Union Index](100-Tutorials.md#whg-union-index)" section
 in [Explaining the WHG indexes](100-Tutorials.md#explaining-the-whg-indexes) guide.
 
-## Thematic place collections
+### Thematic place collections
 
 The **Place Collection** feature in WHG is designed for two use scenarios: as a teaching or workshop exercise, or as a
 form of authored publication. The steps for creating a Place Collection are the same in all cases, as detailed in the [Create
 and publish a Place Collection](100-Tutorials.md#create-and-publish-a-place-collection) guide.
 
-### Instructional exercise in a class setting, or workshop
+#### Instructional exercise in a class setting, or workshop
 
 Registered WHG users can request "group leader" permissions, which allows them to create and manage a WHG **Collection
 Group**. This is a private space where students or workshop participants can create and share collections of places,
@@ -117,7 +117,7 @@ when complete—for review by the instructor or workshop leader.
 
 ![img_16.png](img_16.png)
 
-### Authored publication
+#### Authored publication
 
 Any registered WHG user can create a thematic annotated [Place Collection](100-Tutorials.md#create-and-publish-a-place-collection), and request its publication on the WHG
 platform, subject to review and approval by WHG editorial staff.
