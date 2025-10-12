@@ -1,4 +1,5 @@
-# Part 1: Overview & Core Entities
+# World Historical Gazetteer: Data Model
+## Part 1: Overview & Core Entities
 
 ## Overview
 
@@ -78,7 +79,35 @@ A spatial representation (point, line, polygon, etc.) of a Subject.
 - The `source_crs` defaults to WGS84 (EPSG:4326) for interoperability
 - Geometry type is implicit in the `geom` field structure
 - Derived fields (`representative_point`, `bbox`, `hull`) are required to support the Dynamic Clustering Workflow's spatial grouping operations
-- **Geometry Inheritance**: If a Subject has no explicit Geometry attestation, its geometry should be computed as the union of all member Subject geometries, applied recursively until explicit Geometries are found
+
+**Geometry Inheritance and Computation:**
+
+**Geometry inheritance** can be computed for Subjects lacking explicit Geometry attestations.
+
+**Computation Rules:**
+
+For compositional Subjects (with members):
+1. Find all Subjects that are members (via `member_of` attestations)
+2. For each member:
+   - If it has an explicit Geometry attestation, use that geometry
+   - If it has no explicit Geometry, recursively compute its inherited geometry
+3. Return the union of all geometries found
+
+**Recursion stops** at each branch when an explicit Geometry is reached.
+
+**Example**:
+```
+Abbasid Caliphate (no explicit geometry)
+  ├─ Iraq (explicit geometry: polygon A)
+  ├─ Syria (no explicit geometry)
+  │   ├─ Damascus (explicit geometry: point B)
+  │   └─ Aleppo (explicit geometry: point C)
+  └─ Egypt (explicit geometry: polygon D)
+
+Abbasid Caliphate's inherited geometry = union of (polygon A, point B, point C, polygon D)
+```
+
+**Implementation note:** For Vespa performance, inherited geometries should be pre-computed during indexing and stored as materialized fields, not computed at query time.
 
 ---
 
@@ -108,6 +137,56 @@ A temporal span representing when something existed, occurred, or was valid. Tim
   - Exact: Tang Dynasty 618-907 CE
   - Approximate: Early Bronze Age Anatolia (circa 3000-2000 BCE)
   - PeriodO reference: `periodo:p0qhb9d` (Roman Britain)
+
+**Timespan Inheritance and Computation:**
+
+Similar to Geometry inheritance, **Timespan inheritance** can be computed for Subjects lacking explicit Timespan attestations.
+
+**Computation Rules:**
+
+For compositional Subjects (with members):
+1. Find all member Subjects via `member_of` attestations
+2. For each member, find its Timespan attestations
+3. Compute outer bounds:
+   - `start_earliest` = minimum of all member `start_earliest` values
+   - `start_latest` = minimum of all member `start_latest` values
+   - `stop_earliest` = maximum of all member `stop_earliest` values
+   - `stop_latest` = maximum of all member `stop_latest` values
+
+For periods:
+- By default, compute from members
+- Explicit Timespan attestation overrides computation
+- Useful for defining period boundaries that don't perfectly align with member existence
+
+For itineraries:
+- Automatically compute from segment Timespans
+- Itinerary duration = earliest segment start to latest segment end
+- Can be overridden for overall journey context (e.g., preparation/return time)
+
+**Example:**
+```
+Tang Dynasty period Subject (no explicit Timespan)
+  ├─ Member: Chang'an (Timespan: 618-904)
+  ├─ Member: Luoyang (Timespan: 618-907)
+  └─ Member: Canton (Timespan: 650-900)
+
+Computed Timespan for Tang Dynasty:
+  start_earliest: 618
+  start_latest: 650
+  stop_earliest: 900
+  stop_latest: 907
+```
+
+**Override example:**
+```
+Tang Dynasty explicit Timespan attestation:
+  start_earliest: 618
+  start_latest: 618
+  stop_earliest: 907
+  stop_latest: 907
+  
+This overrides the computed bounds from members.
+```
 
 ---
 

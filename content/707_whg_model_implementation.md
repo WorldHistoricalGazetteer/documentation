@@ -1,4 +1,4 @@
-# Part 6: Implementation in Vespa
+# Part 7: Implementation in Vespa
 
 ## 1. Document Types
 

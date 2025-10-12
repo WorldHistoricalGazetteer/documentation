@@ -1,4 +1,4 @@
-# Part 5: Platform Use Cases
+# Part 6: Platform Use Cases
 
 ## 1. Overview
 

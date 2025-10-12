@@ -6,6 +6,7 @@ Outline of the core concepts for the planned Version 4 release.
 :maxdepth: 2
 
 701_whg_model_overview.md
+702_whg_model_attestations.md
 703_whg_model_vocabularies.md
 704_whg_model_patterns.md
 705_whg_model_contributions.md

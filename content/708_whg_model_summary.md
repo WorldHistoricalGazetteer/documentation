@@ -1,4 +1,4 @@
-# Part 7: Summary & Future Extensions
+# Part 8: Summary & Future Extensions
 
 ## 1. Model Summary
 
@@ -219,22 +219,7 @@ This architecture provides:
 
 ---
 
-### 3.4 Hierarchical Periods
-
-**Nested periods**:
-- "Early Tang" within "Tang Dynasty" within "Imperial China"
-- Via `member_of` attestations between period Subjects
-- Enables queries at multiple temporal granularities
-
-**Period taxonomies**:
-- Political periods (dynasties, reigns)
-- Cultural periods (artistic movements, technological eras)
-- Environmental periods (climate phases, ecological zones)
-- Archaeological periods (Bronze Age, Iron Age)
-
----
-
-### 3.5 Complex Itinerary Patterns
+### 3.4 Complex Itinerary Patterns
 
 **Circular routes**:
 - Return journeys (e.g., round-trip pilgrimages)
@@ -254,7 +239,7 @@ This architecture provides:
 
 ---
 
-### 3.6 Multilingual Enhancements
+### 3.5 Multilingual Enhancements
 
 **Translation networks**:
 - Link Names across languages via attestations
@@ -270,7 +255,7 @@ This architecture provides:
 
 ---
 
-### 3.7 Spatial-Temporal Analytics
+### 3.6 Spatial-Temporal Analytics
 
 **Territory change visualization**:
 - Animate border shifts over time
@@ -290,7 +275,7 @@ This architecture provides:
 
 ---
 
-### 3.8 Machine Learning Integration
+### 3.7 Machine Learning Integration
 
 **Automated reconciliation**:
 - Train models on confirmed `same_as` attestations
@@ -310,7 +295,7 @@ This architecture provides:
 
 ---
 
-### 3.9 Enhanced LPF Mapping
+### 3.8 Enhanced LPF Mapping
 
 **Additional LPF features**:
 - `depictions[]` → Link to visual representations
@@ -324,7 +309,7 @@ This architecture provides:
 
 ---
 
-### 3.10 Interoperability Enhancements
+### 3.9 Interoperability Enhancements
 
 **IIIF integration**:
 - Link Subjects to IIIF manifests (maps, manuscripts)

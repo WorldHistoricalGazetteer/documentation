@@ -1,4 +1,4 @@
-# Part 4: Contribution Types & Data Formats
+# Part 5: Contribution Types & Data Formats
 
 ## 1. Overview
 
@@ -20,13 +20,13 @@ A dataset of places sourced from a common historical or geographical context.
 - Names, Geometries, and Timespans linked via attestations
 
 **Examples:**
+- **Saxton County Maps**: Places from 16th-century English/Welsh maps
 - **Pleiades**: Authoritative ancient Mediterranean places
 - **GeoNames**: Global contemporary place names
 - **Wikidata**: Structured place entities
 - **Getty TGN**: Historical and contemporary curated places
 - **DARMC**: Digital Atlas of Roman and Medieval Civilizations
 - **CHGIS**: China Historical GIS
-- **Saxton County Maps**: Places from 16th-century English/Welsh maps
 
 **Contribution formats accepted:** LPF JSON, CSV/TSV, spreadsheets
 
@@ -274,6 +274,42 @@ Gazetteer Group → Subject (has_type: "gazetteer_group")
 
 ---
 
+### 3.5 URL-Referenced Datasets
+
+**Remote dataset URLs** pointing to publicly accessible files.
+
+**Best for:**
+- Large datasets hosted in institutional repositories
+- Cloud storage contributions (Google Drive, Dropbox with public links, S3 buckets)
+- Datasets that update periodically at source
+- Integration with existing research infrastructure
+
+**Supported URL targets:**
+- Direct file links (CSV, JSON, GeoJSON files)
+- Repository URLs (Zenodo, Figshare, institutional repos)
+- GitHub raw file URLs
+- Cloud storage public links
+
+**Process:**
+1. Contributor submits URL with format specification
+2. WHG fetches file from URL
+3. Validates format and content
+4. Processes as standard contribution
+5. Optionally monitors URL for updates (contributor can enable periodic re-fetch)
+
+**Example URLs:**
+- `https://zenodo.org/record/1234567/files/places.csv`
+- `https://raw.githubusercontent.com/org/repo/main/data/gazetteer.json`
+- `https://drive.google.com/uc?export=download&id=FILEID`
+
+**Requirements:**
+- URL must be publicly accessible (no authentication)
+- File format must match declared type
+- Recommended: versioned URLs for reproducibility
+- Contributor receives DOI for WHG-indexed version
+
+---
+
 ## 4. Relationship to Linked Places Format (LPF)
 
 ### 4.1 LPF as Interchange Format
@@ -334,3 +370,263 @@ The WHG application includes a **transformation layer** that:
 - Derives geometric fields (bbox, representative_point, hull) for Geometry entities
 
 This layer is distinct from the core data model and handles the complexity of mapping between interchange formats and the internal optimized structure.
+
+---
+
+## 5. Editing Contributions
+
+The WHG V4 platform provides comprehensive editing capabilities for both contributors and staff, with all changes tracked in the Django changelog.
+
+### 5.1 Manual Attestation Creation
+
+**Single attestation creation**:
+Contributors and staff can manually create individual Attestation records for existing data through the web interface.
+
+**Use cases:**
+- Adding `same_as` attestations to reconcile contributed places with authority gazetteers
+- Linking newly discovered relationships between places
+- Correcting or adding temporal information
+- Adding missing source attributions
+
+**Workflow:**
+1. Navigate to Subject record in web interface
+2. Click "Add Attestation" button
+3. Select relation type and target object
+4. Fill in source, certainty, temporal data (if applicable)
+5. Save - attestation immediately indexed and change-logged
+
+**Access control:**
+- Contributors can add attestations to their own contributed data
+- Staff can add attestations to any data
+- All additions require source citation
+
+---
+
+### 5.2 Contributor Self-Editing
+
+**New in V4**: Contributors can edit their own contributions directly (not possible in V3).
+
+**Editable elements:**
+- Subject descriptions
+- Name metadata (language, script, transliteration)
+- Geometry precision assessments
+- Source citations in attestations
+- Certainty scores
+- Temporal bounds (via Timespan modifications)
+
+**Workflow:**
+1. Contributor logs in and navigates to their dataset
+2. Selects record to edit
+3. Makes changes in web form
+4. Changes validated and saved
+5. Updates propagated to Vespa
+6. Change-logged with contributor attribution
+
+**Constraints:**
+- Cannot delete records contributed by others
+- Cannot modify attestations created by staff or other contributors
+- Cannot change core identifiers (DOIs, external IDs)
+
+---
+
+### 5.3 Whole-Record Editing
+
+Using the same dataset format as their original contribution, contributors can perform bulk operations:
+
+**Replace entire dataset:**
+- Upload new version with same DOI
+- All records replaced (old version archived)
+- Use case: Major revision or correction
+
+**Delete records:**
+- Submit CSV/JSON with record IDs to delete
+- Records removed from index (archived in changelog)
+- Attestations referencing deleted records flagged
+
+**Add new records:**
+- Submit file with new records (must have unique IDs)
+- Processed as incremental contribution
+- Added to existing dataset under same DOI
+
+**Update existing records:**
+- Submit file with modified records (matching existing IDs)
+- Updated fields replace old values
+- Original values archived in changelog
+
+**Example workflow:**
+1. Contributor exports current dataset from WHG
+2. Makes changes in spreadsheet/text editor
+3. Uploads modified file with operation type selected
+4. WHG validates changes (IDs must match for updates)
+5. Applies changes and re-indexes
+6. Sends confirmation email with change summary
+
+**Supported operations per format:**
+- **LPF JSON**: All operations (replace, delete, add, update)
+- **CSV/TSV**: Add, update, delete (structured format required)
+- **Spreadsheets**: Add, update (easiest for non-technical users)
+
+---
+
+### 5.4 Granular Editing
+
+Focused editing of specific aspects of place records through the web interface.
+
+#### 5.4.1 Reconciliation
+
+**What it is:**
+Assessment and selection of potential matches to other indexed places.
+
+**Process:**
+1. WHG automatically suggests potential matches based on:
+   - Feature class similarity
+   - Toponym similarity (using Name embeddings)
+   - Country code matches
+   - Geometric proximity
+2. Contributor reviews suggestions
+3. Selects matches that represent the same historical entity
+4. Creates `same_as` attestations with appropriate certainty
+5. Can reject suggestions explicitly
+
+**Contributor guidance:**
+- Select at least one match if good candidates exist
+- Do not link to places that are clearly different entities
+- Consider temporal context (same place name, different periods)
+- Use certainty scores to indicate confidence
+
+**Impact:**
+- Creates `same_as` attestations linking contributed Subject to matched Subjects
+- Enables cross-gazetteer queries
+- Improves discovery through authority linkage
+- Reflected in LPF export (relations section)
+
+**Automated trigger:**
+- Records lacking links trigger reconciliation workflow on contribution
+- Can be re-run later if new matches become available
+
+---
+
+#### 5.4.2 Geometry Editing
+
+**Default behavior:**
+If geometry not provided in original contribution, place inherits geometry from first linked place (via reconciliation).
+
+**Contributor options:**
+
+**Select from reconciled places:**
+- Choose geometry from any single linked place
+- Use combined geometries of all linked places (union)
+- Use automatically-generated representative point (centroid of union)
+
+**Manual drawing:**
+Contributor can draw custom geometry using map interface:
+- **Points**: Mark specific locations
+- **Lines**: Draw routes, boundaries, features
+- **Polygons**: Delineate territories, regions, extents
+- **Mixed**: Combine point, line, polygon features
+
+**Map interface features:**
+- Selectable basemaps:
+  - Modern (OpenStreetMap, satellite imagery)
+  - Historical (georeferenced historical maps where available)
+  - Topographic, political, blank canvases
+- Drawing tools: point, line, polygon, circle, rectangle
+- Snapping to existing features
+- Coordinate display and manual entry
+- Measurement tools (distance, area)
+- Layer management (show/hide reference data)
+
+**Precision documentation:**
+When drawing manually, contributor prompted to specify:
+- `precision`: "exact", "approximate", "representative"
+- `precision_km`: Estimated uncertainty in kilometers
+- Source for geometry (e.g., "Traced from 1850 map", "GPS survey 2023")
+
+**Impact:**
+- Creates new Geometry entity with `has_geometry` attestation
+- Replaces inherited geometry with explicit geometry
+- Updates reflected in LPF export
+- Enables downloads of augmented datasets
+
+---
+
+### 5.5 Staff Editing
+
+**Extended permissions for WHG staff:**
+
+**All contributor capabilities plus:**
+- Edit any contributor's data (with attribution in changelog)
+- Merge duplicate Subjects
+- Bulk operations across datasets
+- Create network/route/itinerary structures from existing places
+- Modify classification attestations
+- Correct errors in any attestation
+
+**Quality assurance workflows:**
+- Review flagged records (community reports)
+- Validate suspect geometry
+- Resolve conflicting attestations
+- Standardize inconsistent metadata
+
+**Curation operations:**
+- Create period Subjects from PeriodO imports
+- Build gazetteer group collections
+- Link major authority gazetteers
+- Maintain namespace mappings
+
+---
+
+### 5.6 Change Logging
+
+**All editing operations** (manual attestations, self-edits, bulk updates, granular edits, staff changes) are recorded in the Django changelog.
+
+**Logged information:**
+- Timestamp of change
+- User ID (contributor or staff)
+- Operation type (create, update, delete)
+- Entity affected (Subject, Name, Geometry, Timespan, Attestation)
+- Old values (for updates/deletes)
+- New values (for creates/updates)
+- Rationale (optional free-text note)
+
+**Changelog uses:**
+- Audit trail for accountability
+- Revert capability for error correction
+- Contributor attribution for citations
+- Quality metrics (edit frequency, types)
+- Research on data evolution
+
+**Access:**
+- Contributors can view their own changelog
+- Staff can view all changes
+- Public changelog available for transparency (user IDs anonymized)
+
+---
+
+### 5.7 Augmented Dataset Downloads
+
+**Key feature**: Edits made through the web interface are reflected in downloadable datasets.
+
+**Download options:**
+- **Original format**: As originally uploaded
+- **Augmented LPF**: Original data + added attestations/geometry
+- **Full LPF**: Complete representation with all relationships
+- **CSV**: Simplified tabular format
+- **GeoJSON**: Geographic features for mapping
+
+**Augmentation includes:**
+- Reconciliation links (`same_as` relations)
+- Added or corrected geometry
+- Manual attestations created via UI
+- Temporal data added post-contribution
+- Source citations added by staff
+
+**Versioning:**
+- Each download stamped with version date
+- Original submission always available
+- Diffs available showing augmentations
+
+**Citation:**
+- Downloads include DOI
+- Augmentations attributed to contributors/staff
+- Encourage citation of both original and augmented versions
