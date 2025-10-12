@@ -22,7 +22,6 @@ extensions = [
     'sphinx_copybutton', 
     'sphinx.ext.autodoc', 
     'sphinx.ext.napoleon',
-    "sphinx_design",
 ]
 
 myst_enable_extensions = [
@@ -52,7 +51,6 @@ html_favicon = '_static/favicon.ico'
 html_logo = "_static/whg_logo.png"
 html_css_files = [
     'css/custom.css',
-    "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.1.1/css/all.min.css",
 ]
 
 # Plausible Analytics tracking
