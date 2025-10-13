@@ -21,3 +21,17 @@ h1.logo {
 #readthedocs-ea {
     display: none;
 }
+
+g[id^="entity-SUBJECT-"] > rect.entityBox {
+    fill: #f6e16b !important;
+}
+
+g[id^="entity-ATTESTATION-"] > rect.entityBox {
+    fill: rgba(75, 196, 30, 0.89) !important;
+}
+
+g[id^="entity-NAME-"] > rect.entityBox,
+g[id^="entity-GEOMETRY-"] > rect.entityBox,
+g[id^="entity-TIMESPAN-"] > rect.entityBox {
+    fill: rgb(166, 196, 227) !important;
+}
