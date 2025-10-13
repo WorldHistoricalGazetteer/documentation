@@ -1,7 +1,7 @@
 # Technical
 
 ```{toctree}
-:maxdepth: 4
+:maxdepth: 2
 :numbered:
 
 Repositories <./technical/repositories.md>

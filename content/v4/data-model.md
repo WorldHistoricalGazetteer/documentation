@@ -1,7 +1,7 @@
 # Data Model
 
 ```{toctree}
-:maxdepth: 2
+:maxdepth: 3
 
 ./data-model/overview.md
 ./data-model/attestations.md

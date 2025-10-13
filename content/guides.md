@@ -1,7 +1,7 @@
 # Guides & Tutorials
 
 ```{toctree}
-:maxdepth: 4
+:maxdepth: 2
 :numbered:
 
 Our Indexes <./guides/indexes.md>
