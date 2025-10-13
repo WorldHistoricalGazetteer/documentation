@@ -16,7 +16,7 @@ The World Historical Gazetteer (WHG) provides two complementary APIs:
 
 ## Documentation
 
-Full, interactive documentation is available at https://whgazetteer.org/api/schema/swagger-ui/
+Full, interactive documentation is available at [https://whgazetteer.org/api/schema/swagger-ui/](https://whgazetteer.org/api/schema/swagger-ui/)
 
 ## API Tokens
 
