@@ -199,7 +199,7 @@ The system uses namespaced identifiers for compactness and clarity. A namespace-
 
 | Namespace | URL Root | Usage |
 |-----------|----------|-------|
-| `whg:` | `https://whgazetteer.org/api/` | WHG-generated entities |
+| `whg:` | `https://whgazetteer.org/entity/` | WHG-generated entities |
 | `doi:` | `https://doi.org/` | Contributed datasets and collections |
 | `pleiades:` | `https://pleiades.stoa.org/places/` | Pleiades ancient places |
 | `geonames:` | `https://www.geonames.org/` | GeoNames places |
