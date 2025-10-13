@@ -1,4 +1,4 @@
-# SSH Key Setup
+# SSH Key Setup <img src="https://img.shields.io/badge/upcoming-v4.0--beta-blue">
 
 Here's how to generate an SSH key, copy it to a remote server, and log in without relying on `PubkeyAuthentication` during the initial setup.
 
