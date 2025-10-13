@@ -1,13 +1,13 @@
 # Guides & Tutorials
 
 ```{toctree}
-:maxdepth: 2
+:maxdepth: 3
 :numbered:
 
-Uploading Data <./guides/uploading.md>
 Our Indexes <./guides/indexes.md>
-Reconciliation <./guides/reconciliation.md>
-Publishing Data <./guides/publishing.md>
-Collection Groups <./guides/collection-groups.md>
 Workbench <./guides/workbench.md>
+Publishing Data <./guides/publishing.md>
+Uploading Data <./guides/uploading.md>
+Reconciliation <./guides/reconciliation.md>
+Collection Groups <./guides/collection-groups.md>
 ```
