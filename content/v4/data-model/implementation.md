@@ -963,6 +963,246 @@ def resolve_id(namespaced_id):
 
 ---
 
+## Migrating Legacy closeMatch Data
+
+### Overview
+
+The V3 system contains approximately **38,000 curated closeMatch attestations** in the Django-managed `close_matches` table. These represent valuable human-reviewed linkages between places that must be preserved and migrated to the V4 attestation-based model.
+
+### Legacy closeMatch Structure
+
+**V3 `close_matches` table:**
+```python
+class CloseMatch(models.Model):
+    place = models.ForeignKey(Place, related_name='close_matches')
+    matched_place = models.ForeignKey(Place, related_name='matched_to')
+    authority = models.CharField(max_length=50)  # 'whg', 'wikidata', 'geonames', etc.
+    matched_id = models.CharField(max_length=255)
+    created = models.DateTimeField(auto_now_add=True)
+    reviewed_by = models.ForeignKey(User, null=True)
+    confidence = models.FloatField(default=1.0)
+    notes = models.TextField(blank=True)
+```
+
+### Migration Strategy
+
+#### Phase 1: Data Extraction and Validation
+
+1. **Extract from V3 database:**
+```python
+# Extract all close matches with related data
+close_matches = CloseMatch.objects.select_related(
+    'place', 'matched_place', 'reviewed_by'
+).all()
+
+# Group by place to identify clusters
+place_clusters = defaultdict(set)
+for cm in close_matches:
+    place_clusters[cm.place.id].add(cm.matched_id)
+```
+
+2. **Validate data quality:**
+  - Check for orphaned references (places that no longer exist)
+  - Identify circular references
+  - Verify authority URIs are well-formed
+  - Flag low-confidence matches (< 0.5) for re-review
+
+3. **Resolve identity conflicts:**
+  - When Place A links to both Place B and Place C, but B and C aren't linked to each other
+  - Requires transitive closure analysis
+  - May need human review for ambiguous cases
+
+#### Phase 2: Mapping to V4 Attestation Model
+
+**V3 closeMatch → V4 Attestation mapping:**
+
+```python
+def migrate_close_match(close_match, v4_subject_map):
+    """
+    Convert V3 closeMatch to V4 same_as attestation
+    
+    Args:
+        close_match: V3 CloseMatch instance
+        v4_subject_map: Dict mapping V3 place IDs to V4 Subject IDs
+    """
+    
+    # Get V4 Subject IDs
+    subject_id = v4_subject_map[close_match.place.id]
+    object_id = resolve_authority_id(
+        close_match.authority, 
+        close_match.matched_id
+    )
+    
+    # Create Attestation
+    attestation = {
+        "id": f"whg:attestation-migrated-cm-{close_match.id}",
+        "subject_type": "subject",
+        "subject_id": subject_id,
+        "relation_type": "same_as",
+        "object_type": "subject",
+        "object_id": object_id,
+        "source": [f"WHG V3 closeMatch (migrated)", close_match.notes],
+        "source_type": ["dataset", "annotation"],
+        "certainty": close_match.confidence,
+        "certainty_note": f"Curated by {close_match.reviewed_by.username} on {close_match.created.date()}" if close_match.reviewed_by else "Automated match",
+        "notes": f"Migrated from V3 close_matches table. Original ID: {close_match.id}"
+    }
+    
+    return attestation
+
+def resolve_authority_id(authority, matched_id):
+    """Map V3 authority references to V4 namespaced IDs"""
+    authority_map = {
+        'wikidata': 'wikidata:',
+        'geonames': 'geonames:',
+        'pleiades': 'pleiades:',
+        'tgn': 'tgn:',
+        'whg': 'whg:subject-'  # Internal WHG places
+    }
+    
+    prefix = authority_map.get(authority.lower(), 'unknown:')
+    return f"{prefix}{matched_id}"
+```
+
+#### Phase 3: Handling Special Cases
+
+**1. WHG-internal closeMatches (whg→whg):**
+- Both subject and object are WHG Subjects
+- These form the core of Place Portal clusters
+- Preserve cluster topology exactly
+
+**2. Authority closeMatches (whg→external):**
+- Map external IDs to proper namespaces
+- Validate that external authority still exists (some Wikidata/GeoNames IDs may have changed)
+- Update to current identifier if redirected
+
+**3. Bidirectional relationships:**
+- V3 may have both A→B and B→A recorded separately
+- V4 should treat `same_as` as inherently bidirectional
+- Migrate only one direction, document as symmetric
+
+**4. Conflicting matches:**
+- A→B with certainty 0.9
+- A→C with certainty 0.7
+- If B and C are not linked, this may indicate:
+  - Legitimate ambiguity (homonyms)
+  - Error requiring resolution
+- Tag for post-migration review
+
+#### Phase 4: Temporal Considerations
+
+**Adding temporal context post-migration:**
+
+Legacy closeMatches lack temporal information. After migration, consider:
+
+1. **Inherit temporality from linked Subjects:**
+```python
+# If Subject A (York) has Timespan "71-present"
+# And Subject B (Eboracum) has Timespan "71-400"
+# The same_as attestation could be given Timespan "71-400"
+# (intersection of the two)
+```
+
+2. **Flag for temporal review:**
+- closeMatches between subjects with non-overlapping timespans
+- May indicate name succession rather than identity
+- Consider `succeeds` relation instead of `same_as`
+
+#### Phase 5: Quality Assurance
+
+**Post-migration validation:**
+
+1. **Count verification:**
+  - Confirm all 38k closeMatches migrated
+  - Check for duplicates
+  - Verify no data loss
+
+2. **Cluster integrity:**
+  - Verify Place Portal pages reconstruct correctly
+  - Test queries that depend on `same_as` links
+  - Confirm transitive closure maintained
+
+3. **Authority link validation:**
+  - Test sample of external links still resolve
+  - Update any broken/redirected authority IDs
+  - Document any authorities no longer available
+
+4. **User attribution:**
+  - Preserve reviewer information in certainty_note
+  - Maintain audit trail from V3
+  - Enable future queries by reviewer
+
+#### Phase 6: Documentation
+
+**Migration metadata to preserve:**
+
+```json
+{
+  "migration_event": {
+    "date": "2026-01-15",
+    "source_system": "WHG V3",
+    "source_table": "close_matches",
+    "records_migrated": 38247,
+    "records_failed": 23,
+    "attestation_id_pattern": "whg:attestation-migrated-cm-*",
+    "validation_report": "https://whgazetteer.org/admin/migration/close-matches-report.json"
+  }
+}
+```
+
+**User-facing documentation:**
+- Explain that existing Place Portal clusters will be preserved
+- Note any changes in cluster behavior due to improved algorithms
+- Provide migration report showing what was updated
+
+### Implementation Timeline
+
+**Week 1-2: Preparation**
+- Extract and validate V3 data
+- Identify and resolve conflicts
+- Build migration scripts
+
+**Week 3: Migration**
+- Run migration in staging environment
+- Validate results
+- Fix any issues
+
+**Week 4: Testing**
+- Compare V3 vs V4 Place Portal pages
+- Test search and reconciliation with migrated links
+- User acceptance testing
+
+**Week 5: Production**
+- Execute production migration
+- Monitor for issues
+- Document any anomalies
+
+### Rollback Plan
+
+**If migration fails:**
+1. V3 data remains intact (read-only during migration)
+2. V4 attestations can be deleted by pattern: `whg:attestation-migrated-cm-*`
+3. Restore from pre-migration Vespa snapshot
+4. Investigate issues and re-run
+
+### Success Metrics
+
+- ✅ 100% of closeMatches migrated (allowing for a small failure rate on corrupt data)
+- ✅ Place Portal pages show same or more linked records
+- ✅ No broken authority links (or documented as expected)
+- ✅ User reviewers credited in attestations
+- ✅ Migration audit trail complete
+
+### Future Enhancements
+
+Post-migration, the attestation model enables:
+- **Temporal refinement**: Add Timespan attestations to clarify when identities held
+- **Source enrichment**: Add citations for closeMatch claims where available
+- **Confidence updates**: Users can update certainty scores with new evidence
+- **Relationship refinement**: Convert some `same_as` to `succeeds` where appropriate
+
+---
+
 ## Summary
 
 ### Vespa Strengths for WHG
