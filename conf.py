@@ -45,7 +45,6 @@ html_theme_options = {
     "navigation_with_keys": True,
     "source_repository": "https://github.com/WorldHistoricalGazetteer/documentation/",
     "source_branch": "main",
-    "source_directory": "content",
 }
 html_title = """
 <span style="display: flex; flex-direction: column; align-items: center; text-align: center;">
