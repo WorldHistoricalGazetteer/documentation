@@ -17,6 +17,7 @@ extensions = [
     'sphinx_copybutton', 
     'sphinx.ext.autodoc', 
     'sphinx.ext.napoleon',
+    'sphinxcontrib.mermaid',
 ]
 
 myst_enable_extensions = [

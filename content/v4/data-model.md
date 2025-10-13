@@ -1,5 +1,8 @@
 # Data Model
 
+```{mermaid} ../diagrams/v4_erd.mermaid
+```
+
 ```{toctree}
 :maxdepth: 3
 
