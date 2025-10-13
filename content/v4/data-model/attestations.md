@@ -1,4 +1,4 @@
-# Part 2: Attestations & Relations
+# Attestations & Relations
 
 ## 1. The Attestation Record
 
@@ -77,7 +77,7 @@ The `relation_type` field specifies what is being attested. Where possible, rela
 {
   "connection_type": "trade|diplomatic|postal|telecommunication|administrative|social|religious",
   "directionality": "bidirectional|from_subject_to_object|from_object_to_subject",
-  "intensity": 0.0-1.0,
+  "intensity": 0.5,
   "frequency": "daily|weekly|monthly|seasonal|annual|irregular",
   "commodity": ["spices", "textiles"],
   "notes": "Free text"

@@ -1,4 +1,4 @@
-# Part 1: Data Model Overview & Core Entities
+# Overview & Core Entities
 
 #### Overview
 

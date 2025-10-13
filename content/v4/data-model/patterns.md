@@ -1,4 +1,4 @@
-# Part 4: Special Subject Patterns
+# Special Subject Patterns
 
 ## 1. Period Subjects
 

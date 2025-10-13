@@ -1,4 +1,4 @@
-# Part 5: Contribution Types & Data Formats
+# Contribution Types & Data Formats
 
 ## 1. Overview
 

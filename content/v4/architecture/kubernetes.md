@@ -1,6 +1,6 @@
-# System Architecture
+# Kubernetes Configuration
 
-The **[WHG PLACE](400-Technical.md#code-repositories)** (Place Linkage, Alignment, and Concordance Engine) repository
+The **[WHG PLACE](../../technical/repositories.md)** (Place Linkage, Alignment, and Concordance Engine) repository
 contains the Kubernetes server configuration files for deploying and managing the World Historical Gazetteer (WHG)
 application. This repository is separate from the main Django application
 code ([here](https://github.com/WorldHistoricalGazetteer/whg3)), and provides a dedicated space for configuring and

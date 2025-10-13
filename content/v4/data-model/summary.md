@@ -1,4 +1,4 @@
-# Part 8: Summary & Future Extensions
+# Summary & Future Extensions
 
 ## 1. Model Summary
 

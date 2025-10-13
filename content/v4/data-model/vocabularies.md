@@ -1,4 +1,4 @@
-# Part 3: Vocabularies
+# Vocabularies
 
 ## 1. Subject Classification Vocabulary
 

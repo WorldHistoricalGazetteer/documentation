@@ -24,7 +24,7 @@ Each of these Services will be exposed in the cluster according to the CRC team'
 `LoadBalancer`, or `ClusterIP` behind an internal ingress proxy). We will adjust our service exposure strategy
 accordingly once this is confirmed.
 
-> ### ⚠️ Bot Management
+> ## ⚠️ Bot Management
 > To reduce the impact of unwanted bot traffic (e.g. crawlers, scrapers, vulnerability scanners) on public-facing endpoints, we request that basic bot filtering be applied at the ingress layer.
 > 
 > At minimum, this should include:
