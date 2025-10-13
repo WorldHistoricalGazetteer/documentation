@@ -85,5 +85,5 @@ html_context.update({
     "project": project,
     "years": f"{start_year}–{current_year}" if current_year > start_year else str(current_year),
     "project_url": "https://whgazetteer.org",
-    "plausible_script": PLAUSIBLE_SNIPPET
+    "plausible_script": PLAUSIBLE_SNIPPET,
 })
