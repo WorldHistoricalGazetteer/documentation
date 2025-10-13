@@ -1,6 +1,6 @@
 # Overview & Core Entities
 
-#### Overview
+## Overview
 
 This data model separates **conceptual entities** (Subject, Name, Geometry, Timespan) from their **attestations**—the evidentiary claims about those entities. All historical claims—including names, locations, classifications, memberships, temporal bounds, and spatial extents—are recorded as **Attestation records** with explicit source attribution.
 
@@ -10,11 +10,11 @@ This model is engineered to support the platform's core **Dynamic Clustering Wor
 
 ---
 
-## 1. Core Conceptual Entities
+## Core Conceptual Entities
 
 These four entity types represent the fundamental concepts in the model.
 
-### 1.1 Subject
+### Subject
 
 A conceptual location, historical entity, collection, period, route, itinerary, or network being modelled. Subjects can be atomic (containing no members) or compositional (containing other Subjects).
 
@@ -35,7 +35,7 @@ A conceptual location, historical entity, collection, period, route, itinerary, 
 
 ---
 
-### 1.2 Name
+### Name
 
 A name or label used to refer to a Subject. Names can serve multiple semantic functions simultaneously.
 
@@ -58,7 +58,7 @@ A name or label used to refer to a Subject. Names can serve multiple semantic fu
 
 ---
 
-### 1.3 Geometry
+### Geometry
 
 A spatial representation (point, line, polygon, etc.) of a Subject.
 
@@ -110,7 +110,7 @@ Abbasid Caliphate's inherited geometry = union of (polygon A, point B, point C, 
 
 ---
 
-### 1.4 Timespan
+### Timespan
 
 A temporal span representing when something existed, occurred, or was valid. Timespans can be precise dates, approximate periods, or references to established period definitions (e.g., PeriodO).
 
@@ -189,7 +189,7 @@ This overrides the computed bounds from members.
 
 ---
 
-## 2. ID Resolution and Namespace Schema
+## ID Resolution and Namespace Schema
 
 **Namespace Strategy:**
 
@@ -223,7 +223,7 @@ Additional namespaces follow the LPF context document: https://github.com/Linked
 
 ---
 
-## 3. Provenance and Changelog
+## Provenance and Changelog
 
 **Provenance tracking** for all entity creation and modification is handled by the Django application database, not within the core Vespa data model.
 

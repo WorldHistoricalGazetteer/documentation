@@ -39,6 +39,9 @@ myst_enable_extensions = [
 # Allow parsing of standard Markdown headers (#, ##, etc.)
 myst_heading_anchors = 5
 
+# Automatically number figures, tables, code-blocks
+numfig = True
+
 templates_path = ['_templates']
 exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
 

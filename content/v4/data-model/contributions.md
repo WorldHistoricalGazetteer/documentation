@@ -1,14 +1,14 @@
 # Contribution Types & Data Formats
 
-## 1. Overview
+## Overview
 
 WHG accepts contributions representing different types of historical datasets. All contribution types are mapped to the internal data model upon ingestion using the Subject-Attestation-Timespan-Name-Geometry architecture.
 
 ---
 
-## 2. Contribution Types
+## Contribution Types
 
-### 2.1 Gazetteer
+### Gazetteer
 
 A dataset of places sourced from a common historical or geographical context.
 
@@ -43,7 +43,7 @@ LPF place → Subject
 
 ---
 
-### 2.2 Route
+### Route
 
 A sequentially-ordered set of places, typically without specific temporal traversal information.
 
@@ -78,7 +78,7 @@ Route contribution → Subject (has_type: "route")
 
 ---
 
-### 2.3 Itinerary
+### Itinerary
 
 A route with temporal dimensions indicating when segments were traversed.
 
@@ -116,7 +116,7 @@ Itinerary contribution → Subject (has_type: "itinerary")
 
 ---
 
-### 2.4 Network
+### Network
 
 A dataset indicating geospatial connections between places that may not follow a sequence.
 
@@ -156,7 +156,7 @@ Network contribution → Subject (has_type: "network")
 
 ---
 
-### 2.5 Gazetteer Group
+### Gazetteer Group
 
 A thematic collection of gazetteers sharing common characteristics.
 
@@ -191,9 +191,9 @@ Gazetteer Group → Subject (has_type: "gazetteer_group")
 
 ---
 
-## 3. Accepted Formats for All Types
+## Accepted Formats for All Types
 
-### 3.1 Linked Places Format (LPF) - JSON
+### Linked Places Format (LPF) - JSON
 
 **Primary structured format** following the Linked Places specification.
 
@@ -216,7 +216,7 @@ Gazetteer Group → Subject (has_type: "gazetteer_group")
 
 ---
 
-### 3.2 Delimited Text (CSV/TSV)
+### Delimited Text (CSV/TSV)
 
 **Tabular format** with predefined column mappings.
 
@@ -240,7 +240,7 @@ Gazetteer Group → Subject (has_type: "gazetteer_group")
 
 ---
 
-### 3.3 Spreadsheets
+### Spreadsheets
 
 **Excel/Google Sheets** with template structures.
 
@@ -257,7 +257,7 @@ Gazetteer Group → Subject (has_type: "gazetteer_group")
 
 ---
 
-### 3.4 Geographic Formats
+### Geographic Formats
 
 **GPX, KML, GeoJSON** with WHG extensions.
 
@@ -274,7 +274,7 @@ Gazetteer Group → Subject (has_type: "gazetteer_group")
 
 ---
 
-### 3.5 URL-Referenced Datasets
+### URL-Referenced Datasets
 
 **Remote dataset URLs** pointing to publicly accessible files.
 
@@ -310,9 +310,9 @@ Gazetteer Group → Subject (has_type: "gazetteer_group")
 
 ---
 
-## 4. Relationship to Linked Places Format (LPF)
+## Relationship to Linked Places Format (LPF)
 
-### 4.1 LPF as Interchange Format
+### LPF as Interchange Format
 
 **Linked Places Format (LPF)** is a GeoJSON-based format designed for contributing and exchanging historical place data. It serves as the **interchange format** between WHG and external contributors/consumers.
 
@@ -328,7 +328,7 @@ Gazetteer Group → Subject (has_type: "gazetteer_group")
 
 ---
 
-### 4.2 Bidirectional Transformation
+### Bidirectional Transformation
 
 **Ingestion (LPF/CSV → Internal Model):**
 - LPF `properties.title` → Name records with `has_name` attestations
@@ -352,7 +352,7 @@ Gazetteer Group → Subject (has_type: "gazetteer_group")
 
 ---
 
-### 4.3 Data Transformation Layer
+### Data Transformation Layer
 
 The WHG application includes a **transformation layer** that:
 - Validates incoming LPF/CSV/GPX against schemas
@@ -373,11 +373,11 @@ This layer is distinct from the core data model and handles the complexity of ma
 
 ---
 
-## 5. Editing Contributions
+## Editing Contributions
 
 The WHG V4 platform provides comprehensive editing capabilities for both contributors and staff, with all changes tracked in the Django changelog.
 
-### 5.1 Manual Attestation Creation
+### Manual Attestation Creation
 
 **Single attestation creation**:
 Contributors and staff can manually create individual Attestation records for existing data through the web interface.
@@ -402,7 +402,7 @@ Contributors and staff can manually create individual Attestation records for ex
 
 ---
 
-### 5.2 Contributor Self-Editing
+### Contributor Self-Editing
 
 **New in V4**: Contributors can edit their own contributions directly (not possible in V3).
 
@@ -429,7 +429,7 @@ Contributors and staff can manually create individual Attestation records for ex
 
 ---
 
-### 5.3 Whole-Record Editing
+### Whole-Record Editing
 
 Using the same dataset format as their original contribution, contributors can perform bulk operations:
 
@@ -468,11 +468,11 @@ Using the same dataset format as their original contribution, contributors can p
 
 ---
 
-### 5.4 Granular Editing
+### Granular Editing
 
 Focused editing of specific aspects of place records through the web interface.
 
-#### 5.4.1 Reconciliation
+#### Reconciliation
 
 **What it is:**
 Assessment and selection of potential matches to other indexed places.
@@ -506,7 +506,7 @@ Assessment and selection of potential matches to other indexed places.
 
 ---
 
-#### 5.4.2 Geometry Editing
+#### Geometry Editing
 
 **Default behavior:**
 If geometry not provided in original contribution, place inherits geometry from first linked place (via reconciliation).
@@ -550,7 +550,7 @@ When drawing manually, contributor prompted to specify:
 
 ---
 
-### 5.5 Staff Editing
+### Staff Editing
 
 **Extended permissions for WHG staff:**
 
@@ -576,7 +576,7 @@ When drawing manually, contributor prompted to specify:
 
 ---
 
-### 5.6 Change Logging
+### Change Logging
 
 **All editing operations** (manual attestations, self-edits, bulk updates, granular edits, staff changes) are recorded in the Django changelog.
 
@@ -603,7 +603,7 @@ When drawing manually, contributor prompted to specify:
 
 ---
 
-### 5.7 Augmented Dataset Downloads
+### Augmented Dataset Downloads
 
 **Key feature**: Edits made through the web interface are reflected in downloadable datasets.
 

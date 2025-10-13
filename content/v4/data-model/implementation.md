@@ -1,6 +1,6 @@
 # Implementation in Vespa
 
-## 1. Document Types
+## Document Types
 
 We will need five primary document types in Vespa:
 
@@ -14,9 +14,9 @@ We will need five primary document types in Vespa:
 
 ---
 
-## 2. Indexing Strategy
+## Indexing Strategy
 
-### 2.1 Attestation Records
+### Attestation Records
 
 **Heavily index on:**
 - `subject_id` + `relation_type` (for finding all attestations about a subject)
@@ -72,7 +72,7 @@ attestation {
 
 ---
 
-### 2.2 Subject Records
+### Subject Records
 
 **Index on:**
 - `id` (primary key, attribute for fast lookups)
@@ -95,7 +95,7 @@ subject {
 
 ---
 
-### 2.3 Name Records
+### Name Records
 
 **Index on:**
 - `name` (with language-specific text analyzers)
@@ -157,7 +157,7 @@ name {
 
 ---
 
-### 2.4 Geometry Records
+### Geometry Records
 
 **Index on:**
 - Spatial indexing on `geom` (primary geometry)
@@ -214,7 +214,7 @@ geometry {
 
 ---
 
-### 2.5 Timespan Records
+### Timespan Records
 
 **Index on:**
 - Temporal range fields for point-in-time and overlap queries
@@ -271,9 +271,9 @@ timespan {
 
 ---
 
-## 3. Query Patterns
+## Query Patterns
 
-### 3.1 Name Resolution Over Time
+### Name Resolution Over Time
 
 **Query:** "What was Chang'an called in 700 AD?"
 
@@ -293,7 +293,7 @@ WHERE attestation.subject_id = "whg:subject-changan"
 
 ---
 
-### 3.2 Spatial Queries with Temporal Filter
+### Spatial Queries with Temporal Filter
 
 **Query:** "Places within 100km of Constantinople in the 13th century"
 
@@ -323,7 +323,7 @@ WHERE a1.subject_id = subject.id
 
 ---
 
-### 3.3 Vector Similarity Search for Toponyms
+### Vector Similarity Search for Toponyms
 
 **Query:** "Find names similar to 'Chang'an' across languages"
 
@@ -338,7 +338,7 @@ Where `query_embedding` is the vector for "Chang'an" from the same model used fo
 
 ---
 
-### 3.4 Network Connection Query
+### Network Connection Query
 
 **Query:** "All trade connections from Constantinople 1200-1300 CE"
 
@@ -358,9 +358,9 @@ WHERE attestation.subject_id = "pleiades:520998"
 
 ---
 
-## 4. Handling Temporal Nulls and Geological Time
+## Handling Temporal Nulls and Geological Time
 
-### 4.1 Sentinel Values
+### Sentinel Values
 
 For `start_earliest`, `start_latest`, `stop_earliest`, `stop_latest` fields representing infinity or deep time:
 
@@ -376,7 +376,7 @@ For `start_earliest`, `start_latest`, `stop_earliest`, `stop_latest` fields repr
 - Can represent geological periods (e.g., `periodo:p0pleistocene`)
 - Import PeriodO temporal bounds into Timespan records
 
-### 4.2 Query Logic
+### Query Logic
 
 **Point-in-time queries:**
 ```
@@ -398,9 +398,9 @@ WHERE (timespan.start_earliest IS NULL OR timespan.start_earliest <= query_date)
 
 ---
 
-## 5. Vespa Capabilities Assessment
+## Vespa Capabilities Assessment
 
-### 5.1 What Vespa Handles Well
+### What Vespa Handles Well
 
 **Temporal Range Queries:**
 ✅ Efficient range queries on numeric/timestamp fields
@@ -441,7 +441,7 @@ WHERE (timespan.start_earliest IS NULL OR timespan.start_earliest <= query_date)
 
 ---
 
-### 5.2 Advantages of Vespa-Only Approach
+### Advantages of Vespa-Only Approach
 
 **vs. Postgres + ElasticSearch:**
 - ✅ Single system eliminates sync issues and data duplication
@@ -462,7 +462,7 @@ WHERE (timespan.start_earliest IS NULL OR timespan.start_earliest <= query_date)
 
 ---
 
-### 5.3 Considerations and Tradeoffs
+### Considerations and Tradeoffs
 
 **Optimized for read-heavy workloads:**
 - ✅ Great for WHG's query-dominant usage
@@ -491,9 +491,9 @@ WHERE (timespan.start_earliest IS NULL OR timespan.start_earliest <= query_date)
 
 ---
 
-## 6. Schema Design Best Practices
+## Schema Design Best Practices
 
-### 6.1 Denormalization for Performance
+### Denormalization for Performance
 
 **When to denormalize:**
 - Frequently co-queried data (e.g., primary name with subject)
@@ -521,7 +521,7 @@ Updated during indexing by:
 
 ---
 
-### 6.2 Parent-Child Relationships
+### Parent-Child Relationships
 
 **For closely related documents:**
 
@@ -549,7 +549,7 @@ attestation {
 
 ---
 
-### 6.3 Materialized Views
+### Materialized Views
 
 **For expensive computations:**
 
@@ -571,7 +571,7 @@ Updated via:
 
 ---
 
-### 6.4 Handling Updates
+### Handling Updates
 
 **Update strategies:**
 
@@ -590,9 +590,9 @@ Updated via:
 
 ---
 
-## 7. Dynamic Clustering Support
+## Dynamic Clustering Support
 
-### 7.1 Required Indexes for Clustering
+### Required Indexes for Clustering
 
 **Toponymic clustering (Name similarity):**
 ```
@@ -624,7 +624,7 @@ attestation.object_id: string with fast-search (the classification value)
 
 ---
 
-### 7.2 Clustering Query Pattern
+### Clustering Query Pattern
 
 **Phase 1: Pre-filter candidates**
 ```sql
@@ -661,7 +661,7 @@ Apply merge logic based on relationship predicates and certainty thresholds.
 
 ---
 
-### 7.3 Performance Optimization for Clustering
+### Performance Optimization for Clustering
 
 **Batch queries:**
 - Use Vespa's multi-search API for parallel candidate retrieval
@@ -677,9 +677,9 @@ Apply merge logic based on relationship predicates and certainty thresholds.
 
 ---
 
-## 8. Monitoring and Performance Tuning
+## Monitoring and Performance Tuning
 
-### 8.1 Key Metrics
+### Key Metrics
 
 **Query performance:**
 - Latency percentiles (p50, p95, p99)
@@ -698,7 +698,7 @@ Apply merge logic based on relationship predicates and certainty thresholds.
 
 ---
 
-### 8.2 Optimization Techniques
+### Optimization Techniques
 
 **Query optimization:**
 - Use `timeout` parameter to fail fast
@@ -716,7 +716,7 @@ Apply merge logic based on relationship predicates and certainty thresholds.
 
 ---
 
-### 8.3 Scaling Strategy
+### Scaling Strategy
 
 **Horizontal scaling:**
 - Add content nodes for increased storage/query capacity
@@ -733,9 +733,9 @@ Apply merge logic based on relationship predicates and certainty thresholds.
 
 ---
 
-## 9. Migration from Postgres + ElasticSearch
+## Migration from Postgres + ElasticSearch
 
-### 9.1 Migration Strategy
+### Migration Strategy
 
 **Phase 1: Parallel run**
 - Keep existing Postgres + ElasticSearch
@@ -759,7 +759,7 @@ Apply merge logic based on relationship predicates and certainty thresholds.
 
 ---
 
-### 9.2 Data Migration Process
+### Data Migration Process
 
 **Extract from Postgres:**
 ```python
@@ -815,7 +815,7 @@ def batch_index(documents, doc_type):
 
 ---
 
-### 9.3 Validation
+### Validation
 
 **Query comparison:**
 ```python
@@ -839,9 +839,9 @@ def compare_results(query):
 
 ---
 
-## 10. Django Integration
+## Django Integration
 
-### 10.1 Django Signals for Vespa Updates
+### Django Signals for Vespa Updates
 
 **On Subject create/update:**
 ```python
@@ -899,7 +899,7 @@ def update_vespa_name(sender, instance, **kwargs):
 
 ---
 
-### 10.2 Django Views for Queries
+### Django Views for Queries
 
 **Reconciliation API:**
 ```python
@@ -931,7 +931,7 @@ class ReconciliationView(APIView):
 
 ---
 
-### 10.3 Namespace Resolution
+### Namespace Resolution
 
 **Django model:**
 ```python
@@ -963,9 +963,9 @@ def resolve_id(namespaced_id):
 
 ---
 
-## 11. Summary
+## Summary
 
-### 11.1 Vespa Strengths for WHG
+### Vespa Strengths for WHG
 
 ✅ **Unified storage and indexing** - eliminates sync complexity
 ✅ **Native vector search** - essential for Dynamic Clustering toponymic similarity
@@ -975,7 +975,7 @@ def resolve_id(namespaced_id):
 ✅ **Horizontal scalability** - handles growth in data and query load
 ✅ **Rich query language** - YQL supports complex filters and joins
 
-### 11.2 Implementation Priorities
+### Implementation Priorities
 
 1. **Core document types** - Subject, Name, Geometry, Timespan, Attestation
 2. **Essential indexes** - Embeddings (HNSW), spatial (representative_point), temporal (range fields)
@@ -986,7 +986,7 @@ def resolve_id(namespaced_id):
 7. **Denormalization** - Primary names, frequently-accessed relationships
 8. **Monitoring** - Query latency, index health, resource usage
 
-### 11.3 Next Steps
+### Next Steps
 
 1. Set up Vespa cluster (development → staging → production)
 2. Define schemas for five document types

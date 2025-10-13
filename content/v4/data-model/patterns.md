@@ -1,6 +1,6 @@
 # Special Subject Patterns
 
-## 1. Period Subjects
+## Period Subjects
 
 A **period Subject** represents a span of time, often with associated geographic extent and cultural characteristics.
 
@@ -39,7 +39,7 @@ Period Subject (e.g., "Tang Dynasty")
 
 ---
 
-## 2. Route Subjects
+## Route Subjects
 
 A **route Subject** represents a sequentially-ordered set of places, typically without specific temporal information about traversal.
 
@@ -76,7 +76,7 @@ Route Subject (e.g., "Silk Road")
 
 ---
 
-## 3. Itinerary Subjects
+## Itinerary Subjects
 
 An **itinerary Subject** represents a journey or route through space and time, with temporal information about when segments were traversed.
 
@@ -117,7 +117,7 @@ Itinerary Subject (e.g., "Marco Polo's Journey")
 
 ---
 
-## 4. Network Subjects
+## Network Subjects
 
 A **network Subject** represents a set of connections between places that may not follow a particular sequence.
 
@@ -166,7 +166,7 @@ Network Subject (e.g., "Mediterranean Trade Network")
 
 ---
 
-## 5. Gazetteer Group Subjects
+## Gazetteer Group Subjects
 
 A **gazetteer group Subject** represents a thematic collection of gazetteers sharing common characteristics.
 
@@ -205,7 +205,7 @@ Gazetteer Group Subject (e.g., "Ancient World Gazetteers")
 
 ---
 
-## 6. Timespan Inheritance and Computation
+## Timespan Inheritance and Computation
 
 Similar to Geometry inheritance, **Timespan inheritance** can be computed for Subjects lacking explicit Timespan attestations.
 

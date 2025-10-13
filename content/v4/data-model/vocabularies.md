@@ -1,10 +1,10 @@
 # Vocabularies
 
-## 1. Subject Classification Vocabulary
+## Subject Classification Vocabulary
 
 Subjects are classified via attestations with `relation_type: "has_type"`. The following classification values are recognized for contribution types:
 
-### 1.1 Contribution Type Classifications
+### Contribution Type Classifications
 
 | Classification | Definition | Example Uses |
 |----------------|------------|--------------|
@@ -15,7 +15,7 @@ Subjects are classified via attestations with `relation_type: "has_type"`. The f
 | `gazetteer_group` | A thematic collection of gazetteers | Ancient World collection, Colonial archives, Environmental history datasets |
 | `period` | A temporal entity with chrononym and geographic extent | Dynasties, eras, cultural periods, geological epochs |
 
-### 1.2 GeoNames Feature Classes
+### GeoNames Feature Classes
 
 WHG also supports GeoNames feature class vocabulary for finer-grained place classification:
 
@@ -34,7 +34,7 @@ Full GeoNames feature code list: http://www.geonames.org/export/codes.html
 
 ---
 
-## 2. Name Type Vocabulary
+## Name Type Vocabulary
 
 Names can serve multiple semantic functions. The `name_type` field is an array that can contain any combination of the following values:
 
@@ -61,7 +61,7 @@ Names can serve multiple semantic functions. The `name_type` field is an array t
 
 ---
 
-## 3. Source Type Vocabulary
+## Source Type Vocabulary
 
 The `source_type` array indicates the nature of evidence sources. Values align with Dublin Core type vocabulary where applicable:
 
@@ -84,7 +84,7 @@ The `source_type` array indicates the nature of evidence sources. Values align w
 
 ---
 
-## 4. Temporal Precision Vocabulary
+## Temporal Precision Vocabulary
 
 The `precision` field in Timespan entities uses controlled vocabulary:
 
@@ -104,7 +104,7 @@ The `precision` field in Timespan entities uses controlled vocabulary:
 
 ---
 
-## 5. Spatial Precision Vocabulary
+## Spatial Precision Vocabulary
 
 The `precision` array in Geometry entities can include qualitative assessments:
 
@@ -124,7 +124,7 @@ The `precision` array in Geometry entities can include qualitative assessments:
 
 ---
 
-## 6. Connection Type Vocabulary (for Networks)
+## Connection Type Vocabulary (for Networks)
 
 The `connection_type` field in `connection_metadata` uses domain-specific vocabulary:
 
@@ -149,7 +149,7 @@ The `connection_type` field in `connection_metadata` uses domain-specific vocabu
 
 ---
 
-## 7. Directionality Vocabulary (for Networks)
+## Directionality Vocabulary (for Networks)
 
 The `directionality` field in `connection_metadata`:
 
@@ -162,7 +162,7 @@ The `directionality` field in `connection_metadata`:
 
 ---
 
-## 8. Certainty Assessment
+## Certainty Assessment
 
 The `certainty` field (0.0–1.0 float) and optional `certainty_note` provide evidence quality assessment:
 

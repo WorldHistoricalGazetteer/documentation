@@ -1,14 +1,14 @@
 # Platform Use Cases
 
-## 1. Overview
+## Overview
 
 The World Historical Gazetteer serves multiple complementary functions that distinguish it from general-purpose mapping platforms, search engines, and their LLM successors. This section outlines key use cases that the data model is designed to support.
 
 ---
 
-## 2. Core Platform Capabilities
+## Core Platform Capabilities
 
-### 2.1 Reconciliation Service
+### Reconciliation Service
 
 **What it is:**
 A unified authority file service that matches place references against multiple authoritative gazetteers and curated contributions.
@@ -35,7 +35,7 @@ A unified authority file service that matches place references against multiple 
 
 ---
 
-### 2.2 Temporal Gazetteering
+### Temporal Gazetteering
 
 **What it is:**
 Not just "where" but "when was it called X and where was it located then."
@@ -62,7 +62,7 @@ Not just "where" but "when was it called X and where was it located then."
 
 ---
 
-### 2.3 Discovery with Historiographical Depth
+### Discovery with Historiographical Depth
 
 **What it is:**
 Search and exploration that reveals source complexity, not just "best match" results.
@@ -97,7 +97,7 @@ Search and exploration that reveals source complexity, not just "best match" res
 
 ---
 
-### 2.4 Network, Route, and Itinerary Support
+### Network, Route, and Itinerary Support
 
 **What it is:**
 Not just static places, but connections, movements, and relationships through time.
@@ -129,7 +129,7 @@ Not just static places, but connections, movements, and relationships through ti
 
 ---
 
-### 2.5 Contribution-Friendly Infrastructure
+### Contribution-Friendly Infrastructure
 
 **What it is:**
 Low-barrier entry for diverse contribution formats with professional-grade outputs.
@@ -159,7 +159,7 @@ Low-barrier entry for diverse contribution formats with professional-grade outpu
 
 ---
 
-### 2.6 Attestation-Based Provenance
+### Attestation-Based Provenance
 
 **What it is:**
 Every claim is sourced; every source is transparent and traceable.
@@ -191,7 +191,7 @@ Every claim is sourced; every source is transparent and traceable.
 
 ---
 
-### 2.7 Cross-Cultural Representation
+### Cross-Cultural Representation
 
 **What it is:**
 Not Eurocentric; truly global with multilingual, multi-script support.
@@ -225,7 +225,7 @@ Not Eurocentric; truly global with multilingual, multi-script support.
 
 ---
 
-### 2.8 Historical Dynamism
+### Historical Dynamism
 
 **What it is:**
 Places change: borders shift, cities move, territories fragment and coalesce.
@@ -257,9 +257,9 @@ Places change: borders shift, cities move, territories fragment and coalesce.
 
 ---
 
-## 3. Researcher Workflow Examples
+## Researcher Workflow Examples
 
-### 3.1 Digital Humanities: Text Mining Historical Corpus
+### Digital Humanities: Text Mining Historical Corpus
 
 **Scenario:** Extract and map place references from medieval travel accounts.
 
@@ -274,7 +274,7 @@ Places change: borders shift, cities move, territories fragment and coalesce.
 
 ---
 
-### 3.2 Historical Geography: Reconstructing Trade Routes
+### Historical Geography: Reconstructing Trade Routes
 
 **Scenario:** Map and analyze Hanseatic League trade routes 1300-1450.
 
@@ -289,7 +289,7 @@ Places change: borders shift, cities move, territories fragment and coalesce.
 
 ---
 
-### 3.3 Archaeology: Site Documentation and Reconciliation
+### Archaeology: Site Documentation and Reconciliation
 
 **Scenario:** Archaeological project documenting Bronze Age sites in Anatolia.
 
@@ -304,7 +304,7 @@ Places change: borders shift, cities move, territories fragment and coalesce.
 
 ---
 
-### 3.4 Migration Studies: Tracking Historical Populations
+### Migration Studies: Tracking Historical Populations
 
 **Scenario:** Document Bantu migrations across Africa 1000 BCE - 500 CE.
 
@@ -319,30 +319,30 @@ Places change: borders shift, cities move, territories fragment and coalesce.
 
 ---
 
-## 4. What Sets WHG Apart
+## What Sets WHG Apart
 
-### 4.1 vs. Google Maps / Modern Mapping Platforms
+### vs. Google Maps / Modern Mapping Platforms
 - **Temporal depth**: Google shows present; WHG shows historical change
 - **Source transparency**: WHG exposes evidence; maps are black boxes
 - **Multiple perspectives**: WHG preserves scholarly debate; maps show consensus
 
-### 4.2 vs. Wikipedia / General Encyclopedias
+### vs. Wikipedia / General Encyclopedias
 - **Structured data**: WHG is machine-readable; Wikipedia is prose
 - **Temporal precision**: WHG time-bounds all claims; Wikipedia conflates periods
 - **Reconciliation**: WHG links authorities; Wikipedia links articles
 
-### 4.3 vs. Academic Gazetteers (Pleiades, CHGIS, etc.)
+### vs. Academic Gazetteers (Pleiades, CHGIS, etc.)
 - **Cross-gazetteer**: WHG indexes multiple authorities together
 - **Contribution-friendly**: Lower barrier than specialized gazetteers
 - **Modern periods**: Not limited to ancient/medieval (though those are strengths)
 - **Networks/routes**: Goes beyond point locations
 
-### 4.4 vs. Search Engines
+### vs. Search Engines
 - **Precision**: Structured queries, not keyword matches
 - **Historical context**: Period-specific results, not anachronistic modern names
 - **Evidence-based**: Sources cited, not SEO-ranked aggregations
 
-### 4.5 vs. LLMs (ChatGPT, etc.)
+### vs. LLMs (ChatGPT, etc.)
 - **Accuracy**: Fact-checked structured data, not generated text
 - **Provenance**: Every claim sourced; LLMs hallucinate citations
 - **Temporality**: Explicit date ranges; LLMs conflate time periods
@@ -351,7 +351,7 @@ Places change: borders shift, cities move, territories fragment and coalesce.
 
 ---
 
-## 5. Platform Value Proposition
+## Platform Value Proposition
 
 **For Researchers:**
 - Authoritative, citable place data with DOIs

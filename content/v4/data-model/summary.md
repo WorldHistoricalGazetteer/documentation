@@ -1,8 +1,8 @@
 # Summary & Future Extensions
 
-## 1. Model Summary
+## Model Summary
 
-### 1.1 Core Architecture
+### Core Architecture
 
 The World Historical Gazetteer data model achieves a clean separation between:
 
@@ -23,7 +23,7 @@ This architecture provides:
 
 ---
 
-### 1.2 Key Design Decisions
+### Key Design Decisions
 
 **Unified Subject model**:
 - Single entity type replaces Place/Group distinction
@@ -67,7 +67,7 @@ This architecture provides:
 
 ---
 
-### 1.3 What the Model Achieves
+### What the Model Achieves
 
 ✅ **Temporal gazetteering**: Not just where, but when was it called X and where was it then
 ✅ **Source transparency**: Every claim traceable to evidence
@@ -83,9 +83,9 @@ This architecture provides:
 
 ---
 
-## 2. Comparison with Other Models
+## Comparison with Other Models
 
-### 2.1 vs. Linked Places Format (LPF)
+### vs. Linked Places Format (LPF)
 
 **LPF** (interchange format):
 - Document-oriented (places as standalone GeoJSON features)
@@ -103,7 +103,7 @@ This architecture provides:
 
 ---
 
-### 2.2 vs. Recogito
+### vs. Recogito
 
 **Recogito** (annotation-focused):
 - Lightweight place references in texts
@@ -119,7 +119,7 @@ This architecture provides:
 
 ---
 
-### 2.3 vs. Pleiades
+### vs. Pleiades
 
 **Pleiades** (authoritative ancient places):
 - Curated, high-quality ancient Mediterranean/Near East
@@ -136,7 +136,7 @@ This architecture provides:
 
 ---
 
-### 2.4 vs. GeoNames
+### vs. GeoNames
 
 **GeoNames** (modern place names):
 - Massive contemporary gazetteer
@@ -154,9 +154,9 @@ This architecture provides:
 
 ---
 
-## 3. Possible Future Extensions
+## Possible Future Extensions
 
-### 3.1 Enhanced Attestation Types
+### Enhanced Attestation Types
 
 **Uncertain relationships**:
 - `possibly_same_as`: Low-confidence equivalence claims
@@ -173,7 +173,7 @@ This architecture provides:
 
 ---
 
-### 3.2 Meta-Attestations
+### Meta-Attestations
 
 **Attestations about attestations**:
 - Scholarly critique of existing claims
@@ -197,7 +197,7 @@ This architecture provides:
 
 ---
 
-### 3.3 Advanced Network Analysis
+### Advanced Network Analysis
 
 **Centrality measures**:
 - Pre-compute betweenness, closeness, eigenvector centrality for network nodes
@@ -219,7 +219,7 @@ This architecture provides:
 
 ---
 
-### 3.4 Complex Itinerary Patterns
+### Complex Itinerary Patterns
 
 **Circular routes**:
 - Return journeys (e.g., round-trip pilgrimages)
@@ -239,7 +239,7 @@ This architecture provides:
 
 ---
 
-### 3.5 Multilingual Enhancements
+### Multilingual Enhancements
 
 **Translation networks**:
 - Link Names across languages via attestations
@@ -255,7 +255,7 @@ This architecture provides:
 
 ---
 
-### 3.6 Spatial-Temporal Analytics
+### Spatial-Temporal Analytics
 
 **Territory change visualization**:
 - Animate border shifts over time
@@ -275,7 +275,7 @@ This architecture provides:
 
 ---
 
-### 3.7 Machine Learning Integration
+### Machine Learning Integration
 
 **Automated reconciliation**:
 - Train models on confirmed `same_as` attestations
@@ -295,7 +295,7 @@ This architecture provides:
 
 ---
 
-### 3.8 Enhanced LPF Mapping
+### Enhanced LPF Mapping
 
 **Additional LPF features**:
 - `depictions[]` → Link to visual representations
@@ -309,7 +309,7 @@ This architecture provides:
 
 ---
 
-### 3.9 Interoperability Enhancements
+### Interoperability Enhancements
 
 **IIIF integration**:
 - Link Subjects to IIIF manifests (maps, manuscripts)
@@ -332,9 +332,9 @@ This architecture provides:
 
 ---
 
-## 4. Research Agenda
+## Research Agenda
 
-### 4.1 Algorithmic Challenges
+### Algorithmic Challenges
 
 **Geometry inheritance optimization**:
 - Efficient algorithms for recursive union computation
@@ -353,7 +353,7 @@ This architecture provides:
 
 ---
 
-### 4.2 Modeling Challenges
+### Modeling Challenges
 
 **Contested territories**:
 - Multiple Subjects claiming same space at same time
@@ -372,7 +372,7 @@ This architecture provides:
 
 ---
 
-### 4.3 User Interface Challenges
+### User Interface Challenges
 
 **Temporal visualization**:
 - Timeline controls for time-traveling through maps
@@ -391,9 +391,9 @@ This architecture provides:
 
 ---
 
-## 5. Governance and Sustainability
+## Governance and Sustainability
 
-### 5.1 Data Quality
+### Data Quality
 
 **Curation workflows**:
 - Editorial review for high-profile contributions
@@ -412,7 +412,7 @@ This architecture provides:
 
 ---
 
-### 5.2 Community Engagement
+### Community Engagement
 
 **Contribution incentives**:
 - Academic credit for contributions (DOI citations)
@@ -428,7 +428,7 @@ This architecture provides:
 
 ---
 
-### 5.3 Technical Sustainability
+### Technical Sustainability
 
 **Code maintenance**:
 - Open-source codebase on GitHub
@@ -447,7 +447,7 @@ This architecture provides:
 
 ---
 
-## 6. Conclusion
+## Conclusion
 
 The World Historical Gazetteer v4 data model represents a significant advance in historical place data infrastructure. By:
 

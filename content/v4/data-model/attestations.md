@@ -1,6 +1,6 @@
 # Attestations & Relations
 
-## 1. The Attestation Record
+## The Attestation Record
 
 **Attestation records** are the core mechanism for recording evidentiary claims about all entities. They link Subjects to Names, Geometries, Timespans, and other Subjects, with explicit source attribution.
 
@@ -28,11 +28,11 @@
 
 ---
 
-## 2. Relation Types
+## Relation Types
 
 The `relation_type` field specifies what is being attested. Where possible, relation types align with **CIDOC-CRM** predicates for interoperability with cultural heritage standards.
 
-### 2.1 Core Relations
+### Core Relations
 
 | Relation Type | CIDOC-CRM Alignment | Definition | Object Type |
 |---------------|---------------------|------------|-------------|
@@ -50,7 +50,7 @@ The `relation_type` field specifies what is being attested. Where possible, rela
 
 ---
 
-### 2.2 Hierarchical/Membership Relations
+### Hierarchical/Membership Relations
 
 | Relation Type | CIDOC-CRM Alignment | Definition | Object Type |
 |---------------|---------------------|------------|-------------|
@@ -66,7 +66,7 @@ The `relation_type` field specifies what is being attested. Where possible, rela
 
 ---
 
-### 2.3 Network Relations
+### Network Relations
 
 | Relation Type | CIDOC-CRM Alignment | Definition | Object Type |
 |---------------|---------------------|------------|-------------|
@@ -91,9 +91,9 @@ The `relation_type` field specifies what is being attested. Where possible, rela
 
 ---
 
-## 3. Relationship Examples
+## Relationship Examples
 
-### 3.1 Subject and Name
+### Subject and Name
 
 **Attestation:** "The city in modern Mexico was known as Tenochtitlan during the Aztec period"
 
@@ -138,7 +138,7 @@ Where `whg:timespan-aztec-tenochtitlan` has:
 
 ---
 
-### 3.2 Subject and Geometry
+### Subject and Geometry
 
 **Attestation:** "The capital of the Tang Dynasty was located at these coordinates"
 
@@ -172,7 +172,7 @@ Where `whg:timespan-aztec-tenochtitlan` has:
 
 ---
 
-### 3.3 Subject Classification
+### Subject Classification
 
 **Attestation:** "The Abbasid Caliphate was classified as an empire"
 
@@ -206,7 +206,7 @@ Where `whg:timespan-aztec-tenochtitlan` has:
 
 ---
 
-### 3.4 Subject Membership (Period)
+### Subject Membership (Period)
 
 **Attestation:** "Chang'an was part of the Tang Dynasty period"
 
@@ -240,7 +240,7 @@ Where `whg:timespan-aztec-tenochtitlan` has:
 
 ---
 
-### 3.5 Route Segment (no temporal data)
+### Route Segment (no temporal data)
 
 **Attestation:** "The Silk Road included Samarkand as a waypoint"
 
@@ -262,7 +262,7 @@ Where `whg:timespan-aztec-tenochtitlan` has:
 
 ---
 
-### 3.6 Itinerary Segment (with temporal data)
+### Itinerary Segment (with temporal data)
 
 **Attestation:** "Marco Polo's journey included Venice as the first segment"
 
@@ -309,7 +309,7 @@ Where `whg:timespan-polo-venice` has:
 
 ---
 
-### 3.7 Network Connection
+### Network Connection
 
 **Attestation:** "Constantinople had trade connections with Venice"
 
@@ -349,7 +349,7 @@ Where `whg:timespan-polo-venice` has:
 
 ---
 
-### 3.8 Contributed Dataset Attribution
+### Contributed Dataset Attribution
 
 **Attestation:** "This place record is from a contributed dataset with DOI"
 
@@ -381,11 +381,11 @@ Where `whg:timespan-polo-venice` has:
 
 ---
 
-## 4. Attestation Patterns for Timespans
+## Attestation Patterns for Timespans
 
-Since Timespans are now first-class entities, attestations can link to them in multiple ways:
+Timespans are first-class entities, and attestations can link to them in multiple ways:
 
-### 4.1 Direct Timespan Attestation
+### Direct Timespan Attestation
 
 Subject directly attested to a Timespan (e.g., "Chang'an existed during the Tang Dynasty"):
 
@@ -401,7 +401,7 @@ Subject directly attested to a Timespan (e.g., "Chang'an existed during the Tang
 
 ---
 
-### 4.2 Meta-Attestation Timespan
+### Meta-Attestation Timespan
 
 An attestation itself has a Timespan (e.g., "The name 'Eboracum' was used 71-400 CE"):
 
@@ -418,7 +418,7 @@ An attestation itself has a Timespan (e.g., "The name 'Eboracum' was used 71-400
 
 ---
 
-### 4.3 Multiple Conflicting Timespans
+### Multiple Conflicting Timespans
 
 Same Subject, multiple Timespan attestations from different sources:
 
