@@ -1,8 +1,8 @@
 erDiagram
 %% All relationships go through ATTESTATION
-    NAME ||--o{ ATTESTATION : "object_of"
     SUBJECT ||--o{ ATTESTATION : "subject_of"
     SUBJECT ||--o{ ATTESTATION : "object_of"
+    NAME ||--o{ ATTESTATION : "object_of"
     ATTESTATION ||--o{ ATTESTATION : "meta-attestation"
     ATTESTATION o{--|| GEOMETRY : "object_of"
     ATTESTATION o{--|| TIMESPAN : "object_of"
