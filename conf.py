@@ -2,14 +2,10 @@
 #
 # For the full list of built-in configuration values, see the documentation:
 # https://www.sphinx-doc.org/en/master/usage/configuration.html
+from datetime import datetime
 
 # -- Project information -----------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
-
-project = 'World Historical Gazetteer'
-copyright = '2024, World Historical Gazetteer'
-author = 'Stephen Gadd'
-release = '3.1'
 
 extensions = [
     'myst_parser', 
@@ -66,6 +62,16 @@ html_css_files = [
     'css/custom.css',
 ]
 
+# This will make {{ last_updated }} available
+html_last_updated_fmt = "%d %B %Y"
+
+# Ensure Sphinx tracks modification times for pages
+today_fmt = html_last_updated_fmt
+
+project = 'World Historical Gazetteer'
+start_year = 2017
+current_year = datetime.now().year
+
 # Plausible Analytics tracking
 PLAUSIBLE_DOMAIN = "whgazetteer.org"
 PLAUSIBLE_BASE_URL = "https://analytics.whgazetteer.org"
@@ -76,5 +82,8 @@ PLAUSIBLE_SNIPPET = """
 
 html_context = globals().get("html_context", {})
 html_context.update({
+    "project": project,
+    "years": f"{start_year}–{current_year}" if current_year > start_year else str(current_year),
+    "project_url": "https://whgazetteer.org",
     "plausible_script": PLAUSIBLE_SNIPPET
 })

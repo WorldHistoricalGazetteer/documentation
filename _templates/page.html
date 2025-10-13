@@ -1,0 +1,27 @@
+{% extends "!page.html" %}
+
+{% block footer %}
+<footer class="footer">
+    <div class="bottom-of-page">
+        <div class="left-details" style="font-size: unset">
+
+            <div class="copyright">
+                Copyright ©{{ years }} <a href="{{ project_url }}" target="_blank" rel="noopener">{{ project }}</a>
+            </div>
+
+            {% if last_updated %}
+            <div class="last-updated">
+                {% trans last_updated=last_updated|e -%}
+                Last updated on {{ last_updated }}
+                {%- endtrans %}
+            </div>
+            {% endif %}
+
+        </div>
+    </div>
+
+    {% if plausible_script %}
+    {{ plausible_script|safe }}
+    {% endif %}
+</footer>
+{% endblock %}
