@@ -1,8 +1,8 @@
-## SSH Key Setup
+# SSH Key Setup
 
 Here's how to generate an SSH key, copy it to a remote server, and log in without relying on `PubkeyAuthentication` during the initial setup.
 
-### 1. Generate an SSH Key
+## 1. Generate an SSH Key
 
 * Open your terminal.
 * Run the following command, replacing `"your_email@example.com"` with your email address and `/path/to/your/key` with the desired path and filename for your key (e.g., `~/.ssh/pitt`):
@@ -14,7 +14,7 @@ Here's how to generate an SSH key, copy it to a remote server, and log in withou
 * You'll be prompted to enter a passphrase. You can leave it blank for no passphrase (not recommended for production).
 * This will create two files: `/path/to/your/key` (private key) and `/path/to/your/key.pub` (public key).
 
-### 2. Copy the Public Key to the Remote Server
+## 2. Copy the Public Key to the Remote Server
 
 * Use the `ssh-copy-id` command with the `-o PubkeyAuthentication=no` option to force password-based authentication during the key copy process. Replace `username` and `remote_host` with the appropriate values, and `/path/to/your/key.pub` with the path to your public key:
 
@@ -25,7 +25,7 @@ Here's how to generate an SSH key, copy it to a remote server, and log in withou
 * You'll be prompted for the remote server's password.
 * This command adds your public key to the `~/.ssh/authorized_keys` file on the remote server.
 
-### 3. Log in to the Remote Server
+## 3. Log in to the Remote Server
 
 * Once the key is copied, you can log in using the following command, replacing `username` and `remote_host` with your values. The inclusion of `-o PubkeyAuthentication=no` is not needed for subsequent logins, only for the ssh-copy-id command.
 
@@ -45,7 +45,7 @@ Here's how to generate an SSH key, copy it to a remote server, and log in withou
       IdentitiesOnly yes
   ```
 
-### 4. Automatically Switch to the `gazetteer` Account
+## 4. Automatically Switch to the `gazetteer` Account
 
 * After logging in, edit your `.bashrc` file using `vi`:
 
@@ -70,7 +70,7 @@ Here's how to generate an SSH key, copy it to a remote server, and log in withou
 
 * The next time you log in, you will be automatically switched to the `gazetteer` account.
 
-### 5. Check Kubernetes Nodes
+## 5. Check Kubernetes Nodes
 
 * After logging in and being switched to the `gazetteer` account, run the following command to check the status of your Kubernetes nodes:
 
@@ -99,7 +99,7 @@ Here's how to generate an SSH key, copy it to a remote server, and log in withou
 
 * A script will be run during the deployment process to bundle the variable into a Kubernetes secret, which will be used by the management pod to access the private repository.
 
-## Deploying the Management Pod
+# Deploying the Management Pod
 
 The deployment script handles all setup automatically, including:
 - Starting/verifying Minikube
@@ -146,7 +146,7 @@ To terminate the local port forwarding on your local machine, run:
 pkill -f "ssh -fN -L"
 ```
 
-## Deploying Services
+# Deploying Services
 
 * Access the management API service by visiting `http://localhost:8010/api/v1/namespaces/whg/services/http:management-chart-service:8000/proxy/` in your browser.
 

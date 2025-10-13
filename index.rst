@@ -1,6 +1,5 @@
 .. toctree::
    :maxdepth: 4
-   :numbered:
 
    Introduction <content/introduction.md>
    Guides & Tutorials <content/guides.md>

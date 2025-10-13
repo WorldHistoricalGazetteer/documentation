@@ -1,10 +1,10 @@
 # Introduction
 
-### Vision
+## Vision
 
 Empowering discovery by connecting place names across time and language.
 
-### Mission
+## Mission
 
 The mission of the World Historical Gazetteer is to build a platform for open linked historical place data in order to
 foster deeper understanding of place history and to improve discovery of places that have had many names over time. The

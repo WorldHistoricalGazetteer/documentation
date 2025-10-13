@@ -2,6 +2,7 @@
 
 ```{toctree}
 :maxdepth: 2
+:numbered:
 
 Uploading Data <./guides/uploading.md>
 Our Indexes <./guides/indexes.md>

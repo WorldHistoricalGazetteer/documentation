@@ -25,7 +25,7 @@ The information displayed and options offered are explained below.
 7. The globe icon indicates the potential match includes geometry. Hovering the mouse over the link will highlight it on
    the map.
 
-### What does closeMatch mean?
+## What does closeMatch mean?
 
 The meaning of _closeMatch_ derives from the Simple Knowledge Organization
 System ([SKOS](https://www.w3.org/TR/2009/REC-skos-reference-20090818/)) vocabulary, a widely used data
@@ -47,7 +47,7 @@ From the SKOS specification:
 Furthermore, `closeMatch` is a super-property of `exactMatch`; that is, every `exactMatch` is also a `closeMatch`.
 Remember, the purpose of the assertion is to ensure records that should intuitively appear together, do.
 
-## Reviewing accessioning results
+# Reviewing accessioning results
 
 Review of results for accessioning to the WHG index is similar
 to review for reconciliation but differs in the following

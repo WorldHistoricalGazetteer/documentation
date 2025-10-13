@@ -9,7 +9,7 @@
 project = 'World Historical Gazetteer'
 copyright = '2024, World Historical Gazetteer'
 author = 'Stephen Gadd'
-release = '0.0.1'
+release = '3.1'
 
 extensions = [
     'myst_parser', 
@@ -40,18 +40,22 @@ numfig = True
 templates_path = ['_templates']
 exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
 
-# html_theme = 'alabaster'
-
 html_theme = 'furo'
 html_theme_options = {
-    "navigation_depth": 4,
-    "collapse_navigation": True,
     "navigation_with_keys": True,
     "source_repository": "https://github.com/WorldHistoricalGazetteer/documentation/",
     "source_branch": "main",
     "source_directory": "content",
 }
-
+html_title = """
+<span style="display: flex; flex-direction: column; align-items: center; text-align: center;">
+    <span style="font-size: 0.6em; color: #666; margin-bottom: 0.5em;">Documentation for</span>
+    World Historical Gazetteer
+    <img src="https://img.shields.io/github/v/release/WorldHistoricalGazetteer/website?display_name=tag&color=success" 
+         alt="Latest Release" style="margin-top: 0.5em;">
+</span>
+"""
+html_baseurl = "https://whgazetteer.org/"
 html_static_path = ['_static']
 html_favicon = '_static/favicon.ico'
 html_logo = "_static/whg_logo.png"
