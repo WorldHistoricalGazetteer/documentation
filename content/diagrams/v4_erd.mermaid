@@ -1,82 +1,80 @@
-%%{init: {"erDiagram": {"useMaxWidth": true}, "flowchart": {"rankDir": "TB"}}}%%
-
 erDiagram
 %% Core tables
-    GEOMETRY ||--o{ ATTESTATION : "attests"
-    SUBJECT ||--o{ ATTESTATION : "attests"
-    TIMESPAN ||--o{ ATTESTATION : "attests"
-    NAME ||--o{ ATTESTATION : "attests"
-    ATTESTATION ||--o{ ATTESTATION : "meta-attestation"
+GEOMETRY ||--o{ ATTESTATION : "attests"
+SUBJECT ||--o{ ATTESTATION : "attests"
+TIMESPAN ||--o{ ATTESTATION : "attests"
+NAME ||--o{ ATTESTATION : "attests"
+ATTESTATION ||--o{ ATTESTATION : "meta-attestation"
 
 %% Reference / normalized tables
-    NAME_TYPE o{--|| NAME : "has_type"
-    CLASSIFICATION o{--|| SUBJECT : "has_type"
+NAME_TYPE o{--|| NAME : "has_type"
+CLASSIFICATION o{--|| SUBJECT : "has_type"
 
 %% Core entities
-    SUBJECT {
-        string id
-        text description
-    }
+SUBJECT {
+string id
+text description
+}
 
-    NAME {
-        string id
-        string name
-        string language
-        string script
-        string variant
-        string transliteration
-        string ipa
-        vector embedding
-    }
+NAME {
+string id
+string name
+string language
+string script
+string variant
+string transliteration
+string ipa
+vector embedding
+}
 
-    GEOMETRY {
-        string id
-        geometry geom
-        point representative_point
-        geometry hull
-        array bbox
-        array precision
-        array precision_km
-        string source_crs
-    }
+GEOMETRY {
+string id
+geometry geom
+point representative_point
+geometry hull
+array bbox
+array precision
+array precision_km
+string source_crs
+}
 
-    TIMESPAN {
-        string id
-        date start_earliest
-        date start_latest
-        date stop_earliest
-        date stop_latest
-        string label
-        string precision
-        integer precision_value
-    }
+TIMESPAN {
+string id
+date start_earliest
+date start_latest
+date stop_earliest
+date stop_latest
+string label
+string precision
+integer precision_value
+}
 
-    ATTESTATION {
-        string id PK
-        string subject_type FK
-        string subject_id FK
-        string relation_type
-        string object_type FK
-        string object_id FK
-        integer sequence
-        json connection_metadata
-        array source
-        array source_type
-        float certainty
-        text certainty_note
-        text notes
-    }
+ATTESTATION {
+string id PK
+string subject_type FK
+string subject_id FK
+string relation_type
+string object_type FK
+string object_id FK
+integer sequence
+json connection_metadata
+array source
+array source_type
+float certainty
+text certainty_note
+text notes
+}
 
 %% Normalized / reference tables
-    NAME_TYPE {
-        string id PK "unique row id"
-        string name_id FK "references NAME.id"
-        string type "toponym, chrononym, ethnonym, etc"
+NAME_TYPE {
+string id PK "unique row id"
+string name_id FK "references NAME.id"
+string type "toponym, chrononym, ethnonym, etc"
     }
 
-    CLASSIFICATION {
-        string id "gazetteer, route, itinerary, network, or period"
-        string label "human-readable type"
-        string vocabulary "source vocabulary"
-    %% Note: This table is reference-only, not persisted in core data
-    }
+CLASSIFICATION {
+string id "gazetteer, route, itinerary, network, or period"
+string label "human-readable type"
+string vocabulary "source vocabulary"
+%% Note: This table is reference-only, not persisted in core data
+}
