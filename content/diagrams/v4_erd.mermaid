@@ -1,23 +1,20 @@
 erDiagram
-%% Core tables
-    GEOMETRY ||--o{ ATTESTATION : "attests"
-    SUBJECT ||--o{ ATTESTATION : "attests"
-    TIMESPAN ||--o{ ATTESTATION : "attests"
-    NAME ||--o{ ATTESTATION : "attests"
+%% All relationships go through ATTESTATION
+    NAME ||--o{ ATTESTATION : "object_of"
+    SUBJECT ||--o{ ATTESTATION : "subject_of"
+    SUBJECT ||--o{ ATTESTATION : "object_of"
     ATTESTATION ||--o{ ATTESTATION : "meta-attestation"
-
-%% Reference / normalized tables
-    NAME_TYPE o{--|| NAME : "has_type"
-    CLASSIFICATION o{--|| SUBJECT : "has_type"
+    ATTESTATION o{--|| GEOMETRY : "object_of"
+    ATTESTATION o{--|| TIMESPAN : "object_of"
 
 %% Core entities
     SUBJECT {
-        string id
+        string id PK
         text description
     }
 
     NAME {
-        string id
+        string id PK
         string name
         string language
         string script
@@ -25,10 +22,11 @@ erDiagram
         string transliteration
         string ipa
         vector embedding
+        array name_type "ARRAY: toponym, chrononym, ethnonym, etc"
     }
 
     GEOMETRY {
-        string id
+        string id PK
         geometry geom
         point representative_point
         geometry hull
@@ -39,7 +37,7 @@ erDiagram
     }
 
     TIMESPAN {
-        string id
+        string id PK
         date start_earliest
         date start_latest
         date stop_earliest
@@ -51,30 +49,16 @@ erDiagram
 
     ATTESTATION {
         string id PK
-        string subject_type FK
-        string subject_id FK
-        string relation_type
-        string object_type FK
-        string object_id FK
-        integer sequence
-        json connection_metadata
+        string subject_type "subject, name, geometry, timespan, attestation"
+        string subject_id FK "references any entity"
+        string relation_type "has_name, has_geometry, has_timespan, has_type, member_of, connected_to, same_as"
+        string object_type "subject, name, geometry, timespan, classification"
+        string object_id FK "references entity or classification string"
+        integer sequence "for routes and itineraries"
+        json connection_metadata "for networks"
         array source
         array source_type
         float certainty
         text certainty_note
         text notes
-    }
-
-%% Normalized / reference tables
-    NAME_TYPE {
-        string id PK "unique row id"
-        string name_id FK "references NAME.id"
-        string type "toponym, chrononym, ethnonym, etc"
-    }
-
-    CLASSIFICATION {
-        string id "gazetteer, route, itinerary, network, or period"
-        string label "human-readable type"
-        string vocabulary "source vocabulary"
-    %% Note: This table is reference-only, not persisted in core data
     }
