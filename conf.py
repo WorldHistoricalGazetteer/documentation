@@ -46,6 +46,9 @@ html_theme_options = {
     "navigation_with_keys": True,
     "source_repository": "https://github.com/WorldHistoricalGazetteer/documentation/",
     "source_branch": "main",
+    "light_css_variables": {
+        "font-stack--headings": "Raleway, Georgia, serif",
+    },
 }
 html_title = """
 <span style="display: flex; flex-direction: column; align-items: center; text-align: center;">
