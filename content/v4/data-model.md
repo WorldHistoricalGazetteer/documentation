@@ -1,7 +1,12 @@
 # Data Model <img src="https://img.shields.io/badge/upcoming-v4.0--beta-blue">
 
 ```{mermaid} ../diagrams/v4_erd.mermaid
+:align: center
+:name: fig-data-model
+:alt: Entity–relationship diagram for the WHG v4 data model.
+:caption: Entity–relationship diagram for the WHG v4 data model.
 ```
+<br>
 
 ```{toctree}
 :maxdepth: 3
