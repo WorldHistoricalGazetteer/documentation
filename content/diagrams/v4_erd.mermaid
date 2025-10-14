@@ -2,10 +2,10 @@ erDiagram
 %% All relationships go through ATTESTATION
     THING ||--o{ ATTESTATION : "thing_of"
     THING ||--o{ ATTESTATION : "relates_to"
-    ATTESTATION o{--|| ATTESTATION : "meta-attestation"
-    ATTESTATION o{--|| NAME : "describes"
+    ATTESTATION ||--o{ ATTESTATION : "meta-attestation"
     ATTESTATION o{--|| GEOMETRY : "locates"
     ATTESTATION o{--|| TIMESPAN : "temporally_bounds"
+    ATTESTATION o{--|| NAME : "describes"
     AUTHORITY ||--o{ ATTESTATION : "relation_type"
     AUTHORITY ||--o{ ATTESTATION : "sources (array)"
     AUTHORITY ||--o{ AUTHORITY : "dataset_id"
