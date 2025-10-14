@@ -2,6 +2,14 @@
 
 This section introduces the fundamental entities in the WHG v4 data model.
 
+```{mermaid} ../../diagrams/v4_erd.mermaid
+:align: center
+:name: fig-data-model
+:alt: Entity–relationship diagram for the WHG v4 data model.
+:caption: Entity–relationship diagram for the WHG v4 data model.
+```
+<br>
+
 ## Core Design Philosophy
 
 The WHG data model is built around a **property graph** structure where information is represented as:
