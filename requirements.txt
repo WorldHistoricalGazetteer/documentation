@@ -7,3 +7,4 @@ sphinx-copybutton
 sphinx-panels
 sphinxcontrib-mermaid
 sphinx-notfound-page
+linkify-it-py
