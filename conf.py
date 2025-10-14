@@ -61,6 +61,10 @@ html_favicon = '_static/favicon.ico'
 html_logo = "_static/whg_logo.png"
 html_css_files = [
     'css/custom.css',
+    'css/mermaid-zoom.css',
+]
+html_js_files = [
+    'js/mermaid-zoom.js',
 ]
 
 # This will make {{ last_updated }} available
