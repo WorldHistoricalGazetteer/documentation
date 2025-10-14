@@ -6,3 +6,4 @@ sphinx-autobuild
 sphinx-copybutton
 sphinx-panels
 sphinxcontrib-mermaid
+sphinx-notfound-page

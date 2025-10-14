@@ -8,7 +8,8 @@ from datetime import datetime
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
 extensions = [
-    'myst_parser', 
+    'myst_parser',
+    'notfound.extension',
     'sphinx_panels', 
     'sphinx_copybutton', 
     'sphinx.ext.autodoc', 
@@ -87,3 +88,20 @@ html_context.update({
     "project_url": "https://whgazetteer.org",
     "plausible_script": PLAUSIBLE_SNIPPET,
 })
+
+notfound_urls_prefix = ''
+notfound_context = {
+    'title': 'Page not found',
+    'body': """
+    <div style="text-align: center; margin-top: 3em; margin-bottom: 3em;">
+        <h1 style="font-size: 2.2em; color: var(--color-foreground-primary);">404 — Page not found</h1>
+        <p style="font-size: 1.1em; color: var(--color-foreground-secondary); max-width: 40em; margin: 1em auto;">
+            Sorry, the page you were looking for doesn’t exist or may have been moved.
+        </p>
+        <p style="font-size: 1em; color: var(--color-foreground-secondary);">
+            You can return to the <a href="/" style="color: var(--color-brand-primary);">home page</a> or use the 
+            search box in the sidebar to find what you’re looking for.
+        </p>
+    </div>
+    """,
+}
