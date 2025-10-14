@@ -6,6 +6,11 @@
 :alt: Entity–relationship diagram for the WHG v4 data model.
 :caption: Entity–relationship diagram for the WHG v4 data model.
 ```
+```{note}
+**AUTHORITY Collection (Single Table Inheritance):** Uses the `authority_type` field to distinguish between datasets, sources, relation_types, periods, and certainty_levels within a single collection. While still part of the graph structure (attestations reference authority documents), this collection has a more relational "lookup table" character, serving as reference data rather than semantic entities. This approach provides two key efficiencies:
+1. **Reduced operational overhead** - Managing one collection is simpler than maintaining five separate small collections (fewer indexes, backups, permissions to manage)
+2. **Eliminated redundancy** - Source metadata is stored once and referenced by attestations, rather than duplicated across millions of attestations that cite the same sources
+```
 <br>
 
 ```{toctree}
