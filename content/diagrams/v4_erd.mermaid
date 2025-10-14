@@ -11,6 +11,7 @@ erDiagram
     SUBJECT {
         string id PK
         text description
+        string subject_type "location, historical_entity, collection, period, route, itinerary, network"
     }
 
     NAME {
@@ -22,7 +23,7 @@ erDiagram
         string transliteration
         string ipa
         vector embedding
-        array name_type "ARRAY: toponym, chrononym, ethnonym, etc"
+        array name_type "toponym, chrononym, ethnonym, etc"
     }
 
     GEOMETRY {
@@ -31,8 +32,8 @@ erDiagram
         point representative_point
         geometry hull
         array bbox
-        array precision
-        array precision_km
+        string precision "exact, approximate, uncertain"
+        integer precision_km
         string source_crs
     }
 
@@ -43,7 +44,7 @@ erDiagram
         date stop_earliest
         date stop_latest
         string label
-        string precision
+        string precision "year, decade, century, era"
         integer precision_value
     }
 
@@ -56,9 +57,9 @@ erDiagram
         string object_id FK "references entity or classification string"
         integer sequence "for routes and itineraries"
         json connection_metadata "for networks"
-        array source
-        array source_type
-        float certainty
+        array source "array of source citations"
+        array source_type "array: primary_source, secondary_source, dataset, map, etc"
+        float certainty "0.0 to 1.0"
         text certainty_note
         text notes
     }

@@ -13,165 +13,212 @@ This is the main landing page for the User Guide. Consider adding:
 - Links to quick-start tutorials vs comprehensive documentation
 - Version notes explaining what's new in v4
 
+All pages listed in the toctree below should be created. Any topics not yet covered by the generated files will need to be drafted by the documentation team.
+
 ---
 
-## Getting Started
+```{toctree}
+:maxdepth: 2
+:caption: Getting Started
 
-- [Quick Start Guide](getting-started/quickstart.md)
-- [Creating an Account](getting-started/account.md)
-- [Understanding WHG Concepts](getting-started/concepts.md)
-- [User Interface Overview](getting-started/interface.md)
-- [Your First Search](getting-started/first-search.md)
+user-guide/getting-started/quickstart
+user-guide/getting-started/account
+user-guide/getting-started/concepts
+user-guide/getting-started/interface
+user-guide/getting-started/first-search
+```
 
-## Searching & Discovery
+```{toctree}
+:maxdepth: 2
+:caption: Searching & Discovery
 
-- [Basic Search](search/basic-search.md)
-- [Advanced Search](search/advanced-search.md)
-- [Temporal Search](search/temporal-search.md)
-- [Spatial Search](search/spatial-search.md)
-- [Filtering & Refinement](search/filtering.md)
-- [Understanding Search Results](search/results.md)
-- [Working with Uncertainty](search/uncertainty.md)
-- [Saving & Exporting Searches](search/saving-exporting.md)
+user-guide/search/search-basic.md
+user-guide/search/advanced-search
+user-guide/search/temporal-search
+user-guide/search/spatial-search
+user-guide/search/filtering
+user-guide/search/results
+user-guide/search/uncertainty
+user-guide/search/saving-exporting
+```
 
-## Place Records
+```{toctree}
+:maxdepth: 2
+:caption: Place Records
 
-- [Understanding Place Records](places/understanding-records.md)
-- [Record Anatomy](places/record-anatomy.md)
-- [Attestations & Provenance](places/attestations.md)
-- [Names & Variants](places/names.md)
-- [Geometries & Locations](places/geometries.md)
-- [Temporal Information](places/temporal.md)
-- [Classifications & Types](places/classifications.md)
-- [Relations & Networks](places/relations.md)
-- [Comparing Place Records](places/comparing.md)
+user-guide/places/understanding-records
+user-guide/places/record-anatomy
+user-guide/places/attestations
+user-guide/places/names
+user-guide/places/geometries
+user-guide/places/temporal
+user-guide/places/classifications
+user-guide/places/relations
+user-guide/places/comparing
+```
 
-## Maps & Visualization
+```{toctree}
+:maxdepth: 2
+:caption: Maps & Visualization
 
-- [Map Interface](maps/interface.md)
-- [Map Layers & Base Maps](maps/layers.md)
-- [Temporal Animation](maps/temporal-animation.md)
-- [Network Visualization](maps/networks.md)
-- [Routes & Itineraries](maps/routes.md)
-- [Custom Map Views](maps/custom-views.md)
-- [Exporting Maps](maps/exporting.md)
+user-guide/maps/interface
+user-guide/maps/layers
+user-guide/maps/temporal-animation
+user-guide/maps/networks
+user-guide/maps/routes
+user-guide/maps/custom-views
+user-guide/maps/exporting
+```
 
-## Collections & Datasets
+```{toctree}
+:maxdepth: 2
+:caption: Collections & Datasets
 
-- [Working with Collections](collections/overview.md)
-- [Creating Collections](collections/creating.md)
-- [Managing Collections](collections/managing.md)
-- [Sharing Collections](collections/sharing.md)
-- [Collection Metadata](collections/metadata.md)
-- [Browsing Public Datasets](collections/public-datasets.md)
-- [Dataset Statistics & Quality](collections/quality.md)
+user-guide/collections/overview
+user-guide/collections/creating
+user-guide/collections/managing
+user-guide/collections/sharing
+user-guide/collections/metadata
+user-guide/collections/public-datasets
+user-guide/collections/quality
+```
 
-## Contributing Data
+```{toctree}
+:maxdepth: 2
+:caption: Contributing Data
 
-- [Contribution Overview](contributing/overview.md)
-- [Preparing Your Data](contributing/preparation.md)
-- [Data Formats](contributing/formats.md)
-- [Upload Methods](contributing/upload.md)
-- [Validation & Quality Checks](contributing/validation.md)
-- [Reconciliation Process](contributing/reconciliation.md)
-- [Review & Publication](contributing/review.md)
-- [Updating Contributions](contributing/updating.md)
-- [Contribution Best Practices](contributing/best-practices.md)
-- [Working with Routes & Itineraries](contributing/routes.md)
-- [Working with Networks](contributing/networks.md)
-- [Bulk Operations](contributing/bulk-operations.md)
+user-guide/contributing/overview
+user-guide/contributing/preparation
+user-guide/contributing/formats
+user-guide/contributing/upload
+user-guide/contributing/validation
+user-guide/contributing/reconciliation
+user-guide/contributing/review
+user-guide/contributing/updating
+user-guide/contributing/best-practices
+user-guide/contributing/routes
+user-guide/contributing/networks
+user-guide/contributing/bulk-operations
+```
 
-## Reconciliation & Linking
+```{toctree}
+:maxdepth: 2
+:caption: Reconciliation & Linking
 
-- [What is Reconciliation?](reconciliation/overview.md)
-- [Reconciliation Strategies](reconciliation/strategies.md)
-- [Manual Reconciliation](reconciliation/manual.md)
-- [Automated Reconciliation](reconciliation/automated.md)
-- [Reviewing Matches](reconciliation/reviewing.md)
-- [Managing Links](reconciliation/managing-links.md)
-- [External Authority Files](reconciliation/authorities.md)
-- [Reconciliation API Usage](reconciliation/api.md)
+user-guide/reconciliation/overview
+user-guide/reconciliation/strategies
+user-guide/reconciliation/manual
+user-guide/reconciliation/automated
+user-guide/reconciliation/reviewing
+user-guide/reconciliation/managing-links
+user-guide/reconciliation/authorities
+user-guide/reconciliation/api
+```
 
-## Editing & Curation
+```{toctree}
+:maxdepth: 2
+:caption: Editing & Curation
 
-- [Editing Permissions](editing/permissions.md)
-- [Editing Interface](editing/interface.md)
-- [Adding Names](editing/names.md)
-- [Adding Geometries](editing/geometries.md)
-- [Adding Temporal Data](editing/temporal.md)
-- [Adding Relations](editing/relations.md)
-- [Attestation Management](editing/attestations.md)
-- [Certainty & Uncertainty](editing/certainty.md)
-- [Collaborative Editing](editing/collaborative.md)
-- [Version History & Rollback](editing/versions.md)
+user-guide/editing/permissions
+user-guide/editing/interface
+user-guide/editing/names
+user-guide/editing/geometries
+user-guide/editing/temporal
+user-guide/editing/relations
+user-guide/editing/attestations
+user-guide/editing/certainty
+user-guide/editing/collaborative
+user-guide/editing/versions
+```
 
-## Advanced Features
+```{toctree}
+:maxdepth: 2
+:caption: Advanced Features
 
-- [Network Analysis](advanced/networks.md)
-- [Temporal Querying](advanced/temporal-queries.md)
-- [Spatial-Temporal Analysis](advanced/spatiotemporal.md)
-- [Cross-Cultural Searches](advanced/cross-cultural.md)
-- [Working with Scripts & Languages](advanced/languages.md)
-- [Embedding & Name Similarity](advanced/embeddings.md)
-- [Custom Workflows](advanced/workflows.md)
+user-guide/advanced/networks
+user-guide/advanced/temporal-queries
+user-guide/advanced/spatiotemporal
+user-guide/advanced/cross-cultural
+user-guide/advanced/languages
+user-guide/advanced/embeddings
+user-guide/advanced/workflows
+```
 
-## Data Export & Integration
+```{toctree}
+:maxdepth: 2
+:caption: Data Export & Integration
 
-- [Export Formats](export/formats.md)
-- [Linked Places Format (LPF)](export/lpf.md)
-- [Bulk Export](export/bulk.md)
-- [Citation & Attribution](export/citation.md)
-- [Integrating with GIS Software](export/gis.md)
-- [Integrating with Research Tools](export/research-tools.md)
-- [Using the API](export/api-basics.md)
+user-guide/export/formats
+user-guide/export/lpf
+user-guide/export/bulk
+user-guide/export/citation
+user-guide/export/gis
+user-guide/export/research-tools
+user-guide/export/api-basics
+```
 
-## User Account & Settings
+```{toctree}
+:maxdepth: 2
+:caption: Account & Settings
 
-- [Profile Management](account/profile.md)
-- [Privacy Settings](account/privacy.md)
-- [Notification Preferences](account/notifications.md)
-- [API Keys & Authentication](account/api-keys.md)
-- [Collaboration & Sharing](account/collaboration.md)
+user-guide/account/profile
+user-guide/account/privacy
+user-guide/account/notifications
+user-guide/account/api-keys
+user-guide/account/collaboration
+```
 
-## Tutorials & Workflows
+```{toctree}
+:maxdepth: 2
+:caption: Tutorials
 
-- [Tutorial: Creating a Historical Route](tutorials/route-tutorial.md)
-- [Tutorial: Building a Trade Network](tutorials/network-tutorial.md)
-- [Tutorial: Temporal Research Workflow](tutorials/temporal-workflow.md)
-- [Tutorial: Contributing a Dataset](tutorials/dataset-contribution.md)
-- [Tutorial: Reconciling Place Names](tutorials/reconciliation-tutorial.md)
-- [Tutorial: Creating a Thematic Collection](tutorials/collection-tutorial.md)
-- [Case Studies](tutorials/case-studies.md)
+user-guide/tutorials/route-tutorial
+user-guide/tutorials/network-tutorial
+user-guide/tutorials/temporal-workflow
+user-guide/tutorials/dataset-contribution
+user-guide/tutorials/reconciliation-tutorial
+user-guide/tutorials/collection-tutorial
+user-guide/tutorials/case-studies
+```
 
-## Troubleshooting & FAQ
+```{toctree}
+:maxdepth: 2
+:caption: Troubleshooting & FAQ
 
-- [Common Issues](troubleshooting/common-issues.md)
-- [Search Problems](troubleshooting/search-problems.md)
-- [Upload Problems](troubleshooting/upload-problems.md)
-- [Performance & Timeouts](troubleshooting/performance.md)
-- [Frequently Asked Questions](troubleshooting/faq.md)
+user-guide/troubleshooting/common-issues
+user-guide/troubleshooting/search-problems
+user-guide/troubleshooting/upload-problems
+user-guide/troubleshooting/performance
+user-guide/troubleshooting/faq
+```
 
-## Reference
+```{toctree}
+:maxdepth: 2
+:caption: Reference
 
-- [Glossary](reference/glossary.md)
-- [Controlled Vocabularies](reference/vocabularies.md)
-- [Data Model Overview](reference/data-model.md)
-- [Keyboard Shortcuts](reference/shortcuts.md)
-- [Browser Support](reference/browsers.md)
-- [Accessibility](reference/accessibility.md)
+user-guide/reference/glossary
+user-guide/reference/vocabularies
+user-guide/reference/data-model
+user-guide/reference/shortcuts
+user-guide/reference/browsers
+user-guide/reference/accessibility
+```
 
-## Appendices
+```{toctree}
+:maxdepth: 2
+:caption: Appendices
 
-- [Appendix A: Migration from v3](appendices/migration-v3.md)
-- [Appendix B: Data Quality Guidelines](appendices/quality-guidelines.md)
-- [Appendix C: Licensing & Terms of Use](appendices/licensing.md)
-- [Appendix D: Community Guidelines](appendices/community.md)
+user-guide/appendices/migration-v3
+user-guide/appendices/quality-guidelines
+user-guide/appendices/licensing
+user-guide/appendices/community
+```
 
 ---
 
 ## Getting Help
 
-- **Contact Support**: support@whgazetteer.org
+- **Contact Support**: [email address]
 - **Community Forum**: [link to forum]
 - **GitHub Issues**: [link to repository]
-- **Developer Documentation**: See [Developer Guide](../developer-guide/index.md)
+- **Developer Documentation**: See [link to Developer Guide]
