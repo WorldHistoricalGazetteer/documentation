@@ -16,6 +16,7 @@
 ./data-model/vocabularies.md
 ./data-model/patterns.md
 ./data-model/contributions.md
+./data-model/rdf-representation.md
 ./data-model/usecases.md
 ./data-model/implementation.md
 ./data-model/summary.md

@@ -4,6 +4,10 @@
 # https://www.sphinx-doc.org/en/master/usage/configuration.html
 from datetime import datetime
 
+from pygments.lexers.special import TextLexer
+from pygments.lexers.sql import SqlLexer
+from sphinx.highlighting import lexers
+
 # -- Project information -----------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
@@ -27,7 +31,14 @@ myst_enable_extensions = [
     "smartquotes",     # for smart quotes
     "substitution",    # for substitution definitions
     "tasklist",        # for GitHub-style task lists
+    "linkify",         # Auto-link URLs
 ]
+
+pygments_style = 'sphinx'
+
+lexers['aql'] = SqlLexer()
+lexers['plaintext'] = TextLexer()
+lexers['jsonrelaxed'] = TextLexer()
 
 # Allow parsing of standard Markdown headers (#, ##, etc.)
 myst_heading_anchors = 5

@@ -257,6 +257,12 @@ Gazetteer Group → Subject (has_type: "gazetteer_group")
 
 ---
 
+### RDF/Turtle Format
+
+For contributors working with semantic web technologies or existing RDF datasets,
+WHG may in future accept contributions in Turtle (`.ttl`) format. See the complete
+[RDF Representation guide](rdf-representation.md) for details, examples, and validation requirements.
+
 ### Geographic Formats
 
 **GPX, KML, GeoJSON** with WHG extensions.

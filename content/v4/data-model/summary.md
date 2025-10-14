@@ -330,6 +330,9 @@ This architecture provides:
 - Enable search engine rich snippets
 - Improve discoverability
 
+**Ontology Alignment**:
+- Map to related ontologies (Pleiades, GeoNames, etc.)
+
 ---
 
 ## Research Agenda
