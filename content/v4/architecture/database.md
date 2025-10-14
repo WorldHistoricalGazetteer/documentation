@@ -111,23 +111,23 @@ ArangoDB's native multi-model architecture (graph + document + geospatial) maps 
 ```javascript
 // Things as documents with graph capabilities
 {
-  "_key": "constantinople",
-  "_id": "things/constantinople",
-  "thing_type": "location",
-  "description": "Major Byzantine/Ottoman city on the Bosphorus"
+    "_key": "constantinople",
+    "_id": "things/constantinople",
+    "thing_type": "location",
+    "description": "Major Byzantine/Ottoman city on the Bosphorus"
 }
 
 // Attestations as graph edges with properties
 {
-  "_from": "things/constantinople",
-  "_to": "names/istanbul",
-  "relation_type": "has_name",
-  "source": ["Turkish Geographic Board decision", "1930"],
-  "certainty": 1.0,
-  "timespan": {
+    "_from": "things/constantinople",
+    "_to": "names/istanbul",
+    "relation_type": "has_name",
+    "source": ["Turkish Geographic Board decision", "1930"],
+    "certainty": 1.0,
+    "timespan": {
     "start_earliest": "1930-01-01",
-    "stop_latest": null
-  }
+        "stop_latest": null
+}
 }
 ```
 
@@ -140,37 +140,37 @@ ArangoDB provides native GeoJSON storage and querying with support for Point, Mu
 ```javascript
 // Store complex geometries
 db.things.insert({
-  _key: "constantinople",
-  geometry: {
-    type: "MultiPolygon",
-    coordinates: [
-      // First polygon: city center
-      [[
-        [28.94, 41.01],
-        [29.00, 41.01],
-        [29.00, 41.05],
-        [28.94, 41.05],
-        [28.94, 41.01]
-      ]],
-      // Second polygon: disputed boundary region
-      [[
-        [28.90, 41.00],
-        [28.92, 41.00],
-        [28.92, 41.02],
-        [28.90, 41.02],
-        [28.90, 41.00]
-      ]]
-    ]
-  }
+    _key: "constantinople",
+    geometry: {
+        type: "MultiPolygon",
+        coordinates: [
+            // First polygon: city center
+            [[
+                [28.94, 41.01],
+                [29.00, 41.01],
+                [29.00, 41.05],
+                [28.94, 41.05],
+                [28.94, 41.01]
+            ]],
+            // Second polygon: disputed boundary region
+            [[
+                [28.90, 41.00],
+                [28.92, 41.00],
+                [28.92, 41.02],
+                [28.90, 41.02],
+                [28.90, 41.00]
+            ]]
+        ]
+    }
 })
 
 // Geospatial queries
 db.things.find({
-  geometry: {
-    $geoWithin: {
-      $geometry: queryPolygon
+    geometry: {
+        $geoWithin: {
+            $geometry: queryPolygon
+        }
     }
-  }
 })
 ```
 
@@ -193,8 +193,10 @@ AQL integrates graph traversal, document filtering, geospatial queries, and vect
 ```aql
 // Complex query combining multiple capabilities
 FOR thing IN Things
-  // Vector similarity for name matching
-  FILTER COSINE_SIMILARITY(thing.name_embedding, @query_embedding) > 0.8
+  // Vector similarity search (index-accelerated with FAISS)
+  LET similarity = APPROX_NEAR_COSINE(thing.name_embedding, @query_embedding)
+  FILTER similarity > 0.8
+  SORT similarity DESC
   
   // Geospatial constraint
   FILTER GEO_DISTANCE(thing.geometry, @query_point) < 50000
@@ -208,8 +210,10 @@ FOR thing IN Things
       RETURN {place: v, relation: e}
   )
   
+  LIMIT 10
   RETURN {
     thing: thing,
+    similarity: similarity,
     trade_partners: partners
   }
 ```
@@ -242,7 +246,7 @@ Every node is a JSON document, matching WHG's data modeling approach and facilit
 
 **6. Vector Indexes for Phonetic Name Matching**
 
-ArangoDB 3.10+ provides vector indexes for semantic similarity:
+ArangoDB provides vector indexes for approximate nearest neighbor search, powered by the FAISS library:
 
 ```javascript
 db.names.ensureIndex({
@@ -255,12 +259,24 @@ db.names.ensureIndex({
 })
 ```
 
+**AQL Vector Search** uses the `APPROX_NEAR_COSINE()` function for index-accelerated queries:
+
+```aql
+FOR name IN names
+  LET similarity = APPROX_NEAR_COSINE(name.embedding, @query_embedding)
+  SORT similarity DESC
+  LIMIT 10
+  RETURN {name: name.name, similarity: similarity}
+```
+
 **WHG Use Case**: Our embeddings are derived from **phonetic representations of toponyms** combined with **orthographical metadata** (script, language, transliteration). This enables matching of:
 - Names across different scripts (e.g., "Constantinople" ↔ "Κωνσταντινούπολις" ↔ "القسطنطينية")
 - Transliteration variations (e.g., "Samarkand" ↔ "Samarqand" ↔ "Самарканд")
 - Historical name forms that sound similar but are spelled differently
 
 **Scale**: Name similarity search across 10M+ name variants with phonetic embeddings.
+
+**Note**: AQL also provides a non-indexed `COSINE_SIMILARITY()` function for exact similarity calculations, but `APPROX_NEAR_COSINE()` is the index-accelerated function required for performance at scale. ArangoDB's vector search capabilities were added more recently than its core graph and geospatial features, so early benchmarking with WHG's specific phonetic embedding workload is recommended to validate performance characteristics.
 
 ### Deployment Considerations
 
@@ -334,10 +350,11 @@ ArangoDB does not support the GeoJSON GeometryCollection type. For WHG:
 
 **4. Vector Search Maturity**
 
-- Vector indexes added relatively recently (v3.10, 2023)
-- Less battle-tested than specialized systems (Vespa, pgvector)
-- Performance characteristics at 10M+ vectors less documented
-- **Would benefit from testing with WHG's phonetic embedding workload**
+- Vector indexes powered by FAISS library
+- Index-accelerated similarity search via `APPROX_NEAR_COSINE()` function
+- Less battle-tested than specialized systems (Vespa, pgvector) for very large vector datasets
+- Performance characteristics at 10M+ vectors should be validated
+- **Critical: Early benchmarking with WHG's phonetic embedding workload (10M+ name variants) is essential to validate that performance meets requirements before committing to this architecture**
 
 ### Assessment for WHG
 
@@ -614,7 +631,9 @@ Vespa is **unsuitable for the redesigned data model**.
 1. **Initiate licensing discussion** with ArangoDB regarding academic use case
 2. **Provide project details**: scale, funding model, technical team size, mission
 3. **Explore deployment options**: self-hosted vs. managed hosting pricing
-4. **Decision timeline**: Required for v4 development planning (target: Q2 2025)
+4. **Benchmark vector search**: Test `APPROX_NEAR_COSINE()` performance with realistic phonetic embeddings (10M+ vectors) early in evaluation process
+5. **Validate combined queries**: Test queries mixing graph traversal, geospatial constraints, and vector filtering to verify unified query performance
+6. **Decision timeline**: Required for v4 development planning (target: Q2 2025)
 
 ## Conclusion
 
