@@ -47,7 +47,7 @@ myst_heading_anchors = 5
 numfig = True
 
 templates_path = ['_templates']
-exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
+exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store', '.venv', 'env']
 
 html_theme = 'furo'
 html_theme_options = {

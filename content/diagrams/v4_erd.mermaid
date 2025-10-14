@@ -2,10 +2,13 @@ erDiagram
 %% All relationships go through ATTESTATION
     THING ||--o{ ATTESTATION : "thing_of"
     THING ||--o{ ATTESTATION : "relates_to"
-    NAME ||--o{ ATTESTATION : "describes"
     ATTESTATION o{--|| ATTESTATION : "meta-attestation"
+    ATTESTATION o{--|| NAME : "describes"
     ATTESTATION o{--|| GEOMETRY : "locates"
     ATTESTATION o{--|| TIMESPAN : "temporally_bounds"
+    AUTHORITY ||--o{ ATTESTATION : "relation_type"
+    AUTHORITY ||--o{ ATTESTATION : "sources (array)"
+    AUTHORITY ||--o{ AUTHORITY : "dataset_id"
 
 %% Core entities
     THING {
@@ -53,17 +56,41 @@ erDiagram
     ATTESTATION {
         string id PK
         string thing_id FK "references Thing being described"
-        string relation_type "has_name, has_geometry, has_timespan, has_type, member_of, connected_to, same_as"
+        string relation_type FK "references AUTHORITY with authority_type=relation_type"
         string object_type "name, geometry, timespan, thing, classification"
         string object_id FK "references Name, Geometry, Timespan, Thing, or classification string"
         integer sequence "for routes and itineraries"
         json connection_metadata "for networks: trade goods, flow direction, etc"
-        array source "array of source citations"
-        array source_type "array: primary_source, secondary_source, dataset, map, etc"
+        array sources FK "array of AUTHORITY ids with authority_type=source"
         float certainty "0.0 to 1.0"
         text certainty_note "explanation of certainty assessment"
         text notes "additional context"
         timestamp created
         timestamp modified
         string contributor "user or system that created attestation"
+    }
+
+    AUTHORITY {
+        string id PK
+        string authority_type "dataset, source, relation_type, period, certainty_level"
+        string title "for datasets"
+        string citation "for sources"
+        string label "for relation_types, periods, certainty_levels"
+        string dataset_id FK "sources reference parent dataset"
+        string record_id "source's ID in original dataset"
+        string uri "external URI (PeriodO, source URL, etc)"
+        string version "for datasets"
+        string publisher "for datasets"
+        string license "for datasets"
+        string inverse "for relation_types (e.g., name_of is inverse of has_name)"
+        array domain "for relation_types: valid subject types"
+        array range "for relation_types: valid object types"
+        date start_earliest "for periods"
+        date start_latest "for periods"
+        date stop_earliest "for periods"
+        date stop_latest "for periods"
+        float level "for certainty_levels (0.0-1.0)"
+        text description
+        timestamp created
+        timestamp modified
     }
