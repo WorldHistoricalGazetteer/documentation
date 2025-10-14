@@ -1,24 +1,26 @@
 erDiagram
 %% All relationships go through ATTESTATION
-    SUBJECT ||--o{ ATTESTATION : "subject_of"
-    SUBJECT ||--o{ ATTESTATION : "object_of"
-    NAME ||--o{ ATTESTATION : "object_of"
+    THING ||--o{ ATTESTATION : "thing_of"
+    THING ||--o{ ATTESTATION : "relates_to"
+    NAME ||--o{ ATTESTATION : "describes"
     ATTESTATION o{--|| ATTESTATION : "meta-attestation"
-    ATTESTATION o{--|| GEOMETRY : "object_of"
-    ATTESTATION o{--|| TIMESPAN : "object_of"
+    ATTESTATION o{--|| GEOMETRY : "locates"
+    ATTESTATION o{--|| TIMESPAN : "temporally_bounds"
 
 %% Core entities
-    SUBJECT {
+    THING {
         string id PK
         text description
-        string subject_type "location, historical_entity, collection, period, route, itinerary, network"
+        string thing_type "location, historical_entity, collection, period, route, itinerary, network"
+        timestamp created
+        timestamp modified
     }
 
     NAME {
         string id PK
         string name
-        string language
-        string script
+        string language "ISO 639-3"
+        string script "ISO 15924"
         string variant
         string transliteration
         string ipa
@@ -28,13 +30,13 @@ erDiagram
 
     GEOMETRY {
         string id PK
-        geometry geom
+        geometry geom "GeoJSON: Point, Polygon, LineString, Multi*"
         point representative_point
         geometry hull
-        array bbox
+        array bbox "[min_lon, min_lat, max_lon, max_lat]"
         string precision "exact, approximate, uncertain"
         integer precision_km
-        string source_crs
+        string source_crs "EPSG code or historical CRS"
     }
 
     TIMESPAN {
@@ -43,23 +45,25 @@ erDiagram
         date start_latest
         date stop_earliest
         date stop_latest
-        string label
-        string precision "year, decade, century, era"
+        string label "human-readable period name"
+        string precision "year, decade, century, era, geological_period"
         integer precision_value
     }
 
     ATTESTATION {
         string id PK
-        string subject_type "subject, name, geometry, timespan, attestation"
-        string subject_id FK "references any entity"
+        string thing_id FK "references Thing being described"
         string relation_type "has_name, has_geometry, has_timespan, has_type, member_of, connected_to, same_as"
-        string object_type "subject, name, geometry, timespan, classification"
-        string object_id FK "references entity or classification string"
+        string object_type "name, geometry, timespan, thing, classification"
+        string object_id FK "references Name, Geometry, Timespan, Thing, or classification string"
         integer sequence "for routes and itineraries"
-        json connection_metadata "for networks"
+        json connection_metadata "for networks: trade goods, flow direction, etc"
         array source "array of source citations"
         array source_type "array: primary_source, secondary_source, dataset, map, etc"
         float certainty "0.0 to 1.0"
-        text certainty_note
-        text notes
+        text certainty_note "explanation of certainty assessment"
+        text notes "additional context"
+        timestamp created
+        timestamp modified
+        string contributor "user or system that created attestation"
     }

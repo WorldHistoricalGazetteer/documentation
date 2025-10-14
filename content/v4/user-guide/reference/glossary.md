@@ -24,7 +24,7 @@ This glossary should be:
 ## A
 
 ### Attestation
-A source-backed claim that connects a subject to information (name, geometry, type, etc.). Attestations are the fundamental unit of knowledge in WHG, capturing provenance, temporality, and uncertainty. *Example*: "The historical atlas states this place was called 'Lutetia' from 50 BCE to 300 CE" is an attestation.
+A source-backed claim that connects a Thing to information (name, geometry, type, etc.). Attestations are the fundamental unit of knowledge in WHG, capturing provenance, temporality, and uncertainty. *Example*: "The historical atlas states this Thing was called 'Lutetia' from 50 BCE to 300 CE" is an attestation.
 
 See: [Understanding Attestations](../places/attestations.md), [Data Model: Attestations](../../v4/data-model/attestations.html)
 

@@ -1,236 +1,302 @@
-# Overview & Core Entities <img src="https://img.shields.io/badge/upcoming-v4.0--beta-blue">
+# Overview & Core Entities
 
-## Overview
+This section introduces the fundamental entities in the WHG v4 data model.
 
-This data model separates **conceptual entities** (Subject, Name, Geometry, Timespan) from their **attestations**—the evidentiary claims about those entities. All historical claims—including names, locations, classifications, memberships, temporal bounds, and spatial extents—are recorded as **Attestation records** with explicit source attribution.
+## Core Design Philosophy
 
-This model is designed for internal storage and querying in Vespa. It differs from **Linked Places Format (LPF)**, which serves as the interchange format for contributions and data export. All contribution formats (LPF JSON, CSV, TSV) are mapped to this internal model upon ingestion.
+The WHG data model is built around a **property graph** structure where information is represented as:
+- **Things**: Primary entities (locations, historical entities, collections, periods, routes, itineraries, networks)
+- **Attributes**: Descriptions of Things (Names, Geometries, Timespans)
+- **Attestations**: Source-backed claims connecting Things to attributes or other Things
 
-This model is engineered to support the platform's core **Dynamic Clustering Workflow**. This workflow is essential for pre-filtering and grouping records based on adjustable similarity measures across multiple dimensions—spatial, temporal, typological, and toponymic. To facilitate these advanced search and grouping operations, the model requires specific functional features: the Name entity must accommodate vector embeddings to enable fast and accurate semantic and phonetic similarity search during toponymic clustering; the Geometry entity must include derived geometric fields (such as a bounding box and an encompassing hull) to enable efficient, high-performance spatial querying and grouping; and the Attestation record must incorporate a mechanism to leverage defined relationship predicates, allowing for configurable cluster merging based on attested inter-entity relationships (e.g., "coextensive with" or "successor of").
+This approach enables WHG to:
+- Capture multiple scholarly perspectives
+- Model uncertainty explicitly
+- Preserve complete provenance
+- Track temporal change
+- Represent complex networks of relationships
 
----
+## The Thing Entity
 
-## Core Conceptual Entities
+### What is a Thing?
 
-These four entity types represent the fundamental concepts in the model.
+A **Thing** is the primary entity in WHG - any object of scholarly interest that can be described and related to other entities. The term "Thing" is borrowed from schema.org's root type, chosen for its generality and future-extensibility.
 
-### Subject
+**Types of Things in WHG**:
+- **Locations**: Geographic places (cities, regions, landmarks, etc.)
+- **Historical entities**: Political entities, empires, states
+- **Collections**: Curated sets of related Things
+- **Periods**: Temporal spans with cultural/historical significance
+- **Routes**: Ordered sequences of locations representing journeys
+- **Itineraries**: Specific instances of travel along routes
+- **Networks**: Systems of interconnected Things
 
-A conceptual location, historical entity, collection, period, route, itinerary, or network being modelled. Subjects can be atomic (containing no members) or compositional (containing other Subjects).
+### Why "Thing"?
 
-**Fields:**
-- `id` (String, Required): Namespaced identifier (e.g., `whg:subject-{uuid}`, `doi:10.83427/whg-dataset-657`, `pleiades:579885`)
-- `description` (Text, Optional): Free-text description
+The term may seem informal, but it offers crucial advantages:
 
-**Notes:**
-- A Subject is a stable conceptual anchor; all temporal, spatial, and classificatory information is attached via Attestation records
-- An atomic Subject (e.g., a settlement) is simply a Subject with no attested members
-- A compositional Subject (e.g., an empire, itinerary, route, network, or period) has members attested via `member_of` or `connected_to` relationships
-- Examples: Tenochtitlan, Abbasid Caliphate, Marco Polo's journey to China, Tang Dynasty period, Silk Road, Atlantic trade network, Mount Fuji, Great Zimbabwe
-- **ID Strategy**: 
-  - WHG-created: `whg:subject-{uuid}`
-  - Contributed datasets: `doi:10.83427/whg-{type}-{id}`
-  - External sources: Use namespace from LPF context (e.g., `pleiades:`, `geonames:`, `wikidata:`)
-- **Provenance note**: Subject creation and modification history is tracked in the Django application database changelog, not in this core model
+**Generality**: Accommodates any type of entity without forcing artificial classifications. A medieval monastery might be simultaneously a location, a religious institution, and a network node - "Thing" encompasses all these facets.
 
----
+**Extensibility**: As WHG evolves to include new entity types (people, events, documents), "Thing" remains applicable without terminology shifts.
 
-### Name
+**Interoperability**: Aligns with schema.org's vocabulary, facilitating linked data integration and semantic web compatibility.
 
-A name or label used to refer to a Subject. Names can serve multiple semantic functions simultaneously.
+**Philosophical honesty**: Acknowledges that historical entities resist rigid categorization. What we call "Byzantium" refers to a complex, evolving reality that was simultaneously a place, an empire, an idea, and a cultural sphere.
 
-**Fields:**
-- `id` (String, Required): Namespaced identifier (e.g., `whg:name-{uuid}`)
-- `name` (String, Required): The name/label itself
-- `language` (String, Required): ISO 639 language code
-- `script` (String, Optional): ISO 15924 script code
-- `variant` (String, Optional): BCP 47 variant subtag for script variation
-- `transliteration` (String, Optional): Romanized form if applicable
-- `ipa` (String, Optional): IPA phonetic representation
-- `embedding` (Vector, Required): Vector embedding for semantic similarity (required for dynamic clustering)
-- `name_type` (Array[String], Required): Types of name (see Name Type Vocabulary)
+### Thing Structure
 
-**Notes:**
-- Names are conceptual labels; their temporal validity and association with Subjects is established via Attestation records
-- A single Name can have multiple name_types (e.g., "Hellas" is both a toponym and ethnonym)
-- Vector embeddings are required to support the Dynamic Clustering Workflow's toponymic similarity search
-- Examples: "Tenochtitlan" (Nahuatl toponym), "長安" Chang'an (Chinese toponym), "al-Qāhira" القاهرة (Arabic toponym), "Tang Dynasty" (chrononym), "Swahili" (ethnonym)
+A Thing in WHG consists of:
 
----
+```json
+{
+  "id": "whg:12345",
+  "thing_type": "location",
+  "description": "Major Byzantine/Ottoman city on the Bosphorus",
+  "created": "2023-01-15T10:30:00Z",
+  "modified": "2024-02-20T14:45:00Z"
+}
+```
 
-### Geometry
+**Key Properties**:
+- `id`: Unique persistent identifier (URI)
+- `thing_type`: Classification (location, historical_entity, collection, period, route, itinerary, network)
+- `description`: Human-readable summary
+- `created`, `modified`: Temporal metadata for curation
 
-A spatial representation (point, line, polygon, etc.) of a Subject.
+**Notably absent**: Names, coordinates, dates, types, relations. These are all **asserted through Attestations**, not intrinsic to the Thing itself.
 
-**Fields:**
-- `id` (String, Required): Namespaced identifier (e.g., `whg:geometry-{uuid}`)
-- `geom` (Geometry, Required): Spatial data (GeoJSON, WKT, etc.)
-- `representative_point` (Point, Required): Centroid or point-within-polygon (required for efficient spatial clustering)
-- `hull` (Geometry, Optional): Union of convex hulls of constituent geometries (points and lines buffered by 1000m)
-- `bbox` (Array, Required): Bounding box [minLon, minLat, maxLon, maxLat] (required for efficient spatial queries)
-- `precision` (Array[String], Optional): Spatial precision qualifiers (e.g., ["approximate", "centroid"])
-- `precision_km` (Array[Float], Optional): Spatial precision in kilometers from multiple sources/analyses
-- `source_crs` (String, Required): Coordinate reference system (default: "EPSG:4326" / WGS84)
+### The Separation Principle
 
-**Notes:**
-- Geometries are spatial representations; their temporal validity and association with Subjects is established via Attestation records
-- A single Subject may have multiple Geometries valid at different times (e.g., shifting borders)
-- The `source_crs` defaults to WGS84 (EPSG:4326) for interoperability
-- Geometry type is implicit in the `geom` field structure
-- Derived fields (`representative_point`, `bbox`, `hull`) are required to support the Dynamic Clustering Workflow's spatial grouping operations
+WHG separates **the Thing itself** from **descriptions of the Thing**. This distinction is crucial:
 
-**Geometry Inheritance and Computation:**
+**The Thing**: The abstract entity that existed/exists in reality
+**Descriptions**: Claims about that Thing from various sources at various times
 
-**Geometry inheritance** can be computed for Subjects lacking explicit Geometry attestations.
-
-**Computation Rules:**
-
-For compositional Subjects (with members):
-1. Find all Subjects that are members (via `member_of` attestations)
-2. For each member:
-   - If it has an explicit Geometry attestation, use that geometry
-   - If it has no explicit Geometry, recursively compute its inherited geometry
-3. Return the union of all geometries found
-
-**Recursion stops** at each branch when an explicit Geometry is reached.
+This enables WHG to:
+- Accommodate disagreement (two sources, two different coordinate claims)
+- Track change (names evolve, boundaries shift)
+- Preserve provenance (who said what, when)
+- Model uncertainty (tentative vs. confident claims)
 
 **Example**:
-```
-Abbasid Caliphate (no explicit geometry)
-  ├─ Iraq (explicit geometry: polygon A)
-  ├─ Syria (no explicit geometry)
-  │   ├─ Damascus (explicit geometry: point B)
-  │   └─ Aleppo (explicit geometry: point C)
-  └─ Egypt (explicit geometry: polygon D)
+- Thing ID `whg:12345` represents the conceptual city
+- One attestation claims it was called "Byzantion" (-650 to 330 CE)
+- Another attestation claims it was called "Constantinople" (330 to 1453 CE)
+- Another attestation claims it was called "Istanbul" (1453 to present)
+- All coexist; none overwrites the others
 
-Abbasid Caliphate's inherited geometry = union of (polygon A, point B, point C, polygon D)
-```
+## Name Entity
 
-**Implementation note:** For Vespa performance, inherited geometries should be pre-computed during indexing and stored as materialized fields, not computed at query time.
+A **Name** represents a linguistic form by which a Thing is known.
 
----
+### Structure
 
-### Timespan
-
-A temporal span representing when something existed, occurred, or was valid. Timespans can be precise dates, approximate periods, or references to established period definitions (e.g., PeriodO).
-
-**Fields:**
-- `id` (String, Required): Namespaced identifier (e.g., `whg:timespan-{uuid}`, `periodo:p0qhb9d`)
-- `start_earliest` (Date, Optional): Earliest possible start date
-- `start_latest` (Date, Optional): Latest possible start date
-- `stop_earliest` (Date, Optional): Earliest possible end date
-- `stop_latest` (Date, Optional): Latest possible end date
-- `label` (String, Optional): Human-readable label for the timespan (e.g., "Tang Dynasty", "Bronze Age")
-- `precision` (String, Optional): Temporal precision: "exact", "circa", "decade", "century", "millennium", "era"
-- `precision_value` (Integer, Optional): Numeric precision in years (e.g., ±50 for circa)
-
-**Notes:**
-- Timespans are conceptual temporal bounds; their association with Subjects is established via Attestation records
-- PeriodO periods are imported as Timespans with external IDs (e.g., `periodo:p0qhb9d`)
-- A Subject can be attested to multiple Timespans (e.g., conflicting sources about dates, or membership in multiple overlapping periods)
-- The four-field structure (start_earliest, start_latest, stop_earliest, stop_latest) follows PeriodO's model and accommodates uncertainty
-- For exact dates: all four fields have the same value
-- For unknown start: `start_earliest` and `start_latest` are null or sentinel values (e.g., `-999999999-01-01`)
-- For ongoing/present: `stop_earliest` and `stop_latest` are null or sentinel values (e.g., `9999-12-31`)
-- Examples: 
-  - Exact: Tang Dynasty 618-907 CE
-  - Approximate: Early Bronze Age Anatolia (circa 3000-2000 BCE)
-  - PeriodO reference: `periodo:p0qhb9d` (Roman Britain)
-
-**Timespan Inheritance and Computation:**
-
-Similar to Geometry inheritance, **Timespan inheritance** can be computed for Subjects lacking explicit Timespan attestations.
-
-**Computation Rules:**
-
-For compositional Subjects (with members):
-1. Find all member Subjects via `member_of` attestations
-2. For each member, find its Timespan attestations
-3. Compute outer bounds:
-   - `start_earliest` = minimum of all member `start_earliest` values
-   - `start_latest` = minimum of all member `start_latest` values
-   - `stop_earliest` = maximum of all member `stop_earliest` values
-   - `stop_latest` = maximum of all member `stop_latest` values
-
-For periods:
-- By default, compute from members
-- Explicit Timespan attestation overrides computation
-- Useful for defining period boundaries that don't perfectly align with member existence
-
-For itineraries:
-- Automatically compute from segment Timespans
-- Itinerary duration = earliest segment start to latest segment end
-- Can be overridden for overall journey context (e.g., preparation/return time)
-
-**Example:**
-```
-Tang Dynasty period Subject (no explicit Timespan)
-  ├─ Member: Chang'an (Timespan: 618-904)
-  ├─ Member: Luoyang (Timespan: 618-907)
-  └─ Member: Canton (Timespan: 650-900)
-
-Computed Timespan for Tang Dynasty:
-  start_earliest: 618
-  start_latest: 650
-  stop_earliest: 900
-  stop_latest: 907
+```json
+{
+  "id": "name:67890",
+  "name": "القسطنطينية",
+  "language": "ara",
+  "script": "Arab",
+  "transliteration": "al-Qusṭanṭīnīyah",
+  "ipa": "ʔalqustˤɑntˤiːnijːɐ",
+  "name_type": ["toponym"],
+  "variant": "standard",
+  "embedding": [0.123, -0.456, ...]
+}
 ```
 
-**Override example:**
+**Key Properties**:
+- `name`: The actual text in original script
+- `language`: ISO 639-3 language code
+- `script`: ISO 15924 script code
+- `transliteration`: Romanization for searchability
+- `ipa`: International Phonetic Alphabet representation
+- `name_type`: Classification (toponym, chrononym, ethnonym, etc.)
+- `variant`: Relationship to other forms (official, colloquial, historical, etc.)
+- `embedding`: Vector representation for semantic similarity search
+
+### Name Types
+
+WHG distinguishes several name types:
+- **Toponym**: Geographic place name
+- **Chrononym**: Period or era name
+- **Ethnonym**: Name for a people or ethnic group
+- **Demonym**: Name for inhabitants of a place
+
+See [Vocabularies](vocabularies.md) for complete name type taxonomy.
+
+## Geometry Entity
+
+A **Geometry** represents a spatial location or extent of a Thing at a particular time.
+
+### Structure
+
+```json
+{
+  "id": "geom:11223",
+  "geom": {
+    "type": "Point",
+    "coordinates": [28.9784, 41.0082]
+  },
+  "representative_point": {
+    "type": "Point", 
+    "coordinates": [28.9784, 41.0082]
+  },
+  "hull": {...},
+  "bbox": [28.9, 41.0, 29.0, 41.1],
+  "precision": "approximate",
+  "precision_km": 5,
+  "source_crs": "EPSG:4326"
+}
 ```
-Tang Dynasty explicit Timespan attestation:
-  start_earliest: 618
-  start_latest: 618
-  stop_earliest: 907
-  stop_latest: 907
-  
-This overrides the computed bounds from members.
+
+**Key Properties**:
+- `geom`: GeoJSON geometry (Point, Polygon, LineString, Multi*)
+- `representative_point`: Single point for mapping/search
+- `hull`: Convex hull of the geometry
+- `bbox`: Bounding box [min_lon, min_lat, max_lon, max_lat]
+- `precision`: Spatial certainty indicator
+- `precision_km`: Uncertainty radius in kilometers
+- `source_crs`: Original coordinate reference system
+
+### Why Multiple Geometries?
+
+A single Thing may have multiple Geometries because:
+- **Temporal change**: Borders expand, cities relocate
+- **Uncertainty**: Multiple proposed locations
+- **Source disagreement**: Conflicting geographic claims
+- **Representation levels**: Point for searching, polygon for extent
+
+Each Geometry is connected via an Attestation with temporal bounds and source citation.
+
+## Timespan Entity
+
+A **Timespan** represents a temporal interval with explicit uncertainty modeling.
+
+### Structure
+
+```json
+{
+  "id": "time:33445",
+  "start_earliest": "0802-01-01",
+  "start_latest": "0802-12-31",
+  "stop_earliest": "1431-01-01",
+  "stop_latest": "1432-12-31",
+  "label": "Angkor period",
+  "precision": "year",
+  "precision_value": 1
+}
 ```
 
----
+**Key Properties**:
+- `start_earliest`, `start_latest`: Range of possible start dates
+- `stop_earliest`, `stop_latest`: Range of possible end dates
+- `label`: Human-readable period name
+- `precision`: Temporal granularity (year, decade, century, era, etc.)
+- `precision_value`: Numeric precision indicator
 
-## ID Resolution and Namespace Schema
+### Modeling Temporal Uncertainty
 
-**Namespace Strategy:**
+The four-date model captures uncertainty:
+- **Certain dates**: All four values identical
+- **Uncertain start**: `start_earliest` ≠ `start_latest`
+- **Uncertain end**: `stop_earliest` ≠ `stop_latest`
+- **Fuzzy boundaries**: Wide ranges (e.g., "sometime in 7th century")
 
-The system uses namespaced identifiers for compactness and clarity. A namespace-to-URL mapping is maintained in the Django database and synchronized to Vespa via Django signals.
+**Special values**:
+- `null`: Unknown or inapplicable
+- `-infinity`: From geological prehistory
+- `+infinity`: Into indefinite future
+- `present`: Current day (dynamic)
 
-**Standard Namespaces:**
+See [Implementation in Vespa](implementation.md#handling-temporal-nulls-and-geological-time) for details on null handling.
 
-| Namespace | URL Root | Usage |
-|-----------|----------|-------|
-| `whg:` | `https://whgazetteer.org/entity/` | WHG-generated entities |
-| `doi:` | `https://doi.org/` | Contributed datasets and collections |
-| `pleiades:` | `https://pleiades.stoa.org/places/` | Pleiades ancient places |
-| `geonames:` | `https://www.geonames.org/` | GeoNames places |
-| `wikidata:` | `http://www.wikidata.org/entity/` | Wikidata entities |
-| `tgn:` | `http://vocab.getty.edu/tgn/` | Getty TGN places |
-| `periodo:` | `http://n2t.net/ark:/99152/` | PeriodO periods |
+## Entity Relationships
 
-Additional namespaces follow the LPF context document: https://github.com/LinkedPasts/linked-places-format/blob/main/linkedplaces-context-v1.1.jsonld
+Entities relate through **Attestations** (see [Attestations & Relations](attestations.md)):
 
-**ID Examples:**
-- WHG Subject: `whg:subject-a3f2c8b1-4d5e-6789-abcd-ef1234567890`
-- Contributed dataset: `doi:10.83427/whg-dataset-657`
-- Pleiades place: `pleiades:579885`
-- PeriodO period: `periodo:p0qhb9d`
+```
+Thing --[attestation]--> Name
+Thing --[attestation]--> Geometry
+Thing --[attestation]--> Timespan
+Thing --[attestation]--> Thing (relationships)
+```
 
-**Resolution:**
-- IDs can be used in both namespaced form (compact) and full URL form (explicit)
-- Django maintains authoritative namespace mapping
-- Vespa receives synchronized copy for query resolution and export
-- Both forms are accepted in queries and contributions
+Every connection includes:
+- Source citation(s)
+- Certainty assessment
+- Temporal bounds
+- Relation type
 
----
+This creates a rich, provenance-tracked knowledge graph.
 
-## Provenance and Changelog
+## Entity Lifecycle
 
-**Provenance tracking** for all entity creation and modification is handled by the Django application database, not within the core Vespa data model.
+### Creation
+- Thing created with minimal information (ID, type, description)
+- Attestations added to build out the entity
+- Multiple contributors can add Attestations
 
-The Django changelog records:
-- Who created/modified each entity (User ID or contributor identifier)
-- When changes occurred (timestamps)
-- What changed (field-level diffs)
-- Context (import batch, manual edit, API submission)
+### Evolution
+- New Attestations add information
+- Conflicting Attestations coexist
+- Temporal Attestations track change
+- Meta-Attestations (future) comment on other Attestations
 
-This separation keeps the core model clean while ensuring full audit trails. Changelog entries reference entity IDs but are not part of the Subject/Name/Geometry/Timespan/Attestation records themselves.
+### Persistence
+- Things are never deleted (only deprecated with explanation)
+- Attestations are versioned
+- Full provenance maintained
+- Changes auditable
+
+## Design Rationale
+
+### Why This Model?
+
+**Historical knowledge is complex**:
+- Sources disagree
+- Information changes over time
+- Certainty varies
+- Provenance matters
+
+**Traditional models fail**:
+- Single "truth" per field → loses scholarly debate
+- No temporal context → obscures change
+- No provenance → can't evaluate claims
+- No uncertainty modeling → false precision
+
+**The Attestation model succeeds**:
+- ✅ Multiple perspectives coexist
+- ✅ Everything is temporally situated
+- ✅ Sources always cited
+- ✅ Uncertainty explicitly captured
+- ✅ Enables scholarly rigor
+
+### Influences
+
+This model draws from:
+- **Linked Data / RDF**: Subject-predicate-object triples
+- **Property Graphs**: Nodes and edges with properties
+- **Temporal Databases**: Bitemporal modeling
+- **Provenance Standards**: W3C PROV
+- **Domain models**: Nomisma, Pelagios, Pleiades
+
+### Trade-offs
+
+**Complexity**: More complex than flat records
+- **Mitigation**: Hide complexity in interfaces, provide simple views
+
+**Query complexity**: Joining across attestations
+- **Mitigation**: Use graph database, provide query helpers
+
+**Data entry burden**: More fields to complete
+- **Mitigation**: Make many fields optional, provide good defaults
+
+**Benefits outweigh costs**: Richer, more honest, more scholarly.
+
+## Next Steps
+
+- **Attestations**: See [Attestations & Relations](attestations.md)
+- **Vocabularies**: See [Controlled Vocabularies](vocabularies.md)
+- **Use Cases**: See [Platform Use Cases](usecases.md)
+- **Implementation**: See [Implementation in Vespa](implementation.md)

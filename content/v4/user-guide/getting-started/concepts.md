@@ -22,24 +22,32 @@ The World Historical Gazetteer is built on a fundamentally different model than 
 
 ## Core Entities
 
-### Subjects
+### Things
 
-**Definition**: A subject is anything that can be described - typically a place, but potentially also a person, event, or other historical entity.
+**Definition**: A Thing is anything that can be described - the primary entity in WHG's knowledge graph. This includes locations, historical entities, collections, periods, routes, itineraries, and networks.
 
 **Key Properties**:
 - Unique identifier (ID)
+- Thing type (location, historical_entity, collection, period, route, itinerary, network)
 - Description
 - No inherent names, geometries, or temporal bounds - these are all asserted through attestations
 
-**Why This Matters**:
-A subject is the "conceptual" place - the thing that existed in the world that people described in different ways at different times. Separating the subject from its descriptions allows WHG to capture disagreement, uncertainty, and change.
+**Why "Thing"?**
+
+The term may seem informal, but it's intentionally general:
+- **Future-proof**: Can describe any type of entity WHG might need
+- **Interoperable**: Matches schema.org's root vocabulary term
+- **Honest**: Acknowledges that historical entities resist rigid categorization
+
+A Thing is the "conceptual" entity - the thing that existed in the world that people described in different ways at different times. Separating the Thing from its descriptions allows WHG to capture disagreement, uncertainty, and change.
 
 **Example**:
 ```
-Subject: [place-12345]
+Thing: [whg:12345]
+Type: location
 Description: "Major Byzantine/Ottoman city on the Bosphorus"
 
-This subject has multiple name attestations:
+This Thing has multiple name attestations:
 - "Byzantion" (Greek, -650 to 330 CE)
 - "Constantinople" (Latin/Greek, 330 to 1930 CE)
 - "Istanbul" (Turkish, 1453 to present)
@@ -143,14 +151,14 @@ Timespan for "Angkor was the capital of the Khmer Empire"
 
 ### What is an Attestation?
 
-**Definition**: An attestation is a claim that connects a subject to some information, backed by one or more sources.
+**Definition**: An attestation is a claim that connects a Thing to some information, backed by one or more sources.
 
-**Structure**: 
+**Structure**:
 ```
-[SUBJECT] --[RELATION_TYPE]--> [OBJECT]
-     ^
-     |
-  backed by [SOURCES] with [CERTAINTY] during [TIMESPAN]
+[THING] --[RELATION_TYPE]--> [OBJECT]
+    ^
+    |
+ backed by [SOURCES] with [CERTAINTY] during [TIMESPAN]
 ```
 
 **Why This Matters**:
@@ -159,13 +167,13 @@ Attestations are the foundation of WHG's approach to knowledge representation. T
 - **Disagreement**: Multiple attestations can make conflicting claims
 - **Uncertainty**: Attestations carry certainty assessments
 - **Temporality**: Attestations are bounded by time
-- **Historiography**: We can see who said what when about a place
+- **Historiography**: We can see who said what when about a Thing
 
 ### Attestation Anatomy
 
 Every attestation includes:
 
-1. **Subject**: What is being described?
+1. **Thing**: What is being described?
 2. **Relation Type**: What kind of claim? (has_name, has_geometry, has_type, etc.)
 3. **Object**: The information being asserted (a name, geometry, classification, etc.)
 4. **Source(s)**: Who says so? (bibliographic references, dataset IDs, contributors)
@@ -178,18 +186,18 @@ Every attestation includes:
 The **relation type** defines what kind of claim is being made:
 
 #### Has-Type Relations
-- `has_name`: Subject is known by this name
-- `has_geometry`: Subject is located at this geometry
-- `has_timespan`: Subject existed during this timespan
-- `has_type`: Subject is classified as this type (e.g., "city", "battle site")
+- `has_name`: Thing is known by this name
+- `has_geometry`: Thing is located at this geometry
+- `has_timespan`: Thing existed during this timespan
+- `has_type`: Thing is classified as this type (e.g., "city", "battle site")
 
 #### Network Relations
-- `member_of`: Subject is part of a larger entity
-- `contains`: Subject contains other entities
-- `connected_to`: Subject is connected to another (e.g., trade route)
+- `member_of`: Thing is part of a larger entity
+- `contains`: Thing contains other entities
+- `connected_to`: Thing is connected to another (e.g., trade route)
 
 #### Equivalence Relations
-- `same_as`: Subject is equivalent to another subject (linking/reconciliation)
+- `same_as`: Thing is equivalent to another Thing (linking/reconciliation)
 
 #### Sequential Relations (for Routes/Itineraries)
 - `connected_to` with `sequence` attribute: Ordering places in a route
@@ -198,7 +206,7 @@ The **relation type** defines what kind of claim is being made:
 
 **Example 1: Name Attestation**
 ```
-Subject: [place-Constantinople]
+Thing: [thing-Constantinople]
 Relation: has_name
 Object: Name("İstanbul", language="Turkish", script="Latin")
 Source: ["Turkish Geographic Board decision", "1930"]
@@ -208,7 +216,7 @@ Timespan: 1930-present
 
 **Example 2: Geometric Attestation with Uncertainty**
 ```
-Subject: [place-OldSarai]
+Thing: [thing-OldSarai]
 Relation: has_geometry
 Object: Geometry(point=(47.5, 47.1), precision=±10km)
 Source: ["Medieval Travel Account (Ibn Battuta)", "c.1340"]
@@ -218,6 +226,25 @@ Timespan: 1300-1400
 ```
 
 **Example 3: Classification Attestation**
+```
+Thing: [thing-Ephesus]
+Relation: has_type
+Object: Classification("cult center", type="religious")
+Source: ["Acts of the Apostles", "60-90 CE"]
+Certainty: 0.9 (probable)
+Timespan: 100 BCE - 400 CE
+Notes: "Famous for Temple of Artemis"
+```
+
+**Example 4: Network Relation**
+```
+Thing: [thing-Samarkand]
+Relation: connected_to
+Object: [thing-Kashgar]
+Source: ["Historical Atlas of Silk Roads"]
+Connection Metadata: {type: "trade_route", name: "Silk Road"}
+Timespan: 100 BCE - 1500 CE
+``` Attestation**
 ```
 Subject: [place-Ephesus]
 Relation: has_type
@@ -249,7 +276,7 @@ Timespan: 100 BCE - 1500 CE
 
 **Example**:
 ```
-Subject: [attestation-456]
+Thing: [attestation-456]
 Relation: disputes
 Object: [attestation-789]
 Source: ["Johnson, Reassessing Medieval Capitals, 2020"]
@@ -260,7 +287,7 @@ Notes: "Archaeological evidence contradicts claimed timespan"
 
 ### Routes & Itineraries
 
-**Definition**: An ordered sequence of places connected by a journey.
+**Definition**: An ordered sequence of Things connected by a journey.
 
 **Implementation**: 
 - Each leg is a `connected_to` attestation with a `sequence` attribute
@@ -270,24 +297,24 @@ Notes: "Archaeological evidence contradicts claimed timespan"
 **Example: Silk Road Segment**
 ```
 Attestation 1:
-  Subject: [Chang'an]
-  Relation: connected_to (sequence=1)
-  Object: [Dunhuang]
-  
+Thing: [Chang'an]
+Relation: connected_to (sequence=1)
+Object: [Dunhuang]
+
 Attestation 2:
-  Subject: [Dunhuang]
-  Relation: connected_to (sequence=2)
-  Object: [Kashgar]
-  
+Thing: [Dunhuang]
+Relation: connected_to (sequence=2)
+Object: [Kashgar]
+
 Attestation 3:
-  Subject: [Kashgar]
-  Relation: connected_to (sequence=3)
-  Object: [Samarkand]
+Thing: [Kashgar]
+Relation: connected_to (sequence=3)
+Object: [Samarkand]
 ```
 
 ### Networks
 
-**Definition**: A system of interconnected places with relationship metadata.
+**Definition**: A system of interconnected Things with relationship metadata.
 
 **Types**:
 - Trade networks (nodes = markets, edges = trade relationships)
@@ -302,7 +329,7 @@ Attestation 3:
 
 ### Collections
 
-**Definition**: A curated set of subjects grouped for analysis or presentation.
+**Definition**: A curated set of Things grouped for analysis or presentation.
 
 **Types**:
 - Thematic (e.g., "Hanseatic League Cities")
@@ -311,7 +338,7 @@ Attestation 3:
 - Project-based (e.g., "My Dissertation Research Sites")
 
 **Key Features**:
-- Can include subjects from multiple datasets
+- Can include Things from multiple datasets
 - Can be public or private
 - Can have metadata and descriptions
 - Can be versioned/snapshots for citation

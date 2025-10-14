@@ -21,7 +21,7 @@ This page needs extensive visual aids:
 
 ## Overview
 
-A WHG place record is a rich, multi-faceted representation of a historical place. Unlike traditional gazetteers with fixed fields, WHG records are built from **attestations** - individual claims from sources that together form a comprehensive picture.
+A WHG place record is a rich, multi-faceted representation of a historical place. Unlike traditional gazetteers with fixed fields, WHG records are built from **attestations** - individual claims from sources that together form a comprehensive picture of a **Thing**.
 
 ## Record Sections
 
@@ -31,8 +31,8 @@ Every place record contains several sections:
 2. **Names Tab** - All known names and variants
 3. **Locations Tab** - Geometries and spatial information
 4. **Temporal Tab** - When-related information
-5. **Types & Classifications Tab** - What kind of place
-6. **Relations Tab** - Connections to other places
+5. **Types & Classifications Tab** - What kind of Thing
+6. **Relations Tab** - Connections to other Things
 7. **Attestations Tab** - Source-level detail
 8. **Provenance Tab** - Contribution and curation history
 
@@ -48,18 +48,18 @@ The header provides at-a-glance information:
 
 **Display**: Largest text at top of record
 
-**Logic**: 
+**Logic**:
 - Most recent name with highest certainty
 - OR most commonly attested name
 - OR editor-designated primary name
 
-**Example**: For subject-Constantinople, primary name might be "Istanbul" (current) or "Constantinople" (historical dominance)
+**Example**: For thing-Constantinople, primary name might be "Istanbul" (current) or "Constantinople" (historical dominance)
 
-### Subject ID
+### Thing ID
 
 **Display**: Small text below primary name (e.g., `whg:12345`)
 
-**Purpose**: Unique permanent identifier for this place
+**Purpose**: Unique permanent identifier for this Thing
 
 **Use**: For citations, API queries, cross-referencing
 
@@ -99,7 +99,7 @@ Each name entry shows:
 **Transliteration**: Romanized form (if non-Latin)
 - Example: `al-Qusṭanṭīnīyah`
 
-**Language & Script**: 
+**Language & Script**:
 - Example: `Arabic / Arabic script`
 
 **Name Type**: Classification
@@ -180,7 +180,7 @@ Below map, list of all geometries:
 **Type**: Point, Polygon, LineString, etc.
 - Icon indicates type
 
-**Coordinates/Data**: 
+**Coordinates/Data**:
 - Points: Latitude, Longitude
 - Polygons: Vertex count, area
 - Regions: Bounding box
@@ -243,7 +243,7 @@ The Temporal tab focuses on when-related information.
 
 **Each timespan shows**:
 
-**Start**: 
+**Start**:
 - Earliest possible: -280
 - Latest possible: -275
 - Display: "circa 280 BCE"
@@ -313,7 +313,7 @@ Shows what kind of place this is.
 
 **Each entry shows**:
 
-**Classification**: 
+**Classification**:
 - Example: `Port City`
 
 **Vocabulary**: Which classification system?
@@ -407,7 +407,7 @@ Relations are grouped by type:
 - For routes: Distance, travel time, mode
 - For hierarchy: Nature of relationship
 
-**Directionality**: 
+**Directionality**:
 - Symmetric: Relation goes both ways
 - Asymmetric: One-directional (e.g., part-of)
 
@@ -472,12 +472,12 @@ Reminder: An attestation is a source-backed claim. This tab shows the raw data.
 **Subject → Relation → Object** structure
 - Example: `[Constantinople] --has_name--> [Name: "Κωνσταντινούπολις"]`
 
-**Source(s)**: 
+**Source(s)**:
 - Full bibliographic citation(s)
 - Multiple sources may support same claim
 - Links to external source if available
 
-**Certainty**: 
+**Certainty**:
 - Numerical: 0.0 - 1.0
 - Qualitative: certain, probable, uncertain, speculative
 - Certainty note: Explanation of assessment
@@ -486,7 +486,7 @@ Reminder: An attestation is a source-backed claim. This tab shows the raw data.
 
 **Notes**: Additional context, methodology, etc.
 
-**Metadata**: 
+**Metadata**:
 - Contributor
 - Date added
 - Last modified
@@ -509,7 +509,7 @@ Reminder: An attestation is a source-backed claim. This tab shows the raw data.
 
 ### Conflicting Attestations
 
-**Highlighted in interface**: 
+**Highlighted in interface**:
 - Icon indicates conflict
 - Expandable detail showing disagreement
 - Example: Two sources give different coordinates for the same time period

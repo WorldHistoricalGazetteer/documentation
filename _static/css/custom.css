@@ -22,12 +22,12 @@ h1.logo {
     display: none;
 }
 
-g[id^="entity-SUBJECT-"] > rect.entityBox {
+g[id^="entity-THING-"] > rect.entityBox {
     fill: #f6e16b !important;
 }
 
 g[id^="entity-ATTESTATION-"] > rect.entityBox {
-    fill: rgba(75, 196, 30, 0.89) !important;
+    fill: rgb(117, 202, 85) !important;
 }
 
 g[id^="entity-NAME-"] > rect.entityBox,
