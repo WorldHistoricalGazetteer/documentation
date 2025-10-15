@@ -234,43 +234,106 @@ The WHG RDF model builds on standard semantic web vocabularies:
 
 This ensures interoperability with existing linked data systems.
 
-## Geometry Formats: WKT and GeoJSON
+## Geometry Representation
 
-WHG supports both WKT (Well-Known Text) and GeoJSON for geometry representation to ensure maximum interoperability:
+WHG supports both WKT (Well-Known Text) and GeoJSON for geometry representation to ensure maximum interoperability with different tools and systems.
 
-### WKT Format (GeoSPARQL Standard)
+### Standard Prefixes and Context
 
-For use with GeoSPARQL-enabled triplestores and spatial query engines:
-
-```turtle
-ex:baghdad a geo:Feature ;
-           geo:hasGeometry [
-                 a geo:Geometry ;
-                 geo:asWKT "POINT(44.3661 33.3152)"^^geo:wktLiteral
-             ] .
-```
-
-### GeoJSON Format (LPF Compatible)
-
-For web applications and JSON-LD consumers:
+**Turtle prefixes:**
 
 ```turtle
-ex:baghdad a lpf:Place ;
-           lpf:geometry [
-                 a geojson:Point ;
-                 geojson:coordinates "44.3661, 33.3152"
-             ] .
+@prefix geo: <http://www.opengis.net/ont/geosparql#> .
+@prefix geojson: <https://purl.org/geojson/vocab#> .
+@prefix dcterms: <http://purl.org/dc/terms/> .
+@prefix lpf: <http://linkedpasts.org/vocab#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
 ```
 
-### Conversion Between Formats
+**JSON-LD context:**
 
-When exporting WHG data:
+```json
+{
+  "@context": {
+    "@version": 1.1,
+    "type": "@type",
+    "id": "@id",
+    "geojson": "https://purl.org/geojson/vocab#",
+    "Feature": "geojson:Feature",
+    "FeatureCollection": "geojson:FeatureCollection",
+    "geometry": {
+      "@id": "geojson:geometry",
+      "@type": "@json"
+    },
+    "properties": "geojson:properties",
+    "geo": "http://www.opengis.net/ont/geosparql#",
+    "hasGeometry": {
+      "@id": "geo:hasGeometry",
+      "@type": "@id"
+    },
+    "asWKT": {
+      "@id": "geo:asWKT",
+      "@type": "geo:wktLiteral"
+    },
+    "asGeoJSON": {
+      "@id": "geo:asGeoJSON",
+      "@type": "geo:geoJSONLiteral"
+    },
+    "dcterms": "http://purl.org/dc/terms/",
+    "lpf": "http://linkedpasts.org/vocab#"
+  }
+}
+```
 
-- **For GeoSPARQL triplestores**: Use WKT format with proper `geo:Feature` and `geo:Geometry` classes
-- **For LPF/JSON-LD**: Use GeoJSON format with LPF patterns
-- **For maximum compatibility**: Include both representations
+### Dual Geometry Representation
 
-Contributors may submit geometries in either format. WHG will convert between formats as needed for different export targets.
+To support both web mapping tools (which expect GeoJSON) and GeoSPARQL spatial queries (which expect WKT), WHG uses parallel geometry representations:
+
+**JSON-LD format:**
+
+```json
+{
+  "@context": "http://whgazetteer.org/contexts/lpf-geosparql.jsonld",
+  "@id": "http://whgazetteer.org/place/12345",
+  "type": "Feature",
+  "properties": {
+    "title": "Baghdad"
+  },
+  "geometry": {
+    "type": "Point",
+    "coordinates": [44.4, 33.3]
+  },
+  "hasGeometry": {
+    "@id": "http://whgazetteer.org/geom/12345",
+    "@type": "geo:Geometry",
+    "asWKT": "POINT(44.4 33.3)",
+    "asGeoJSON": "{\"type\":\"Point\",\"coordinates\":[44.4,33.3]}"
+  }
+}
+```
+
+**Equivalent Turtle format:**
+
+```turtle
+ex:12345 a geojson:Feature ;
+    dcterms:title "Baghdad" ;
+    geojson:geometry "{\"type\":\"Point\",\"coordinates\":[44.4,33.3]}" ;
+    geo:hasGeometry exg:12345 .
+
+exg:12345 a geo:Geometry ;
+    geo:asWKT "POINT(44.4 33.3)"^^geo:wktLiteral ;
+    geo:asGeoJSON "{\"type\":\"Point\",\"coordinates\":[44.4,33.3]}"^^geo:geoJSONLiteral .
+```
+
+**Benefits of this approach:**
+
+- ✅ **GeoJSON tools** see valid GeoJSON in the `geometry` property
+- ✅ **GeoSPARQL engines** find proper `geo:hasGeometry` with WKT literals
+- ✅ **No transformation needed** - both representations coexist
+- ✅ **Standards compliant** - doesn't violate GeoJSON or GeoSPARQL specifications
+- ⚠️ **Minor redundancy** - geometry stored twice, but storage cost is minimal
+
+Contributors may submit data using either format (or both). WHG will ensure both representations are maintained for maximum interoperability.
 
 ## Comparison with Other Models
 
