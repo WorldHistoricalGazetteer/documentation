@@ -35,3 +35,7 @@ g[id^="entity-GEOMETRY-"] > rect.entityBox,
 g[id^="entity-TIMESPAN-"] > rect.entityBox {
     fill: rgb(166, 196, 227) !important;
 }
+
+img[alt="v4.0-beta"] {
+    height: 1.5rem;
+}

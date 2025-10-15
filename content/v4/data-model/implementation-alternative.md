@@ -1,4 +1,4 @@
-# 3.9. Implementation in ArangoDB (Proposed Alternative) <img src="https://img.shields.io/badge/upcoming-v4.0--beta-blue">
+# 3.9. Implementation in ArangoDB (Proposed Alternative)
 
 > **Note:** This document presents an alternative implementation approach using ArangoDB instead of Vespa. It complements the database technology assessment in [Section 4.1](https://docs.whgazetteer.org/content/v4/architecture/database.html) and the Vespa-based implementation in [Section 3.8](https://docs.whgazetteer.org/content/v4/data-model/implementation.html).
 

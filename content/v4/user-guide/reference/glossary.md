@@ -343,11 +343,6 @@ The process of checking data for errors, completeness, and consistency before pu
 
 See: [Validation & Quality Checks](../contributing/validation.md)
 
-### Vespa
-The search and storage engine underlying WHG v4, enabling complex temporal-spatial queries and vector similarity search.
-
-See: [Implementation in Vespa](../../v4/data-model/implementation.html)
-
 ### Vocabulary
 See **Controlled Vocabulary**
 

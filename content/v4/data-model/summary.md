@@ -1,4 +1,4 @@
-# Summary & Future Extensions <img src="https://img.shields.io/badge/upcoming-v4.0--beta-blue">
+# Summary & Future Extensions
 
 ## Model Summary
 

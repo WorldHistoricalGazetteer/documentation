@@ -1,4 +1,4 @@
-# Database Technology Assessment <img src="https://img.shields.io/badge/upcoming-v4.0--beta-blue">
+# Database Technology Assessment
 
 ## TL;DR
 

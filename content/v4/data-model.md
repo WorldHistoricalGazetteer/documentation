@@ -1,4 +1,4 @@
-# Data Model <img src="https://img.shields.io/badge/upcoming-v4.0--beta-blue">
+# Data Model
 
 ```{mermaid} ../diagrams/v4_erd.mermaid
 :align: center

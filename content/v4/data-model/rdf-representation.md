@@ -1,4 +1,4 @@
-# RDF Representation <img src="https://img.shields.io/badge/upcoming-v4.0--beta-blue">
+# RDF Representation
 
 ## Overview
 
@@ -35,10 +35,13 @@ A name variant for a thing (toponym, chrononym, personal name, etc.). Names can 
 
 **Properties:**
 - `whg:nameString` - The actual name text with language tag
-- `whg:language` - ISO 639 language code
+- `whg:language` - ISO 639-3 language code
 - `whg:script` - ISO 15924 script code
+- `whg:variant` - Relationship to other forms (official, colloquial, historical, etc.)
 - `whg:transliteration` - Romanization or transliteration
-- `whg:nameType` - toponym, chrononym, ethnonym, etc.
+- `whg:ipa` - International Phonetic Alphabet representation
+- `whg:nameType` - Array of classifications (toponym, chrononym, ethnonym, etc.)
+- `whg:embedding` - Vector representation for semantic similarity search
 
 ### whg:Geometry
 
@@ -48,9 +51,13 @@ A spatial representation of a thing. Extends GeoSPARQL geometry to support tempo
 
 **Properties:**
 - `geo:asWKT` - Well-Known Text representation
-- `whg:representativePoint` - Centroid or representative point
-- `whg:precision` - Spatial precision descriptor
-- `whg:precisionKm` - Precision in kilometers
+- `geo:asGeoJSON` - GeoJSON representation (alternative to WKT)
+- `whg:representativePoint` - Centroid or representative point for mapping/search
+- `whg:hull` - Convex hull of the geometry
+- `whg:bbox` - Bounding box array [min_lon, min_lat, max_lon, max_lat]
+- `whg:precision` - Spatial precision descriptor (exact, approximate, uncertain)
+- `whg:precisionKm` - Precision uncertainty radius in kilometers
+- `whg:sourceCRS` - Source coordinate reference system (EPSG code or historical CRS)
 
 ### whg:Timespan
 
@@ -63,8 +70,9 @@ A temporal extent with support for uncertainty bounds. Based on the W3C Time Ont
 - `whg:startLatest` - Latest possible start date
 - `whg:endEarliest` - Earliest possible end date
 - `whg:endLatest` - Latest possible end date
-- `whg:label` - Human-readable description
-- `whg:precision` - Temporal precision (year, decade, century, etc.)
+- `whg:label` - Human-readable period name
+- `whg:precision` - Temporal precision (year, decade, century, era, geological_period)
+- `whg:precisionValue` - Numeric precision indicator
 
 ### whg:Attestation
 
@@ -73,16 +81,22 @@ A statement asserting a relationship between entities, grounded in primary sourc
 **Extends:** `prov:Entity`
 
 **Properties:**
-- `whg:subject` - The thing being described
+- `whg:subject` - The thing being described (references whg:Thing)
 - `whg:subjectType` - Type of subject (thing, name, geometry, attestation)
 - `whg:relationType` - The relationship type (has_name, has_geometry, etc.)
-- `whg:object` - The related entity
-- `whg:objectType` - Type of object
-- `whg:temporalScope` - When this relationship held
+- `whg:object` - The related entity (Name, Geometry, Timespan, Thing, or classification)
+- `whg:objectType` - Type of object (name, geometry, timespan, thing, classification)
+- `whg:sequence` - Ordering for routes and itineraries
+- `whg:connectionMetadata` - JSON object for network relationships (trade goods, flow direction, etc.)
+- `whg:temporalScope` - When this relationship held (references whg:Timespan)
 - `whg:certainty` - Confidence value (0.0-1.0)
 - `whg:certaintyNote` - Explanation of uncertainty
-- `prov:hadPrimarySource` - Source document(s)
+- `whg:notes` - Additional context or commentary
+- `prov:hadPrimarySource` - Source document(s) - array of Authority references
 - `whg:sourceType` - Classification of source
+- `dcterms:created` - Timestamp of attestation creation
+- `dcterms:modified` - Timestamp of last modification
+- `dcterms:contributor` - User or system that created attestation
 
 ## The Attestation Pattern
 
@@ -104,16 +118,16 @@ This reification pattern allows WHG to:
 
 ```turtle
 ex:attestation_001 a whg:Attestation ;
-    whg:subject ex:some_thing ;
-    whg:subjectType "thing" ;
-    whg:relationType "has_name" ;
-    whg:object ex:some_name ;
-    whg:objectType "name" ;
-    whg:temporalScope ex:some_timespan ;
-    whg:certainty 0.8 ;
-    whg:certaintyNote "Based on fragmentary inscription" ;
-    prov:hadPrimarySource ex:some_source ;
-    whg:sourceType "archaeological" .
+                   whg:subject ex:some_thing ;
+                   whg:subjectType "thing" ;
+                   whg:relationType "has_name" ;
+                   whg:object ex:some_name ;
+                   whg:objectType "name" ;
+                   whg:temporalScope ex:some_timespan ;
+                   whg:certainty 0.8 ;
+                   whg:certaintyNote "Based on fragmentary inscription" ;
+                   prov:hadPrimarySource ex:some_source ;
+                   whg:sourceType "archaeological" .
 ```
 
 ## Relation Types
@@ -136,7 +150,11 @@ Custom relations can be defined for specific domains.
 
 The following example demonstrates the attestation-based model using Medieval Baghdad. This shows how a historical place with multiple names, changing geometries, and complex relationships is represented in RDF:
 
-[View complete Baghdad example in Turtle format →](rdf-examples/baghdad.ttl)
+`````{literalinclude} rdf-examples/baghdad.ttl
+:language: turtle
+:linenos: true
+:caption: Complete Baghdad example in Turtle format
+`````
 
 **Key features demonstrated:**
 
@@ -154,12 +172,12 @@ Any attestation can be temporally scoped to indicate when the relationship held:
 
 ```turtle
 ex:timespan_001 a whg:Timespan ;
-    whg:startEarliest "1200-01-01"^^xsd:date ;
-    whg:startLatest "1250-12-31"^^xsd:date ;
-    whg:endEarliest "1400-01-01"^^xsd:date ;
-    whg:endLatest "1450-12-31"^^xsd:date ;
-    whg:label "Roughly 13th-14th centuries" ;
-    whg:precision "quarter-century" .
+                whg:startEarliest "1200-01-01"^^xsd:date ;
+                whg:startLatest "1250-12-31"^^xsd:date ;
+                whg:endEarliest "1400-01-01"^^xsd:date ;
+                whg:endLatest "1450-12-31"^^xsd:date ;
+                whg:label "Roughly 13th-14th centuries" ;
+                whg:precision "quarter-century" .
 ```
 
 The four-point timespan model accommodates historical uncertainty about when periods begin and end.
@@ -177,10 +195,10 @@ Example:
 
 ```turtle
 ex:attestation_002 a whg:Attestation ;
-    whg:certainty 0.6 ;
-    whg:certaintyNote "Two chronicles give different dates; split the difference" ;
-    prov:hadPrimarySource ex:chronicle_a, ex:chronicle_b ;
-    whg:sourceType "chronicle" .
+                   whg:certainty 0.6 ;
+                   whg:certaintyNote "Two chronicles give different dates; split the difference" ;
+                   prov:hadPrimarySource ex:chronicle_a, ex:chronicle_b ;
+                   whg:sourceType "chronicle" .
 ```
 
 ## Meta-Attestations
@@ -194,11 +212,11 @@ Attestations can themselves be subjects of other attestations, enabling document
 
 ```turtle
 ex:attestation_099 a whg:Attestation ;
-    whg:subject ex:attestation_001 ;
-    whg:subjectType "attestation" ;
-    whg:relationType "contradicts" ;
-    whg:object ex:attestation_002 ;
-    whg:notes "Source A claims founding in 762, Source B claims 765" .
+                   whg:subject ex:attestation_001 ;
+                   whg:subjectType "attestation" ;
+                   whg:relationType "contradicts" ;
+                   whg:object ex:attestation_002 ;
+                   whg:notes "Source A claims founding in 762, Source B claims 765" .
 ```
 
 ## Integration with Existing Ontologies
@@ -215,6 +233,44 @@ The WHG RDF model builds on standard semantic web vocabularies:
 | **OWL** | Ontology structure and logical relationships |
 
 This ensures interoperability with existing linked data systems.
+
+## Geometry Formats: WKT and GeoJSON
+
+WHG supports both WKT (Well-Known Text) and GeoJSON for geometry representation to ensure maximum interoperability:
+
+### WKT Format (GeoSPARQL Standard)
+
+For use with GeoSPARQL-enabled triplestores and spatial query engines:
+
+```turtle
+ex:baghdad a geo:Feature ;
+           geo:hasGeometry [
+                 a geo:Geometry ;
+                 geo:asWKT "POINT(44.3661 33.3152)"^^geo:wktLiteral
+             ] .
+```
+
+### GeoJSON Format (LPF Compatible)
+
+For web applications and JSON-LD consumers:
+
+```turtle
+ex:baghdad a lpf:Place ;
+           lpf:geometry [
+                 a geojson:Point ;
+                 geojson:coordinates "44.3661, 33.3152"
+             ] .
+```
+
+### Conversion Between Formats
+
+When exporting WHG data:
+
+- **For GeoSPARQL triplestores**: Use WKT format with proper `geo:Feature` and `geo:Geometry` classes
+- **For LPF/JSON-LD**: Use GeoJSON format with LPF patterns
+- **For maximum compatibility**: Include both representations
+
+Contributors may submit geometries in either format. WHG will convert between formats as needed for different export targets.
 
 ## Comparison with Other Models
 
@@ -242,12 +298,14 @@ LPF is already RDF! It uses JSON-LD syntax, which means it's both:
 - Valid JSON (easy for developers)
 - Valid RDF (semantic web compatible)
 
-The attestation pattern can be expressed in any RDF serialization:
+**WHG's approach:**
 
-- **JSON-LD** - for LPF compatibility and web APIs
-- **Turtle** - for human readability and examples
-- **RDF/XML** - for legacy systems
-- **N-Triples** - for streaming and large datasets
+- **Accept LPF contributions** - JSON-LD with GeoJSON geometries
+- **Accept Turtle contributions** - Native RDF with WKT or GeoJSON geometries
+- **Export in multiple formats** - JSON-LD (LPF), Turtle, RDF/XML, N-Triples
+- **GeoSPARQL-compliant export** - Proper `geo:Feature` patterns with WKT for triplestore compatibility
+
+The attestation pattern can be expressed in any RDF serialization, and geometries can use either WKT or GeoJSON depending on the target system's needs.
 
 ## Querying with SPARQL
 
@@ -290,6 +348,19 @@ SELECT ?thing ?geometry ?certainty ?note WHERE {
 }
 ```
 
+### Spatial query with GeoSPARQL
+
+```sparql
+PREFIX geo: <http://www.opengis.net/ont/geosparql#>
+PREFIX geof: <http://www.opengis.net/def/function/geosparql/>
+
+SELECT ?place ?geom WHERE {
+    ?place geo:hasGeometry ?geom .
+    ?geom geo:asWKT ?wkt .
+    FILTER(geof:sfWithin(?wkt, "POLYGON(...)"^^geo:wktLiteral))
+}
+```
+
 ## Implementation Notes
 
 ### Internal Storage vs. Export
@@ -298,7 +369,7 @@ Our recommended architecture:
 
 1. **Store data internally** in ArangoDB using JSON for performance
 2. **Provide RDF export** in multiple serializations (JSON-LD, Turtle, RDF/XML)
-3. **Support SPARQL endpoint** (optional) for semantic web integration
+3. **Support SPARQL endpoint** for semantic web integration
 
 This gives you:
 
@@ -306,46 +377,54 @@ This gives you:
 ✓ Flexibility of document model  
 ✓ Interoperability through RDF export
 
-### Accepting Contributions in Turtle
+### Accepting Contributions
 
-WHG accepts contributions in both [Linked Places Format](contributions.md) (JSON-LD) and Turtle (`.ttl`).
+WHG accepts contributions in multiple formats:
 
-**Advantages of Turtle:**
+**JSON-LD (LPF):**
+- Standard Linked Places Format with GeoJSON geometries
+- Best for most contributors
+- Familiar to digital humanities researchers
 
-- Researchers familiar with semantic web can contribute directly
-- Enables reuse of existing RDF datasets
-- Natural for linking to authority files
-- Better for contributors with complex ontological requirements
+**Turtle (.ttl):**
+- Native RDF with WKT or GeoJSON geometries
+- Best for semantic web researchers
+- Enables direct reuse of existing RDF datasets
+- Natural for complex ontological requirements
 
 **Submission guidelines:**
 
-1. Validate RDF syntax using a standard Turtle parser
+1. Validate syntax using standard parsers (e.g., `rapper`, Apache Jena)
 2. Ensure compliance with WHG ontology (see validation section)
 3. Include proper provenance and source citations
 4. Provide at least one attestation per Thing
 
-**Example submission template:**
+**Example Turtle submission:**
 
 ```turtle
 @prefix whg: <http://whgazetteer.org/ontology/> .
+@prefix geo: <http://www.opengis.net/ont/geosparql#> .
 @prefix ex: <http://your-project.org/data/> .
 
-# Your contribution here
 ex:my_place a whg:Thing ;
     dcterms:identifier "your-id" ;
     dcterms:type "place" ;
-    dcterms:description "Description" .
+    dcterms:description "Historical site in Mesopotamia" .
+
+ex:my_place_geom a geo:Geometry ;
+    geo:asWKT "POINT(44.4 33.3)"^^geo:wktLiteral .
 
 ex:att_001 a whg:Attestation ;
     whg:subject ex:my_place ;
-    whg:relationType "has_name" ;
-    whg:object ex:my_name ;
+    whg:relationType "has_geometry" ;
+    whg:object ex:my_place_geom ;
+    whg:certainty 0.9 ;
     prov:hadPrimarySource ex:my_source .
 ```
 
 ### Validation
 
-Contributors should validate their Turtle against:
+Contributors should validate their submissions against:
 
 1. **RDF syntax** - Standard Turtle parser (e.g., `rapper`, Apache Jena)
 2. **WHG ontology** - SHACL shapes defining required patterns
@@ -355,12 +434,12 @@ Example SHACL constraint:
 
 ```turtle
 whg:ThingShape a sh:NodeShape ;
-    sh:targetClass whg:Thing ;
-    sh:property [
-        sh:path [ sh:inversePath whg:subject ] ;
-        sh:minCount 1 ;
-        sh:message "Every Thing must have at least one Attestation" ;
-    ] .
+               sh:targetClass whg:Thing ;
+               sh:property [
+                     sh:path [ sh:inversePath whg:subject ] ;
+                     sh:minCount 1 ;
+                     sh:message "Every Thing must have at least one Attestation" ;
+                 ] .
 ```
 
 ### Tools

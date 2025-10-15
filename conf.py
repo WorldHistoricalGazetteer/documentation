@@ -120,3 +120,21 @@ notfound_context = {
     </div>
     """,
 }
+def add_v4_badge(app, docname, source):
+    """Add badge to all documents in content/v4 folder"""
+    if '/v4/' in docname or docname.startswith('v4'):
+        lines = source[0].split('\n')
+
+        # Find the first heading (line starting with #)
+        for i, line in enumerate(lines):
+            if line.strip().startswith('#'):
+                # Insert badge after the heading
+                lines.insert(i + 1, '')
+                lines.insert(i + 2, '![v4.0-beta](https://img.shields.io/badge/proposed-v4.0--alpha-blueviolet?logo=open-access&logoColor=white)')
+                lines.insert(i + 3, '')
+                break
+
+        source[0] = '\n'.join(lines)
+
+def setup(app):
+    app.connect('source-read', add_v4_badge)

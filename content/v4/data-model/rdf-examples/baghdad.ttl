@@ -4,6 +4,8 @@
 @prefix prov: <http://www.w3.org/ns/prov#> .
 @prefix dcterms: <http://purl.org/dc/terms/> .
 @prefix skos: <http://www.w3.org/2004/02/skos/core#> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
 @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
 @prefix ex: <http://whgazetteer.org/places/> .
 
@@ -12,27 +14,27 @@
 # ============================================
 
 whg:Thing a owl:Class ;
-    rdfs:label "Thing" ;
-    rdfs:comment "Any entity that can be attested in historical sources (places, periods, people, events, etc.)" .
+          rdfs:label "Thing" ;
+          rdfs:comment "Any entity that can be attested in historical sources (places, periods, people, events, etc.)" .
 
 whg:Name a owl:Class ;
-    rdfs:label "Name" ;
-    rdfs:comment "A name variant for a thing (toponym, chrononym, personal name, etc.)" .
+         rdfs:label "Name" ;
+         rdfs:comment "A name variant for a thing (toponym, chrononym, personal name, etc.)" .
 
 whg:Geometry a owl:Class ;
-    rdfs:subClassOf geo:Geometry ;
-    rdfs:label "Geometry" ;
-    rdfs:comment "A spatial representation of a thing" .
+             rdfs:subClassOf geo:Geometry ;
+             rdfs:label "Geometry" ;
+             rdfs:comment "A spatial representation of a thing" .
 
 whg:Timespan a owl:Class ;
-    rdfs:subClassOf time:ProperInterval ;
-    rdfs:label "Timespan" ;
-    rdfs:comment "A temporal extent with uncertainty bounds" .
+             rdfs:subClassOf time:ProperInterval ;
+             rdfs:label "Timespan" ;
+             rdfs:comment "A temporal extent with uncertainty bounds" .
 
 whg:Attestation a owl:Class ;
-    rdfs:subClassOf prov:Entity ;
-    rdfs:label "Attestation" ;
-    rdfs:comment "A statement asserting a relationship between entities, grounded in sources" .
+                rdfs:subClassOf prov:Entity ;
+                rdfs:label "Attestation" ;
+                rdfs:comment "A statement asserting a relationship between entities, grounded in sources" .
 
 # ============================================
 # EXAMPLE: Medieval Baghdad (Place Thing)
@@ -40,59 +42,71 @@ whg:Attestation a owl:Class ;
 
 # The Place Thing
 ex:baghdad a whg:Thing ;
-    dcterms:identifier "whg:12345" ;
-    dcterms:description "Historic city on the Tigris River, capital of the Abbasid Caliphate" ;
-    dcterms:type "place" .
+           dcterms:identifier "whg:12345" ;
+           dcterms:description "Historic city on the Tigris River, capital of the Abbasid Caliphate" ;
+           dcterms:type "place" .
 
 # Names for Baghdad
 ex:name_baghdad_arabic a whg:Name ;
-    whg:nameString "بغداد"@ar ;
-    whg:language "ar" ;
-    whg:script "Arab" ;
-    whg:nameType "toponym" .
+                       whg:nameString "بغداد"@ar ;
+                       whg:language "ar" ;
+                       whg:script "Arab" ;
+                       whg:variant "standard" ;
+                       whg:nameType "toponym" .
 
 ex:name_baghdad_latin a whg:Name ;
-    whg:nameString "Bagdad"@la ;
-    whg:language "la" ;
-    whg:transliteration "Bagdad" ;
-    whg:nameType "toponym" .
+                      whg:nameString "Bagdad"@la ;
+                      whg:language "la" ;
+                      whg:script "Latn" ;
+                      whg:variant "transliteration" ;
+                      whg:transliteration "Bagdad" ;
+                      whg:nameType "toponym" .
 
 ex:name_madinat_al_salam a whg:Name ;
-    whg:nameString "مدينة السلام"@ar ;
-    whg:language "ar" ;
-    whg:nameType "toponym" ;
-    rdfs:comment "City of Peace - ceremonial name" .
+                         whg:nameString "مدينة السلام"@ar ;
+                         whg:language "ar" ;
+                         whg:script "Arab" ;
+                         whg:variant "ceremonial" ;
+                         whg:transliteration "Madīnat as-Salām" ;
+                         whg:ipa "madiːnat assalaːm" ;
+                         whg:nameType "toponym" ;
+                         rdfs:comment "City of Peace - ceremonial name" .
 
 # Geometries (location changed over time as city expanded)
 ex:geom_baghdad_762 a whg:Geometry ;
-    geo:asWKT "POINT(44.3661 33.3152)"^^geo:wktLiteral ;
-    whg:representativePoint "POINT(44.3661 33.3152)"^^geo:wktLiteral ;
-    whg:precision "approximate" ;
-    whg:precisionKm 5.0 .
+                    geo:asWKT "POINT(44.3661 33.3152)"^^geo:wktLiteral ;
+                    whg:representativePoint "POINT(44.3661 33.3152)"^^geo:wktLiteral ;
+                    whg:precision "approximate" ;
+                    whg:precisionKm 5.0 ;
+                    whg:sourceCRS "EPSG:4326" .
 
 ex:geom_baghdad_1200 a whg:Geometry ;
-    geo:asWKT "POLYGON((44.34 33.30, 44.40 33.30, 44.40 33.35, 44.34 33.35, 44.34 33.30))"^^geo:wktLiteral ;
-    whg:bbox "44.34,33.30,44.40,33.35" ;
-    whg:precision "estimated" .
+                     geo:asWKT "POLYGON((44.34 33.30, 44.40 33.30, 44.40 33.35, 44.34 33.35, 44.34 33.30))"^^geo:wktLiteral ;
+                     whg:representativePoint "POINT(44.37 33.325)"^^geo:wktLiteral ;
+                     whg:hull "POLYGON((44.34 33.30, 44.40 33.30, 44.40 33.35, 44.34 33.35, 44.34 33.30))"^^geo:wktLiteral ;
+                     whg:bbox "44.34,33.30,44.40,33.35" ;
+                     whg:precision "estimated" ;
+                     whg:precisionKm 2.0 ;
+                     whg:sourceCRS "EPSG:4326" .
 
 # Timespans
 ex:time_abbasid_founding a whg:Timespan ;
-    time:hasBeginning [
-        time:inXSDDate "0762-07-30"^^xsd:date
-    ] ;
-    time:hasEnd [
-        time:inXSDDate "0766-12-31"^^xsd:date
-    ] ;
-    whg:label "Founding period" ;
-    whg:precision "year" .
+                         whg:startEarliest "0762-07-30"^^xsd:date ;
+                         whg:startLatest "0762-07-30"^^xsd:date ;
+                         whg:endEarliest "0766-12-31"^^xsd:date ;
+                         whg:endLatest "0766-12-31"^^xsd:date ;
+                         whg:label "Founding period" ;
+                         whg:precision "year" ;
+                         whg:precisionValue 1 .
 
 ex:time_abbasid_golden_age a whg:Timespan ;
-    whg:startEarliest "0800-01-01"^^xsd:date ;
-    whg:startLatest "0820-12-31"^^xsd:date ;
-    whg:endEarliest "1050-01-01"^^xsd:date ;
-    whg:endLatest "1100-12-31"^^xsd:date ;
-    whg:label "Golden Age (uncertain bounds)" ;
-    whg:precision "decade" .
+                           whg:startEarliest "0800-01-01"^^xsd:date ;
+                           whg:startLatest "0820-12-31"^^xsd:date ;
+                           whg:endEarliest "1050-01-01"^^xsd:date ;
+                           whg:endLatest "1100-12-31"^^xsd:date ;
+                           whg:label "Golden Age (uncertain bounds)" ;
+                           whg:precision "decade" ;
+                           whg:precisionValue 10 .
 
 # ============================================
 # ATTESTATIONS - The Core of WHG's Model
@@ -100,147 +114,208 @@ ex:time_abbasid_golden_age a whg:Timespan ;
 
 # Attestation 1: Baghdad has the Arabic name
 ex:att_001 a whg:Attestation ;
-    whg:subject ex:baghdad ;
-    whg:subjectType "subject" ;
-    whg:relationType "has_name" ;
-    whg:object ex:name_baghdad_arabic ;
-    whg:objectType "name" ;
-    whg:certainty 1.0 ;
-    prov:hadPrimarySource ex:source_tabari ;
-    whg:sourceType "chronicle" ;
-    dcterms:date "0915"^^xsd:gYear .
+           whg:subject ex:baghdad ;
+           whg:subjectType "thing" ;
+           whg:relationType "has_name" ;
+           whg:object ex:name_baghdad_arabic ;
+           whg:objectType "name" ;
+           whg:certainty 1.0 ;
+           prov:hadPrimarySource ex:source_tabari ;
+           whg:sourceType "chronicle" ;
+           dcterms:created "2023-01-15T10:30:00Z"^^xsd:dateTime ;
+           dcterms:modified "2023-01-15T10:30:00Z"^^xsd:dateTime ;
+           dcterms:contributor "researcher@example.edu" .
 
 # Attestation 2: Baghdad has the ceremonial name (during specific period)
 ex:att_002 a whg:Attestation ;
-    whg:subject ex:baghdad ;
-    whg:relationType "has_name" ;
-    whg:object ex:name_madinat_al_salam ;
-    whg:temporalScope ex:time_abbasid_founding ;
-    whg:certainty 0.9 ;
-    whg:certaintyNote "Name used in official documents but unclear how widely adopted" ;
-    prov:hadPrimarySource ex:source_yaqubi ;
-    whg:sourceType "geographic_work" .
+           whg:subject ex:baghdad ;
+           whg:subjectType "thing" ;
+           whg:relationType "has_name" ;
+           whg:object ex:name_madinat_al_salam ;
+           whg:objectType "name" ;
+           whg:temporalScope ex:time_abbasid_founding ;
+           whg:certainty 0.9 ;
+           whg:certaintyNote "Name used in official documents but unclear how widely adopted" ;
+           whg:notes "Appears in early Abbasid inscriptions and official correspondence" ;
+           prov:hadPrimarySource ex:source_yaqubi ;
+           whg:sourceType "geographic_work" ;
+           dcterms:created "2023-02-10T14:20:00Z"^^xsd:dateTime ;
+           dcterms:modified "2023-02-10T14:20:00Z"^^xsd:dateTime ;
+           dcterms:contributor "researcher@example.edu" .
 
 # Attestation 3: Baghdad has geometry in 762
 ex:att_003 a whg:Attestation ;
-    whg:subject ex:baghdad ;
-    whg:relationType "has_geometry" ;
-    whg:object ex:geom_baghdad_762 ;
-    whg:temporalScope ex:time_abbasid_founding ;
-    whg:certainty 0.7 ;
-    whg:certaintyNote "Location based on archaeological surveys" ;
-    prov:hadPrimarySource ex:source_archaeological ;
-    whg:sourceType "archaeological" .
+           whg:subject ex:baghdad ;
+           whg:subjectType "thing" ;
+           whg:relationType "has_geometry" ;
+           whg:object ex:geom_baghdad_762 ;
+           whg:objectType "geometry" ;
+           whg:temporalScope ex:time_abbasid_founding ;
+           whg:certainty 0.7 ;
+           whg:certaintyNote "Location based on archaeological surveys" ;
+           whg:notes "Coordinates derived from al-Mansur's round city excavations" ;
+           prov:hadPrimarySource ex:source_archaeological ;
+           whg:sourceType "archaeological" ;
+           dcterms:created "2023-03-22T09:15:00Z"^^xsd:dateTime ;
+           dcterms:modified "2024-01-10T11:30:00Z"^^xsd:dateTime ;
+           dcterms:contributor "archaeologist@university.edu" .
 
 # Attestation 4: Baghdad has expanded geometry by 1200
 ex:att_004 a whg:Attestation ;
-    whg:subject ex:baghdad ;
-    whg:relationType "has_geometry" ;
-    whg:object ex:geom_baghdad_1200 ;
-    whg:temporalScope [
-        a whg:Timespan ;
-        time:hasBeginning [ time:inXSDDate "1200-01-01"^^xsd:date ]
-    ] ;
-    whg:certainty 0.8 ;
-    prov:hadPrimarySource ex:source_ibn_jubayr .
+           whg:subject ex:baghdad ;
+           whg:subjectType "thing" ;
+           whg:relationType "has_geometry" ;
+           whg:object ex:geom_baghdad_1200 ;
+           whg:objectType "geometry" ;
+           whg:temporalScope [
+                 a whg:Timespan ;
+                 whg:startEarliest "1200-01-01"^^xsd:date ;
+                 whg:startLatest "1200-01-01"^^xsd:date ;
+                 whg:label "Circa 1200 CE"
+             ] ;
+           whg:certainty 0.8 ;
+           whg:notes "City had expanded significantly beyond original round city" ;
+           prov:hadPrimarySource ex:source_ibn_jubayr ;
+           whg:sourceType "travel_account" ;
+           dcterms:created "2023-03-22T09:45:00Z"^^xsd:dateTime ;
+           dcterms:modified "2023-03-22T09:45:00Z"^^xsd:dateTime ;
+           dcterms:contributor "historian@institute.org" .
 
 # Attestation 5: Baghdad has type "city"
 ex:att_005 a whg:Attestation ;
-    whg:subject ex:baghdad ;
-    whg:relationType "has_type" ;
-    whg:object <http://vocab.getty.edu/aat/300008389> ; # AAT: city
-    whg:temporalScope ex:time_abbasid_golden_age ;
-    prov:hadPrimarySource ex:source_tabari .
+           whg:subject ex:baghdad ;
+           whg:subjectType "thing" ;
+           whg:relationType "has_type" ;
+           whg:object <http://vocab.getty.edu/aat/300008389> ; # AAT: city
+           whg:objectType "classification" ;
+           whg:temporalScope ex:time_abbasid_golden_age ;
+           whg:certainty 1.0 ;
+           prov:hadPrimarySource ex:source_tabari ;
+           whg:sourceType "chronicle" ;
+           dcterms:created "2023-01-15T10:35:00Z"^^xsd:dateTime ;
+           dcterms:modified "2023-01-15T10:35:00Z"^^xsd:dateTime ;
+           dcterms:contributor "researcher@example.edu" .
 
 # Attestation 6: Baghdad was capital of Abbasid Caliphate
 ex:abbasid_caliphate a whg:Thing ;
-    dcterms:identifier "whg:67890" ;
-    dcterms:description "Islamic caliphate, 750-1258 CE" ;
-    dcterms:type "polity" .
+                     dcterms:identifier "whg:67890" ;
+                     dcterms:description "Islamic caliphate, 750-1258 CE" ;
+                     dcterms:type "polity" .
 
 ex:att_006 a whg:Attestation ;
-    whg:subject ex:baghdad ;
-    whg:relationType "was_capital_of" ;
-    whg:object ex:abbasid_caliphate ;
-    whg:temporalScope [
-        a whg:Timespan ;
-        time:hasBeginning [ time:inXSDDate "0762-07-30"^^xsd:date ] ;
-        time:hasEnd [ time:inXSDDate "1258-02-10"^^xsd:date ]
-    ] ;
-    whg:certainty 1.0 ;
-    prov:hadPrimarySource ex:source_tabari .
+           whg:subject ex:baghdad ;
+           whg:subjectType "thing" ;
+           whg:relationType "was_capital_of" ;
+           whg:object ex:abbasid_caliphate ;
+           whg:objectType "thing" ;
+           whg:temporalScope [
+                 a whg:Timespan ;
+                 whg:startEarliest "0762-07-30"^^xsd:date ;
+                 whg:startLatest "0762-07-30"^^xsd:date ;
+                 whg:endEarliest "1258-02-10"^^xsd:date ;
+                 whg:endLatest "1258-02-10"^^xsd:date ;
+                 whg:label "Abbasid capital period"
+             ] ;
+           whg:certainty 1.0 ;
+           prov:hadPrimarySource ex:source_tabari ;
+           whg:sourceType "chronicle" ;
+           dcterms:created "2023-01-20T13:00:00Z"^^xsd:dateTime ;
+           dcterms:modified "2023-01-20T13:00:00Z"^^xsd:dateTime ;
+           dcterms:contributor "historian@institute.org" .
 
 # Attestation 7: Baghdad connected to Basra via trade route
 ex:basra a whg:Thing ;
-    dcterms:identifier "whg:54321" ;
-    dcterms:description "Port city in southern Iraq" ;
-    dcterms:type "place" .
+         dcterms:identifier "whg:54321" ;
+         dcterms:description "Port city in southern Iraq" ;
+         dcterms:type "place" .
 
 ex:att_007 a whg:Attestation ;
-    whg:subject ex:baghdad ;
-    whg:relationType "connected_to" ;
-    whg:object ex:basra ;
-    whg:sequence 1 ;
-    whg:connectionMetadata [
-        whg:routeType "trade" ;
-        whg:transportMode "caravan"
-    ] ;
-    whg:temporalScope ex:time_abbasid_golden_age ;
-    prov:hadPrimarySource ex:source_muqaddasi .
+           whg:subject ex:baghdad ;
+           whg:subjectType "thing" ;
+           whg:relationType "connected_to" ;
+           whg:object ex:basra ;
+           whg:objectType "thing" ;
+           whg:sequence 1 ;
+           whg:connectionMetadata [
+                 whg:routeType "trade" ;
+                 whg:transportMode "caravan" ;
+                 whg:tradeGoods "textiles, spices, dates" ;
+                 whg:flowDirection "bidirectional"
+             ] ;
+           whg:temporalScope ex:time_abbasid_golden_age ;
+           whg:certainty 0.95 ;
+           whg:notes "Major trade route connecting capital to Gulf ports" ;
+           prov:hadPrimarySource ex:source_muqaddasi ;
+           whg:sourceType "geographic_work" ;
+           dcterms:created "2023-04-15T16:20:00Z"^^xsd:dateTime ;
+           dcterms:modified "2023-04-15T16:20:00Z"^^xsd:dateTime ;
+           dcterms:contributor "trade-historian@university.edu" .
 
 # Meta-attestation: One source contradicts another about founding date
 ex:att_008 a whg:Attestation ;
-    whg:subject ex:att_001 ;
-    whg:subjectType "attestation" ;
-    whg:relationType "contradicts" ;
-    whg:object ex:att_002 ;
-    whg:notes "Ibn al-Faqih gives different founding date than al-Tabari" ;
-    prov:hadPrimarySource ex:source_ibn_al_faqih .
+           whg:subject ex:att_001 ;
+           whg:subjectType "attestation" ;
+           whg:relationType "contradicts" ;
+           whg:object ex:att_002 ;
+           whg:objectType "attestation" ;
+           whg:notes "Ibn al-Faqih gives different founding date than al-Tabari; al-Faqih claims 765 CE while al-Tabari documents 762 CE" ;
+           prov:hadPrimarySource ex:source_ibn_al_faqih ;
+           whg:sourceType "geographic_work" ;
+           dcterms:created "2023-05-10T10:00:00Z"^^xsd:dateTime ;
+           dcterms:modified "2023-05-10T10:00:00Z"^^xsd:dateTime ;
+           dcterms:contributor "historiographer@academy.edu" .
 
 # ============================================
 # SOURCE DEFINITIONS
 # ============================================
 
 ex:source_tabari a prov:Entity ;
-    dcterms:title "Tarikh al-Rusul wa'l-Muluk" ;
-    dcterms:creator "al-Tabari" ;
-    dcterms:date "0915"^^xsd:gYear ;
-    dcterms:type "chronicle" .
+                 dcterms:title "Tarikh al-Rusul wa'l-Muluk" ;
+                 dcterms:creator "al-Tabari" ;
+                 dcterms:date "0915"^^xsd:gYear ;
+                 dcterms:type "chronicle" ;
+                 dcterms:description "History of the Prophets and Kings" .
 
 ex:source_yaqubi a prov:Entity ;
-    dcterms:title "Kitab al-Buldan" ;
-    dcterms:creator "al-Ya'qubi" ;
-    dcterms:date "0891"^^xsd:gYear ;
-    dcterms:type "geographic_work" .
+                 dcterms:title "Kitab al-Buldan" ;
+                 dcterms:creator "al-Ya'qubi" ;
+                 dcterms:date "0891"^^xsd:gYear ;
+                 dcterms:type "geographic_work" ;
+                 dcterms:description "Book of Countries" .
 
 ex:source_muqaddasi a prov:Entity ;
-    dcterms:title "Ahsan al-Taqasim fi Ma'rifat al-Aqalim" ;
-    dcterms:creator "al-Muqaddasi" ;
-    dcterms:date "0985"^^xsd:gYear ;
-    dcterms:type "geographic_work" .
+                    dcterms:title "Ahsan al-Taqasim fi Ma'rifat al-Aqalim" ;
+                    dcterms:creator "al-Muqaddasi" ;
+                    dcterms:date "0985"^^xsd:gYear ;
+                    dcterms:type "geographic_work" ;
+                    dcterms:description "The Best Divisions for Knowledge of the Regions" .
 
 ex:source_ibn_jubayr a prov:Entity ;
-    dcterms:title "Rihla" ;
-    dcterms:creator "Ibn Jubayr" ;
-    dcterms:date "1185"^^xsd:gYear ;
-    dcterms:type "travel_account" .
+                     dcterms:title "Rihla" ;
+                     dcterms:creator "Ibn Jubayr" ;
+                     dcterms:date "1185"^^xsd:gYear ;
+                     dcterms:type "travel_account" ;
+                     dcterms:description "The Travels of Ibn Jubayr" .
 
 ex:source_archaeological a prov:Entity ;
-    dcterms:title "Archaeological Survey of Medieval Baghdad" ;
-    dcterms:date "2010"^^xsd:gYear ;
-    dcterms:type "archaeological" .
+                         dcterms:title "Archaeological Survey of Medieval Baghdad" ;
+                         dcterms:creator "Iraq State Board of Antiquities and Heritage" ;
+                         dcterms:date "2010"^^xsd:gYear ;
+                         dcterms:type "archaeological" ;
+                         dcterms:description "Modern archaeological survey and excavation reports" .
 
 ex:source_ibn_al_faqih a prov:Entity ;
-    dcterms:title "Kitab al-Buldan" ;
-    dcterms:creator "Ibn al-Faqih" ;
-    dcterms:date "0903"^^xsd:gYear ;
-    dcterms:type "geographic_work" .
+                       dcterms:title "Kitab al-Buldan" ;
+                       dcterms:creator "Ibn al-Faqih" ;
+                       dcterms:date "0903"^^xsd:gYear ;
+                       dcterms:type "geographic_work" ;
+                       dcterms:description "Compendium of Countries" .
 
 # ============================================
 # LINKING TO EXTERNAL AUTHORITIES
 # ============================================
 
 ex:baghdad owl:sameAs <http://www.wikidata.org/entity/Q1530> ;
-    owl:sameAs <http://vocab.getty.edu/tgn/7001766> ;
-    owl:sameAs <http://www.geonames.org/98182/> ;
-    skos:closeMatch <https://pleiades.stoa.org/places/912936> .
+           owl:sameAs <http://vocab.getty.edu/tgn/7001766> ;
+           owl:sameAs <http://www.geonames.org/98182/> ;
+           skos:closeMatch <https://pleiades.stoa.org/places/912936> .

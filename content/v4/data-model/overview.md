@@ -105,10 +105,10 @@ A **Name** represents a linguistic form by which a Thing is known.
   "name": "القسطنطينية",
   "language": "ara",
   "script": "Arab",
+  "variant": "standard",
   "transliteration": "al-Qusṭanṭīnīyah",
   "ipa": "ʔalqustˤɑntˤiːnijːɐ",
   "name_type": ["toponym"],
-  "variant": "standard",
   "embedding": [0.123, -0.456, ...]
 }
 ```
@@ -117,10 +117,10 @@ A **Name** represents a linguistic form by which a Thing is known.
 - `name`: The actual text in original script
 - `language`: ISO 639-3 language code
 - `script`: ISO 15924 script code
+- `variant`: Relationship to other forms (official, colloquial, historical, etc.)
 - `transliteration`: Romanization for searchability
 - `ipa`: International Phonetic Alphabet representation
-- `name_type`: Classification (toponym, chrononym, ethnonym, etc.)
-- `variant`: Relationship to other forms (official, colloquial, historical, etc.)
+- `name_type`: Array of classifications (toponym, chrononym, ethnonym, etc.)
 - `embedding`: Vector representation for semantic similarity search
 
 ### Name Types
@@ -150,7 +150,10 @@ A **Geometry** represents a spatial location or extent of a Thing at a particula
     "type": "Point", 
     "coordinates": [28.9784, 41.0082]
   },
-  "hull": {...},
+  "hull": {
+    "type": "Polygon",
+    "coordinates": [[...]]
+  },
   "bbox": [28.9, 41.0, 29.0, 41.1],
   "precision": "approximate",
   "precision_km": 5,
@@ -163,9 +166,31 @@ A **Geometry** represents a spatial location or extent of a Thing at a particula
 - `representative_point`: Single point for mapping/search
 - `hull`: Convex hull of the geometry
 - `bbox`: Bounding box [min_lon, min_lat, max_lon, max_lat]
-- `precision`: Spatial certainty indicator
+- `precision`: Spatial certainty indicator (exact, approximate, uncertain)
 - `precision_km`: Uncertainty radius in kilometers
-- `source_crs`: Original coordinate reference system
+- `source_crs`: Original coordinate reference system (EPSG code or historical CRS)
+
+### Geometry Formats
+
+WHG supports both **GeoJSON** (for internal storage and LPF export) and **WKT** (Well-Known Text, for GeoSPARQL compliance):
+
+**GeoJSON format** (internal):
+```json
+{
+  "type": "Point",
+  "coordinates": [28.9784, 41.0082]
+}
+```
+
+**WKT format** (RDF export):
+```turtle
+"POINT(28.9784 41.0082)"^^geo:wktLiteral
+```
+
+This dual format support ensures:
+- Web application compatibility (GeoJSON)
+- Triplestore compatibility (WKT for GeoSPARQL queries)
+- Seamless conversion between formats on export
 
 ### Why Multiple Geometries?
 
@@ -198,9 +223,9 @@ A **Timespan** represents a temporal interval with explicit uncertainty modeling
 
 **Key Properties**:
 - `start_earliest`, `start_latest`: Range of possible start dates
-- `stop_earliest`, `stop_latest`: Range of possible end dates
+- `stop_earliest`, `stop_latest`: Range of possible end dates (note: internal schema uses "stop", RDF export uses "end" for W3C Time compatibility)
 - `label`: Human-readable period name
-- `precision`: Temporal granularity (year, decade, century, era, etc.)
+- `precision`: Temporal granularity (year, decade, century, era, geological_period)
 - `precision_value`: Numeric precision indicator
 
 ### Modeling Temporal Uncertainty
@@ -219,6 +244,67 @@ The four-date model captures uncertainty:
 
 See [Implementation in Vespa](implementation.md#handling-temporal-nulls-and-geological-time) for details on null handling.
 
+## Attestation Entity
+
+An **Attestation** is a source-backed claim connecting a Thing to an attribute (Name, Geometry, Timespan) or to another Thing (relationship).
+
+### Structure
+
+```json
+{
+  "id": "att:55667",
+  "thing_id": "whg:12345",
+  "relation_type": "has_name",
+  "object_type": "name",
+  "object_id": "name:67890",
+  "sequence": null,
+  "connection_metadata": null,
+  "sources": ["source:abc123"],
+  "certainty": 0.95,
+  "certainty_note": "Well-documented in primary chronicles",
+  "notes": "Name used during Byzantine period",
+  "created": "2023-01-15T10:30:00Z",
+  "modified": "2024-02-20T14:45:00Z",
+  "contributor": "researcher@example.edu"
+}
+```
+
+**Key Properties**:
+- `thing_id`: References the Thing being described
+- `relation_type`: Type of relationship (has_name, has_geometry, connected_to, etc.)
+- `object_type`: Type of object (name, geometry, timespan, thing, classification)
+- `object_id`: References the related entity
+- `sequence`: Ordering for routes and itineraries
+- `connection_metadata`: JSON object for network relationships (e.g., trade goods, flow direction)
+- `sources`: Array of source Authority IDs
+- `certainty`: Confidence value (0.0-1.0)
+- `certainty_note`: Explanation of uncertainty assessment
+- `notes`: Additional context
+- `created`, `modified`: Temporal metadata
+- `contributor`: User or system that created the attestation
+
+### Attestation Types
+
+Attestations connect Things to:
+
+1. **Names**: `has_name` relation
+2. **Geometries**: `has_geometry` relation
+3. **Timespans**: `has_timespan` relation
+4. **Classifications**: `has_type` relation (linking to controlled vocabularies)
+5. **Other Things**: Various relationship types (member_of, connected_to, same_as, etc.)
+
+### Special Attestation Features
+
+**For Routes and Itineraries**:
+- `sequence`: Integer indicating order of waypoints along a route
+
+**For Networks**:
+- `connection_metadata`: JSON storing relationship details (trade goods, volume, direction, etc.)
+
+**For All Attestations**:
+- Can reference a Timespan to indicate temporal scope
+- Support meta-attestations (attestations about other attestations)
+
 ## Entity Relationships
 
 Entities relate through **Attestations** (see [Attestations & Relations](attestations.md)):
@@ -228,12 +314,13 @@ Thing --[attestation]--> Name
 Thing --[attestation]--> Geometry
 Thing --[attestation]--> Timespan
 Thing --[attestation]--> Thing (relationships)
+Attestation --[attestation]--> Attestation (meta-attestations)
 ```
 
 Every connection includes:
 - Source citation(s)
 - Certainty assessment
-- Temporal bounds
+- Optional temporal bounds
 - Relation type
 
 This creates a rich, provenance-tracked knowledge graph.
@@ -249,7 +336,7 @@ This creates a rich, provenance-tracked knowledge graph.
 - New Attestations add information
 - Conflicting Attestations coexist
 - Temporal Attestations track change
-- Meta-Attestations (future) comment on other Attestations
+- Meta-Attestations comment on other Attestations
 
 ### Persistence
 - Things are never deleted (only deprecated with explanation)
@@ -308,3 +395,4 @@ This model draws from:
 - **Vocabularies**: See [Controlled Vocabularies](vocabularies.md)
 - **Use Cases**: See [Platform Use Cases](usecases.md)
 - **Implementation**: See [Implementation in Vespa](implementation.md)
+- **RDF Representation**: See [RDF Representation](rdf-representation.md)

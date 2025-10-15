@@ -1,4 +1,4 @@
-# Special Subject Patterns <img src="https://img.shields.io/badge/upcoming-v4.0--beta-blue">
+# Special Subject Patterns
 
 ## Period Subjects
 

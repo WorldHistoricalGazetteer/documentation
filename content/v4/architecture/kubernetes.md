@@ -1,4 +1,4 @@
-# Kubernetes Configuration  <img src="https://img.shields.io/badge/upcoming-v4.0--beta-blue">
+# Kubernetes Configuration
 
 The **[WHG PLACE](../../technical/repositories.md)** (Place Linkage, Alignment, and Concordance Engine) repository
 contains the Kubernetes server configuration files for deploying and managing the World Historical Gazetteer (WHG)

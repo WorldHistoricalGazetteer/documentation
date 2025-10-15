@@ -1,7 +1,5 @@
 # User Guide
 
-![https://img.shields.io/badge/upcoming-v4.0--beta-blue](https://img.shields.io/badge/upcoming-v4.0--beta-blue)
-
 Welcome to the World Historical Gazetteer v4 User Guide. This guide covers all aspects of using the WHG platform, from basic searches to advanced contribution workflows.
 
 ## Note to Documentation Team

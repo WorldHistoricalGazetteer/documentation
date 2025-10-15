@@ -24,9 +24,9 @@ erDiagram
         string name
         string language "ISO 639-3"
         string script "ISO 15924"
-        string variant
+        string variant "official, colloquial, historical, etc"
         string transliteration
-        string ipa
+        string ipa "International Phonetic Alphabet"
         vector embedding
         array name_type "toponym, chrononym, ethnonym, etc"
     }
@@ -35,7 +35,7 @@ erDiagram
         string id PK
         geometry geom "GeoJSON: Point, Polygon, LineString, Multi*"
         point representative_point
-        geometry hull
+        geometry hull "Convex hull"
         array bbox "[min_lon, min_lat, max_lon, max_lat]"
         string precision "exact, approximate, uncertain"
         integer precision_km

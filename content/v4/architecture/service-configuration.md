@@ -1,4 +1,4 @@
-# Service Configuration <img src="https://img.shields.io/badge/upcoming-v4.0--beta-blue">
+# Service Configuration
 
 This document outlines the proposed mapping between public-facing subdomains and internal Kubernetes Services for the
 World Historical Gazetteer (WHG) deployment on the Pitt University CRC-managed VM.
