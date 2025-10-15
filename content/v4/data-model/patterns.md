@@ -1,6 +1,6 @@
 # Special Subject Patterns
 
-## Period Subjects
+## Period Subjects *TODO: REQUIRES UPDATE: "Period Things"
 
 A **period Subject** represents a span of time, often with associated geographic extent and cultural characteristics.
 
