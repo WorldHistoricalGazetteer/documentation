@@ -9,16 +9,17 @@ upstream.
 
 ## Proposed Subdomain Mapping
 
-| Subdomain                    | Purpose                      | Kubernetes Service | Port  | Access Scope  |
-|------------------------------|------------------------------|--------------------|-------|---------------|
-| `whgazetteer.org`            | Public-facing frontend       | `frontend`         | 443   | Public        |
-| `docs.whgazetteer.org`       | Public documentation         | `docs`             | 443   | Public        |
-| `blog.whgazetteer.org`       | WordPress blog               | `blog`             | 443   | Public        |
-| `tileserver.whgazetteer.org` | Map tile server              | `tile-server`      | 443   | Public        |
-| `admin.whgazetteer.org`      | Management API               | `management-api`   | 8000  | Pitt VPN only |
-| `test.whgazetteer.org`       | Django test instance         | `django-test`      | 8443  | Pitt VPN only |
-| `errors.whgazetteer.org`     | Error tracking               | `glitchtip`        | 3000  | Pitt VPN only |
-| `analytics.whgazetteer.org`  | Usage analytics              | `plausible`        | 8000  | Pitt VPN only |
+| Subdomain                    | Purpose                | Kubernetes Service | Port  | Access Scope  |
+|------------------------------|------------------------|--------------------|-------|---------------|
+| `whgazetteer.org`            | Public-facing frontend | `frontend`         | 443   | Public        |
+| `docs.whgazetteer.org`       | Public documentation   | `docs`             | 443   | Public        |
+| `blog.whgazetteer.org`       | WordPress blog         | `blog`             | 443   | Public        |
+| `tileserver.whgazetteer.org` | Map tile server        | `tile-server`      | 443   | Public        |
+| `zulip.whgazetteer.org`      | Team chat (Zulip)      | `zulip`            | 443   | Public        |
+| `admin.whgazetteer.org`      | Management API         | `management-api`   | 8000  | Pitt VPN only |
+| `test.whgazetteer.org`       | Django test instance   | `django-test`      | 8443  | Pitt VPN only |
+| `errors.whgazetteer.org`     | Error tracking         | `glitchtip`        | 3000  | Pitt VPN only |
+| `analytics.whgazetteer.org`  | Usage analytics        | `plausible`        | 8000  | Pitt VPN only |
 
 Each of these Services will be exposed in the cluster according to the CRC team's preferred mechanism (e.g. `NodePort`,
 `LoadBalancer`, or `ClusterIP` behind an internal ingress proxy). We will adjust our service exposure strategy
