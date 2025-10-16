@@ -1,8 +1,14 @@
 # Vocabularies
 
-## Subject Classification Vocabulary
+## Thing Classification Vocabulary
 
-Subjects are classified via attestations with `relation_type: "has_type"`. The following classification values are recognized for contribution types:
+Things are classified via attestations that connect to AUTHORITY documents with `authority_type: "classification"`. In the graph model, this is expressed through edges:
+
+```
+Thing ←[subject_of]← Attestation ─[typed_by]→ Authority(classification)
+```
+
+The following classification values are recognized for contribution types:
 
 ### Contribution Type Classifications
 
@@ -55,7 +61,7 @@ Names can serve multiple semantic functions. The `name_type` field is an array t
 **Notes:**
 - A single Name can have multiple types. For example, "Hellas" (Ἑλλάς) can be `["toponym", "ethnonym"]`
 - **Toponym** is the inclusive category for all geographic feature names
-- Specific feature types (rivers, mountains, seas) are indicated through Subject classification (`has_type`) rather than as separate name types
+- Specific feature types (rivers, mountains, seas) are indicated through Thing classification (`typed_by` edge to classification AUTHORITY) rather than as separate name types
 - No combinations are forbidden; the model accommodates complex naming practices across cultures
 - This vocabulary is extensible; new name_types can be added as needed
 
@@ -63,7 +69,7 @@ Names can serve multiple semantic functions. The `name_type` field is an array t
 
 ## Source Type Vocabulary
 
-The `source_type` array indicates the nature of evidence sources. Values align with Dublin Core type vocabulary where applicable:
+The `source_type` array in AUTHORITY documents (where `authority_type: "source"`) indicates the nature of evidence sources. Values align with Dublin Core type vocabulary where applicable:
 
 | Source Type | Dublin Core Alignment | Definition | Examples |
 |-------------|----------------------|------------|----------|
@@ -78,7 +84,7 @@ The `source_type` array indicates the nature of evidence sources. Values align w
 | `crowdsourced` | dcterms:Collection | Community-contributed data | Wikipedia, OpenStreetMap, collaborative projects |
 
 **Notes:**
-- Multiple source types can apply to a single attestation (hence array)
+- Multiple source types can apply to a single source (hence array)
 - Align with Dublin Core terms where possible for interoperability
 - Vocabulary is extensible for domain-specific source types
 
@@ -106,7 +112,7 @@ The `precision` field in Timespan entities uses controlled vocabulary:
 
 ## Spatial Precision Vocabulary
 
-The `precision` array in Geometry entities can include qualitative assessments:
+The `precision` field in Geometry entities uses controlled vocabulary for qualitative assessments:
 
 | Precision Value | Definition | Usage |
 |-----------------|------------|-------|
@@ -118,15 +124,14 @@ The `precision` array in Geometry entities can include qualitative assessments:
 | `uncertain` | Low confidence in location | Contested sites, poorly documented places |
 
 **Notes:**
-- Multiple precision descriptors can apply (e.g., `["approximate", "centroid"]`)
-- Use `precision_km` array for quantitative uncertainty from multiple analyses
+- Use `precision_km` field for quantitative uncertainty radius in kilometers
 - Spatial precision distinct from temporal precision
 
 ---
 
 ## Connection Type Vocabulary (for Networks)
 
-The `connection_type` field in `connection_metadata` uses domain-specific vocabulary:
+The `connection_type` field in Attestation `connection_metadata` (for network connections) uses domain-specific vocabulary:
 
 | Connection Type | Definition | Example Applications |
 |-----------------|------------|----------------------|
@@ -145,13 +150,13 @@ The `connection_type` field in `connection_metadata` uses domain-specific vocabu
 **Notes:**
 - Connection types are extensible for specific research domains
 - Multiple connection types can characterize a single link (e.g., both trade and diplomatic)
-- Use `connection_metadata` for additional domain-specific attributes
+- Use `connection_metadata` JSON object for additional domain-specific attributes
 
 ---
 
 ## Directionality Vocabulary (for Networks)
 
-The `directionality` field in `connection_metadata`:
+The `directionality` field in Attestation `connection_metadata`:
 
 | Directionality | Definition | Example |
 |----------------|------------|---------|
@@ -164,7 +169,7 @@ The `directionality` field in `connection_metadata`:
 
 ## Certainty Assessment
 
-The `certainty` field (0.0–1.0 float) and optional `certainty_note` provide evidence quality assessment:
+The `certainty` field (0.0–1.0 float) in Attestation nodes and optional `certainty_note` provide evidence quality assessment:
 
 **Recommended Scale:**
 - `1.0`: Definitively proven by multiple independent sources
@@ -179,3 +184,22 @@ The `certainty` field (0.0–1.0 float) and optional `certainty_note` provide ev
 - Certainty is inherently subjective; use `certainty_note` to explain assessment
 - Float scale provides more granularity than CIDOC-CRM's qualitative types
 - Consider source reliability, corroboration, and potential bias in assessment
+
+---
+
+## Meta-Attestation Types
+
+The `meta_type` field in edges where `edge_type: "meta_attestation"` indicates the relationship between attestations:
+
+| Meta Type | Definition | Use Case |
+|-----------|------------|----------|
+| `contradicts` | One attestation contradicts another | Conflicting sources, scholarly disputes |
+| `supports` | One attestation supports/corroborates another | Multiple independent sources agreeing |
+| `supersedes` | One attestation replaces/updates another | New evidence, corrections |
+| `bundles` | One attestation groups multiple others | Composite claims, aggregated evidence |
+| `qualifies` | One attestation adds nuance to another | Additional context, clarifications |
+
+**Notes:**
+- Meta-attestations enable modeling of scholarly discourse
+- Each meta-attestation has its own source, certainty, and notes
+- Creates full audit trail of how interpretations evolve
