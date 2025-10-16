@@ -2,7 +2,7 @@
 
 ## Overview
 
-WHG accepts contributions representing different types of historical datasets. All contribution types are mapped to the internal data model upon ingestion using the Subject-Attestation-Timespan-Name-Geometry architecture.
+WHG accepts contributions representing different types of historical datasets. All contribution types are mapped to the internal graph data model upon ingestion using the Thing-Attestation-Timespan-Name-Geometry architecture with edges connecting these entities.
 
 ---
 
@@ -13,11 +13,11 @@ WHG accepts contributions representing different types of historical datasets. A
 A dataset of places sourced from a common historical or geographical context.
 
 **Characteristics in the model:**
-- Each place becomes a Subject
-- Places may have `has_type` attestations to GeoNames feature classes or custom classifications
-- Places may be grouped under a parent Subject representing the gazetteer dataset itself
-- Dataset-level metadata (DOI, title, description) attached to parent Subject
-- Names, Geometries, and Timespans linked via attestations
+- Each place becomes a Thing
+- Places may have classification via `typed_by` edges to AUTHORITY documents with GeoNames feature classes or custom classifications
+- Places may be grouped under a parent Thing representing the gazetteer dataset itself via `member_of` relationships
+- Dataset-level metadata (DOI, title, description) stored in AUTHORITY documents with `authority_type: "dataset"`
+- Names, Geometries, and Timespans linked via Attestation nodes and edges
 
 **Examples:**
 - **Saxton County Maps**: Places from 16th-century English/Welsh maps
@@ -32,13 +32,13 @@ A dataset of places sourced from a common historical or geographical context.
 
 **Mapping to model:**
 ```
-LPF place → Subject
-  ├─ LPF properties.title → Name (has_name attestation)
-  ├─ LPF names[] → Multiple Name attestations
-  ├─ LPF geometry/geometries[] → Geometry attestations
-  ├─ LPF types[] → Classification attestations (has_type)
-  ├─ LPF when → Timespan + has_timespan attestation
-  └─ LPF relations[] → member_of/same_as attestations
+LPF place → Thing
+  ├─ properties.title → Name (via Attestation + attests_name edge)
+  ├─ names[] → Multiple Name entities (via separate Attestations)
+  ├─ geometry/geometries[] → Geometry entities (via Attestations + attests_geometry edges)
+  ├─ types[] → Classification (via Attestation + typed_by edge to AUTHORITY)
+  ├─ when → Timespan entity (via Attestation + attests_timespan edge)
+  └─ relations[] → member_of/same_as (via Attestation + typed_by + relates_to edges)
 ```
 
 ---
@@ -48,10 +48,10 @@ LPF place → Subject
 A sequentially-ordered set of places, typically without specific temporal traversal information.
 
 **Characteristics in the model:**
-- Container Subject classified with `has_type` → "route"
-- Member Subjects (waypoints/segments) linked via `member_of` with `sequence` field
+- Container Thing classified via `typed_by` edge to AUTHORITY(classification: "route")
+- Member Things (waypoints/segments) linked via Attestations with `sequence` field and `member_of` relation type
 - Timespan attestations optional or represent when route existed (not traversal)
-- May include path Geometries as separate Subjects with LineString geometries
+- May include path Geometries as separate Things with LineString geometries
 
 **Examples:**
 - **Silk Road Dataset**: Ancient trade route locations across Central Asia
@@ -61,19 +61,19 @@ A sequentially-ordered set of places, typically without specific temporal traver
 - **Camino de Santiago**: Medieval pilgrimage route network
 - **Via Francigena**: Historic route from Canterbury to Rome
 
-**Contribution formats accepted:** 
+**Contribution formats accepted:**
 - LPF JSON (with sequence in relations)
 - CSV/TSV with sequence column
 - GPX/KML for geometric routes
 
 **Mapping to model:**
 ```
-Route contribution → Subject (has_type: "route")
-  ├─ Route name → Name attestation
-  ├─ Waypoint 1 → Subject with member_of (sequence: 1)
-  ├─ Waypoint 2 → Subject with member_of (sequence: 2)
-  ├─ Path geometry (optional) → Geometry (LineString)
-  └─ Route existence period (optional) → Timespan attestation
+Route contribution → Thing (typed_by AUTHORITY[classification: "route"])
+  ├─ Route name → Name (via Attestation)
+  ├─ Waypoint 1 → Thing with Attestation(sequence: 1) + typed_by(member_of) + relates_to(Route)
+  ├─ Waypoint 2 → Thing with Attestation(sequence: 2) + typed_by(member_of) + relates_to(Route)
+  ├─ Path geometry (optional) → Geometry (LineString via Attestation)
+  └─ Route existence period (optional) → Timespan (via Attestation)
 ```
 
 ---
@@ -83,9 +83,9 @@ Route contribution → Subject (has_type: "route")
 A route with temporal dimensions indicating when segments were traversed.
 
 **Characteristics in the model:**
-- Container Subject classified with `has_type` → "itinerary"
-- Member Subjects linked via `member_of` with `sequence`
-- **Each segment's `member_of` attestation has its own `has_timespan` attestation**
+- Container Thing classified via `typed_by` edge to AUTHORITY(classification: "itinerary")
+- Member Things linked via Attestations with `sequence` field and `member_of` relation type
+- **Each segment Attestation has its own Timespan attestation** (via attests_timespan edge)
 - Overall itinerary Timespan computed from segment bounds (or explicitly overridden)
 
 **Examples:**
@@ -96,22 +96,22 @@ A route with temporal dimensions indicating when segments were traversed.
 - **Diplomatic Missions**: Embassy journeys, tribute missions, papal legations
 - **Scientific Expeditions**: Darwin's Beagle voyage, Humboldt's Americas journey
 
-**Contribution formats accepted:** 
+**Contribution formats accepted:**
 - LPF JSON (with when in relations)
 - CSV/TSV with date columns for each segment
 - Annotated GPX with timestamps
 
 **Mapping to model:**
 ```
-Itinerary contribution → Subject (has_type: "itinerary")
-  ├─ Itinerary name → Name attestation
-  ├─ Segment 1 → Subject
-  │   ├─ member_of attestation (sequence: 1)
-  │   └─ has_timespan → Timespan (traversal dates)
-  ├─ Segment 2 → Subject
-  │   ├─ member_of attestation (sequence: 2)
-  │   └─ has_timespan → Timespan (traversal dates)
-  └─ Overall timespan (computed or explicit)
+Itinerary contribution → Thing (typed_by AUTHORITY[classification: "itinerary"])
+  ├─ Itinerary name → Name (via Attestation)
+  ├─ Segment 1 → Thing
+  │   ├─ Attestation(sequence: 1) + typed_by(member_of) + relates_to(Itinerary)
+  │   └─ Timespan via attests_timespan edge (traversal dates)
+  ├─ Segment 2 → Thing
+  │   ├─ Attestation(sequence: 2) + typed_by(member_of) + relates_to(Itinerary)
+  │   └─ Timespan via attests_timespan edge (traversal dates)
+  └─ Overall timespan (computed or explicit via Attestation)
 ```
 
 ---
@@ -121,10 +121,10 @@ Itinerary contribution → Subject (has_type: "itinerary")
 A dataset indicating geospatial connections between places that may not follow a sequence.
 
 **Characteristics in the model:**
-- Container Subject classified with `has_type` → "network"
-- Connections between member Subjects via `connected_to` attestations
+- Container Thing classified via `typed_by` edge to AUTHORITY(classification: "network")
+- Connections between member Things via Attestations with `connection_metadata` field and `connected_to` relation type
 - Connection metadata specifies type, directionality, and domain-specific attributes
-- Multiple instances of same connection over time represented by multiple attestations with different Timespan attestations
+- Multiple instances of same connection over time represented by multiple Attestations with different Timespan attestations
 - Can reference route Geometries if available, but not required
 
 **Examples:**
@@ -135,7 +135,7 @@ A dataset indicating geospatial connections between places that may not follow a
 - **Religious Networks**: Monastery networks, diocese connections, pilgrimage site relationships
 - **Scholarly Networks**: Medieval universities, Islamic House of Wisdom connections, Republic of Letters
 
-**Contribution formats accepted:** 
+**Contribution formats accepted:**
 - LPF JSON with custom relations for connections
 - CSV/TSV with source-target pairs and metadata columns
 - Edge list formats (from, to, attributes)
@@ -143,15 +143,16 @@ A dataset indicating geospatial connections between places that may not follow a
 
 **Mapping to model:**
 ```
-Network contribution → Subject (has_type: "network")
-  ├─ Network name → Name attestation
+Network contribution → Thing (typed_by AUTHORITY[classification: "network"])
+  ├─ Network name → Name (via Attestation)
   ├─ Connection 1:
-  │   ├─ Subject A connected_to Subject B
-  │   ├─ connection_metadata: {type, directionality, ...}
-  │   └─ has_timespan → Timespan (when connection existed)
+  │   ├─ Thing A ←[subject_of]← Attestation(connection_metadata: {...})
+  │   │                                   ├─[typed_by]→ AUTHORITY(connected_to)
+  │   │                                   └─[relates_to]→ Thing B
+  │   └─ Timespan via attests_timespan edge (when connection existed)
   ├─ Connection 2:
   │   └─ ...
-  └─ Network overall timespan (optional)
+  └─ Network overall timespan (optional via Attestation)
 ```
 
 ---
@@ -161,8 +162,8 @@ Network contribution → Subject (has_type: "network")
 A thematic collection of gazetteers sharing common characteristics.
 
 **Characteristics in the model:**
-- Container Subject classified with `has_type` → "gazetteer_group"
-- Member Subjects (which are themselves gazetteers) linked via `member_of`
+- Container Thing classified via `typed_by` edge to AUTHORITY(classification: "gazetteer_group")
+- Member Things (which are themselves gazetteers) linked via Attestations with `member_of` relation type
 - Group-level Names and descriptions
 - May have Timespan attestations representing the collection's temporal scope
 
@@ -174,19 +175,19 @@ A thematic collection of gazetteers sharing common characteristics.
 - **Historical Urban Gazetteers**: Medieval cities + Renaissance cities + Industrial revolution urban centers
 - **Maritime Gazetteers**: Ports, lighthouses, naval bases, shipwreck locations
 
-**Contribution formats accepted:** 
+**Contribution formats accepted:**
 - Metadata file referencing existing gazetteer IDs
 - JSON descriptor with member list
 - CSV with gazetteer identifiers and metadata
 
 **Mapping to model:**
 ```
-Gazetteer Group → Subject (has_type: "gazetteer_group")
-  ├─ Group name → Name attestation
-  ├─ Member gazetteer 1 → member_of attestation
-  ├─ Member gazetteer 2 → member_of attestation
-  ├─ Group timespan → Timespan attestation (collection scope)
-  └─ Group description → description field
+Gazetteer Group → Thing (typed_by AUTHORITY[classification: "gazetteer_group"])
+  ├─ Group name → Name (via Attestation)
+  ├─ Member gazetteer 1 → via Attestation + typed_by(member_of) + relates_to(Group)
+  ├─ Member gazetteer 2 → via Attestation + typed_by(member_of) + relates_to(Group)
+  ├─ Group timespan → Timespan (via Attestation for collection scope)
+  └─ Group description → description field in Thing
 ```
 
 ---
@@ -205,14 +206,14 @@ Gazetteer Group → Subject (has_type: "gazetteer_group")
 - Detailed provenance and source citations
 
 **LPF to Model Mapping:**
-- `@id` → Subject `id`
-- `properties.title` → Primary Name
-- `names[]` → Multiple Name attestations with Timespan linkages
-- `geometry` / `geometries[]` → Geometry attestations
-- `types[]` → `has_type` attestations
-- `when` → Timespan entities + `has_timespan` attestations
-- `relations[]` → `member_of`, `same_as`, `connected_to` attestations
-- `descriptions[]` → Subject `description` field
+- `@id` → Thing `_id`
+- `properties.title` → Primary Name entity + Attestation
+- `names[]` → Multiple Name entities + Attestations with Timespan linkages
+- `geometry` / `geometries[]` → Geometry entities + Attestations
+- `types[]` → Classifications via typed_by edges to AUTHORITY
+- `when` → Timespan entities + attests_timespan edges
+- `relations[]` → Attestations with typed_by + relates_to edges
+- `descriptions[]` → Thing `description` field
 
 ---
 
@@ -273,8 +274,8 @@ WHG may in future accept contributions in Turtle (`.ttl`) format. See the comple
 - Modern field-collected data
 
 **Mapping:**
-- Track/path → Route Subject with LineString Geometry
-- Waypoints → Member Subjects with Point Geometries
+- Track/path → Route Thing with LineString Geometry
+- Waypoints → Member Things with Point Geometries
 - Timestamps → Timespan attestations (for itineraries)
 - Metadata → Attestation fields and connection_metadata
 
@@ -327,31 +328,31 @@ WHG may in future accept contributions in Turtle (`.ttl`) format. See the comple
 | Aspect | LPF | Internal Data Model |
 |--------|-----|---------------------|
 | Purpose | Data contribution, exchange, export | Internal storage and querying |
-| Structure | Document-oriented (places as standalone objects) | Graph-oriented (subjects linked via attestations) |
-| Temporality | Embedded in feature properties | Separate Timespan entities |
+| Structure | Document-oriented (places as standalone objects) | Graph-oriented (Things linked via Attestations and edges) |
+| Temporality | Embedded in feature properties | Separate Timespan entities connected via edges |
 | Optimization | Human readability, ease of contribution | Query performance, analytical capabilities |
-| Format | GeoJSON-LD | Vespa document schema |
+| Format | GeoJSON-LD | ArangoDB graph structure |
 
 ---
 
 ### Bidirectional Transformation
 
 **Ingestion (LPF/CSV → Internal Model):**
-- LPF `properties.title` → Name records with `has_name` attestations
-- LPF `names[]` array → Multiple Name records with `has_name` attestations
-- LPF `geometry` or `geometries[]` → Geometry records with `has_geometry` attestations
-- LPF `types[]` → Classification attestations (`has_type`)
-- LPF `when` → Timespan entities + `has_timespan` attestations
-- LPF `relations[]` → `member_of`, `same_as`, `connected_to` attestations
-- CSV rows → Subjects with derived attestations from column values
-- Network edge lists → `connected_to` attestations with metadata
+- LPF `properties.title` → Name entities + Attestations with attests_name edges
+- LPF `names[]` array → Multiple Name entities + Attestations
+- LPF `geometry` or `geometries[]` → Geometry entities + Attestations with attests_geometry edges
+- LPF `types[]` → Attestations with typed_by edges to AUTHORITY documents
+- LPF `when` → Timespan entities + Attestations with attests_timespan edges
+- LPF `relations[]` → Attestations with typed_by + relates_to edges (member_of, same_as, connected_to)
+- CSV rows → Things with derived Attestations from column values
+- Network edge lists → Attestations with connection_metadata and connected_to relation
 
 **Export (Internal Model → LPF):**
-- Subject + attestations → Reconstructed LPF place document
-- Timespan attestations → LPF `when` timespan arrays
-- Name attestations → LPF `names[]` with temporal qualification
-- Classification attestations → LPF `types[]`
-- Relationship attestations → LPF `relations[]`
+- Thing + Attestations + edges → Reconstructed LPF place document
+- Timespan Attestations → LPF `when` timespan arrays
+- Name Attestations → LPF `names[]` with temporal qualification
+- Classification Attestations → LPF `types[]`
+- Relationship Attestations → LPF `relations[]`
 - Network connections → LPF relations with custom properties
 
 **Key principle**: The internal model is more granular and temporally precise than LPF, allowing for richer querying while maintaining the ability to export back to LPF for interchange.
@@ -363,19 +364,20 @@ WHG may in future accept contributions in Turtle (`.ttl`) format. See the comple
 The WHG application includes a **transformation layer** that:
 - Validates incoming LPF/CSV/GPX against schemas
 - Normalizes names, dates, and geographic coordinates
-- Creates Subject, Name, Geometry, and Timespan records
-- Generates appropriate Attestation records with source attribution
+- Creates Thing, Name, Geometry, and Timespan documents
+- Generates Attestation nodes and Edge documents connecting them
+- Creates AUTHORITY documents for sources and datasets
 - Assigns DOIs to contributed datasets (format: `doi:10.83427/whg-{type}-{id}`)
-- Embeds DOIs in attestation sources
+- Stores DOIs in AUTHORITY documents referenced by attestations
 - Handles updates and conflicts with existing data
 - Provides audit trails in the Django changelog
-- Maps contribution types to appropriate Subject classifications
-- Extracts sequence information for routes/itineraries
-- Parses connection metadata for networks
+- Maps contribution types to appropriate Thing classifications via AUTHORITY
+- Extracts sequence information for routes/itineraries into Attestation nodes
+- Parses connection metadata for networks into Attestation nodes
 - Computes vector embeddings for Name entities
 - Derives geometric fields (bbox, representative_point, hull) for Geometry entities
 
-This layer is distinct from the core data model and handles the complexity of mapping between interchange formats and the internal optimized structure.
+This layer is distinct from the core data model and handles the complexity of mapping between interchange formats and the internal optimized graph structure.
 
 ---
 
@@ -386,7 +388,7 @@ The WHG V4 platform provides comprehensive editing capabilities for both contrib
 ### Manual Attestation Creation
 
 **Single attestation creation**:
-Contributors and staff can manually create individual Attestation records for existing data through the web interface.
+Contributors and staff can manually create individual Attestation nodes and their connecting edges for existing data through the web interface.
 
 **Use cases:**
 - Adding `same_as` attestations to reconcile contributed places with authority gazetteers
@@ -395,16 +397,24 @@ Contributors and staff can manually create individual Attestation records for ex
 - Adding missing source attributions
 
 **Workflow:**
-1. Navigate to Subject record in web interface
+1. Navigate to Thing record in web interface
 2. Click "Add Attestation" button
-3. Select relation type and target object
-4. Fill in source, certainty, temporal data (if applicable)
-5. Save - attestation immediately indexed and change-logged
+3. Select relation type from AUTHORITY(relation_type) vocabulary
+4. Select or create target entity (Name, Geometry, Timespan, or Thing)
+5. Fill in source (creates sourced_by edge to AUTHORITY[source]), certainty, notes
+6. Save - creates Attestation node + required edges, immediately indexed
+
+**Graph operations created:**
+```
+Thing ←[subject_of]← New Attestation ─[typed_by]→ AUTHORITY(relation_type)
+                                     ├─[relates_to]→ Target entity
+                                     └─[sourced_by]→ AUTHORITY(source)
+```
 
 **Access control:**
 - Contributors can add attestations to their own contributed data
 - Staff can add attestations to any data
-- All additions require source citation
+- All additions require source citation (AUTHORITY reference)
 
 ---
 
@@ -413,25 +423,25 @@ Contributors and staff can manually create individual Attestation records for ex
 **New in V4**: Contributors can edit their own contributions directly (not possible in V3).
 
 **Editable elements:**
-- Subject descriptions
-- Name metadata (language, script, transliteration)
-- Geometry precision assessments
-- Source citations in attestations
-- Certainty scores
-- Temporal bounds (via Timespan modifications)
+- Thing descriptions
+- Name metadata (language, script, transliteration) in Name documents
+- Geometry precision assessments in Geometry documents
+- Source citations via AUTHORITY references in attestations
+- Certainty scores in Attestation nodes
+- Temporal bounds (via Timespan document modifications)
 
 **Workflow:**
 1. Contributor logs in and navigates to their dataset
 2. Selects record to edit
 3. Makes changes in web form
-4. Changes validated and saved
-5. Updates propagated to Vespa
+4. Changes validated and saved to appropriate graph documents
+5. Updates propagated through the graph
 6. Change-logged with contributor attribution
 
 **Constraints:**
-- Cannot delete records contributed by others
-- Cannot modify attestations created by staff or other contributors
-- Cannot change core identifiers (DOIs, external IDs)
+- Cannot delete documents created by others
+- Cannot modify Attestations created by staff or other contributors
+- Cannot change core identifiers (DOIs in AUTHORITY, external IDs)
 
 ---
 
@@ -446,17 +456,17 @@ Using the same dataset format as their original contribution, contributors can p
 
 **Delete records:**
 - Submit CSV/JSON with record IDs to delete
-- Records removed from index (archived in changelog)
-- Attestations referencing deleted records flagged
+- Thing documents removed (archived in changelog)
+- Attestations and edges referencing deleted Things handled appropriately
 
 **Add new records:**
 - Submit file with new records (must have unique IDs)
 - Processed as incremental contribution
-- Added to existing dataset under same DOI
+- Added to existing dataset under same DOI in AUTHORITY
 
 **Update existing records:**
 - Submit file with modified records (matching existing IDs)
-- Updated fields replace old values
+- Updated fields replace old values in appropriate graph documents
 - Original values archived in changelog
 
 **Example workflow:**
@@ -464,7 +474,7 @@ Using the same dataset format as their original contribution, contributors can p
 2. Makes changes in spreadsheet/text editor
 3. Uploads modified file with operation type selected
 4. WHG validates changes (IDs must match for updates)
-5. Applies changes and re-indexes
+5. Applies changes to graph documents and re-indexes
 6. Sends confirmation email with change summary
 
 **Supported operations per format:**
@@ -485,24 +495,31 @@ Assessment and selection of potential matches to other indexed places.
 
 **Process:**
 1. WHG automatically suggests potential matches based on:
-   - Feature class similarity
-   - Toponym similarity (using Name embeddings)
-   - Country code matches
-   - Geometric proximity
+    - Feature class similarity (via typed_by edges)
+    - Toponym similarity (using Name embeddings)
+    - Country code matches
+    - Geometric proximity
 2. Contributor reviews suggestions
 3. Selects matches that represent the same historical entity
-4. Creates `same_as` attestations with appropriate certainty
+4. Creates `same_as` attestations (via AUTHORITY[same_as relation])
 5. Can reject suggestions explicitly
+
+**Graph operations created:**
+```
+Thing A ←[subject_of]← Attestation ─[typed_by]→ AUTHORITY(same_as)
+                                   ├─[relates_to]→ Thing B
+                                   └─[sourced_by]→ AUTHORITY(reconciliation_source)
+```
 
 **Contributor guidance:**
 - Select at least one match if good candidates exist
 - Do not link to places that are clearly different entities
 - Consider temporal context (same place name, different periods)
-- Use certainty scores to indicate confidence
+- Use certainty scores in Attestation to indicate confidence
 
 **Impact:**
-- Creates `same_as` attestations linking contributed Subject to matched Subjects
-- Enables cross-gazetteer queries
+- Creates Attestations with same_as relationships
+- Enables cross-gazetteer queries via graph traversal
 - Improves discovery through authority linkage
 - Reflected in LPF export (relations section)
 
@@ -533,9 +550,9 @@ Contributor can draw custom geometry using map interface:
 
 **Map interface features:**
 - Selectable basemaps:
-  - Modern (OpenStreetMap, satellite imagery)
-  - Historical (georeferenced historical maps where available)
-  - Topographic, political, blank canvases
+    - Modern (OpenStreetMap, satellite imagery)
+    - Historical (georeferenced historical maps where available)
+    - Topographic, political, blank canvases
 - Drawing tools: point, line, polygon, circle, rectangle
 - Snapping to existing features
 - Coordinate display and manual entry
@@ -546,11 +563,15 @@ Contributor can draw custom geometry using map interface:
 When drawing manually, contributor prompted to specify:
 - `precision`: "exact", "approximate", "representative"
 - `precision_km`: Estimated uncertainty in kilometers
-- Source for geometry (e.g., "Traced from 1850 map", "GPS survey 2023")
+- Source for geometry (stored in AUTHORITY, referenced via sourced_by edge)
+
+**Graph operations:**
+- Creates new Geometry document
+- Creates new Attestation node
+- Creates edges: subject_of, attests_geometry, sourced_by
+- Replaces inherited geometry with explicit geometry
 
 **Impact:**
-- Creates new Geometry entity with `has_geometry` attestation
-- Replaces inherited geometry with explicit geometry
 - Updates reflected in LPF export
 - Enables downloads of augmented datasets
 
@@ -562,23 +583,23 @@ When drawing manually, contributor prompted to specify:
 
 **All contributor capabilities plus:**
 - Edit any contributor's data (with attribution in changelog)
-- Merge duplicate Subjects
+- Merge duplicate Things (combining Attestations)
 - Bulk operations across datasets
 - Create network/route/itinerary structures from existing places
-- Modify classification attestations
-- Correct errors in any attestation
+- Modify classification attestations (typed_by edges)
+- Correct errors in any attestation or edge
 
 **Quality assurance workflows:**
 - Review flagged records (community reports)
 - Validate suspect geometry
-- Resolve conflicting attestations
+- Resolve conflicting attestations via meta-attestations
 - Standardize inconsistent metadata
 
 **Curation operations:**
-- Create period Subjects from PeriodO imports
+- Create period Things from PeriodO imports
 - Build gazetteer group collections
 - Link major authority gazetteers
-- Maintain namespace mappings
+- Maintain namespace mappings in AUTHORITY
 
 ---
 
@@ -590,7 +611,7 @@ When drawing manually, contributor prompted to specify:
 - Timestamp of change
 - User ID (contributor or staff)
 - Operation type (create, update, delete)
-- Entity affected (Subject, Name, Geometry, Timespan, Attestation)
+- Entity affected (Thing, Name, Geometry, Timespan, Attestation, Edge, AUTHORITY)
 - Old values (for updates/deletes)
 - New values (for creates/updates)
 - Rationale (optional free-text note)
@@ -621,11 +642,11 @@ When drawing manually, contributor prompted to specify:
 - **GeoJSON**: Geographic features for mapping
 
 **Augmentation includes:**
-- Reconciliation links (`same_as` relations)
+- Reconciliation links (same_as relations via Attestations)
 - Added or corrected geometry
 - Manual attestations created via UI
 - Temporal data added post-contribution
-- Source citations added by staff
+- Source citations added by staff (AUTHORITY references)
 
 **Versioning:**
 - Each download stamped with version date
@@ -633,6 +654,6 @@ When drawing manually, contributor prompted to specify:
 - Diffs available showing augmentations
 
 **Citation:**
-- Downloads include DOI
+- Downloads include DOI from AUTHORITY(dataset)
 - Augmentations attributed to contributors/staff
 - Encourage citation of both original and augmented versions

@@ -2,7 +2,7 @@
 
 ## Overview
 
-The World Historical Gazetteer data model can be fully expressed in RDF (Resource Description Framework), providing interoperability with semantic web technologies and linked open data initiatives. This document explains how the attestation-based model maps to RDF triples.
+The World Historical Gazetteer data model can be fully expressed in RDF (Resource Description Framework), providing interoperability with semantic web technologies and linked open data initiatives. This document explains how the graph-based attestation model maps to RDF triples.
 
 ### Why RDF?
 
@@ -27,7 +27,7 @@ Any entity that can be attested in historical sources. This includes places, per
 **Properties:**
 - `dcterms:identifier` - Unique identifier
 - `dcterms:description` - Textual description
-- `dcterms:type` - Classification (place, period, person, event, polity, etc.)
+- `whg:thingType` - Classification (location, historical_entity, collection, period, route, itinerary, network)
 
 ### whg:Name
 
@@ -68,7 +68,7 @@ A temporal extent with support for uncertainty bounds. Based on the W3C Time Ont
 **Properties:**
 - `whg:startEarliest` - Earliest possible start date
 - `whg:startLatest` - Latest possible start date
-- `whg:endEarliest` - Earliest possible end date
+- `whg:endEarliest` - Earliest possible end date (note: internal uses "stop", RDF uses "end")
 - `whg:endLatest` - Latest possible end date
 - `whg:label` - Human-readable period name
 - `whg:precision` - Temporal precision (year, decade, century, era, geological_period)
@@ -76,108 +76,339 @@ A temporal extent with support for uncertainty bounds. Based on the W3C Time Ont
 
 ### whg:Attestation
 
-A statement asserting a relationship between entities, grounded in primary sources. This is the foundational unit of the WHG model, capturing not just facts but provenance, certainty, and temporal context.
+A node that bundles together claims about a Thing, linking it to Names, Geometries, Timespans, and other Things, all grounded in primary sources. This is the foundational unit of the WHG model, capturing not just facts but provenance, certainty, and temporal context.
 
 **Extends:** `prov:Entity`
 
 **Properties:**
-- `whg:subject` - The thing being described (references whg:Thing)
-- `whg:subjectType` - Type of subject (thing, name, geometry, attestation)
-- `whg:relationType` - The relationship type (has_name, has_geometry, etc.)
-- `whg:object` - The related entity (Name, Geometry, Timespan, Thing, or classification)
-- `whg:objectType` - Type of object (name, geometry, timespan, thing, classification)
 - `whg:sequence` - Ordering for routes and itineraries
 - `whg:connectionMetadata` - JSON object for network relationships (trade goods, flow direction, etc.)
-- `whg:temporalScope` - When this relationship held (references whg:Timespan)
 - `whg:certainty` - Confidence value (0.0-1.0)
 - `whg:certaintyNote` - Explanation of uncertainty
 - `whg:notes` - Additional context or commentary
-- `prov:hadPrimarySource` - Source document(s) - array of Authority references
-- `whg:sourceType` - Classification of source
 - `dcterms:created` - Timestamp of attestation creation
 - `dcterms:modified` - Timestamp of last modification
 - `dcterms:contributor` - User or system that created attestation
 
-## The Attestation Pattern
+**Outgoing relationships** (expressed as predicates):
+- `whg:attests` - Links to the Thing being attested (subject_of in graph)
+- `whg:attestsName` - Links to Name entity (attests_name in graph)
+- `whg:attestsGeometry` - Links to Geometry entity (attests_geometry in graph)
+- `whg:attestsTimespan` - Links to Timespan entity (attests_timespan in graph)
+- `whg:relatesTo` - Links to another Thing via custom relation (relates_to in graph)
+- `whg:typedBy` - Links to Authority defining relation type (typed_by in graph)
+- `prov:hadPrimarySource` - Links to Source Authority (sourced_by in graph)
 
-The key innovation in WHG's RDF model is the **attestation pattern**. Rather than directly asserting relationships (e.g., "Baghdad has name X"), we create attestation resources that document:
+### whg:Authority
 
-- **What** the relationship is (subject-predicate-object)
-- **Who** attests to it (source)
-- **When** it applies (temporal scope)
-- **How certain** we are (certainty value and notes)
+Reference data for sources, datasets, relation types, periods, and certainty levels. Uses single table inheritance pattern via `whg:authorityType`.
 
-This reification pattern allows WHG to:
+**Properties:**
+- `whg:authorityType` - Discriminator: "dataset", "source", "relation_type", "period", "certainty_level"
+- `dcterms:title` - For datasets
+- `dcterms:bibliographicCitation` - For sources
+- `whg:recordId` - Source's ID in original dataset
+- `rdfs:label` - For relation_types, periods, certainty_levels
+- `owl:inverseOf` - For relation_types (bidirectional navigation)
+- `rdfs:domain` - For relation_types: valid subject types
+- `rdfs:range` - For relation_types: valid object types
+- `dcterms:hasVersion` - For datasets
+- `dcterms:publisher` - For datasets
+- `dcterms:license` - For datasets
+- `dcterms:identifier` - External URI (PeriodO, source URL, etc.)
+- Timespan properties for periods (startEarliest, startLatest, endEarliest, endLatest)
+- `whg:level` - For certainty_levels (0.0-1.0)
+- `dcterms:description` - General description
 
+## The Attestation Pattern in RDF
+
+The key innovation in WHG's RDF model is representing **Attestations as nodes** rather than as reified statements. This aligns with the internal graph database structure where Attestations are vertices connected via edges.
+
+### Graph-Based RDF Structure
+
+In the WHG model, an Attestation is not just metadata about a triple—it's a first-class entity that acts as a hub connecting multiple resources:
+
+```turtle
+# The Attestation as a node
+ex:attestation_001 a whg:Attestation ;
+    whg:certainty 0.95 ;
+    whg:certaintyNote "Well-documented in multiple sources" ;
+    dcterms:created "2024-01-15T10:30:00Z"^^xsd:dateTime ;
+    dcterms:contributor "researcher@example.edu" .
+
+# Thing to Attestation
+ex:baghdad whg:attestedBy ex:attestation_001 .
+
+# Or reverse direction:
+ex:attestation_001 whg:attests ex:baghdad .
+
+# Attestation to Name
+ex:attestation_001 whg:attestsName ex:name_baghdad .
+
+# Attestation to Geometry  
+ex:attestation_001 whg:attestsGeometry ex:geometry_762ce .
+
+# Attestation to Timespan
+ex:attestation_001 whg:attestsTimespan ex:timespan_abbasid .
+
+# Attestation to Source
+ex:attestation_001 prov:hadPrimarySource ex:source_al_tabari .
+```
+
+This pattern allows WHG to:
+
+- Bundle multiple claims together (Name + Geometry + Timespan)
 - Track multiple, potentially conflicting sources
 - Represent scholarly uncertainty
 - Model change over time
 - Enable historiographical analysis
 
-### Basic Structure
+### Relation Types via Authority
+
+For Thing-to-Thing relationships, the semantic meaning is expressed through Authority entities:
 
 ```turtle
-ex:attestation_001 a whg:Attestation ;
-                   whg:subject ex:some_thing ;
-                   whg:subjectType "thing" ;
-                   whg:relationType "has_name" ;
-                   whg:object ex:some_name ;
-                   whg:objectType "name" ;
-                   whg:temporalScope ex:some_timespan ;
-                   whg:certainty 0.8 ;
-                   whg:certaintyNote "Based on fragmentary inscription" ;
-                   prov:hadPrimarySource ex:some_source ;
-                   whg:sourceType "archaeological" .
+# Member-of relationship via Authority
+ex:attestation_005 a whg:Attestation ;
+    whg:attests ex:changan ;
+    whg:typedBy ex:authority_member_of ;
+    whg:relatesTo ex:tang_dynasty .
+
+ex:authority_member_of a whg:Authority ;
+    whg:authorityType "relation_type" ;
+    rdfs:label "member_of" ;
+    owl:inverseOf ex:authority_contains ;
+    rdfs:domain whg:Thing ;
+    rdfs:range whg:Thing .
 ```
 
-## Relation Types
+## Relation Type Vocabulary
 
-The WHG model supports multiple relation types:
+Standard relation types (system-defined edges in the graph):
 
-| Relation Type | Description |
-|--------------|-------------|
-| `has_name` | Thing has a name |
-| `has_geometry` | Thing has a spatial representation |
-| `has_timespan` | Thing has a temporal extent |
-| `has_type` | Thing has a classification (links to controlled vocabularies like AAT) |
-| `member_of` | Thing is part of another thing (administrative hierarchy, etc.) |
-| `connected_to` | Things are connected (networks, routes, itineraries) |
-| `same_as` | Things represent the same entity (linking across datasets) |
+| RDF Predicate | Graph Edge Type | Description |
+|--------------|----------------|-------------|
+| `whg:attestsName` | `attests_name` | Attestation claims this Name |
+| `whg:attestsGeometry` | `attests_geometry` | Attestation claims this Geometry |
+| `whg:attestsTimespan` | `attests_timespan` | Attestation claims this Timespan |
 
-Custom relations can be defined for specific domains.
+Custom relation types (via Authority with `authorityType: "relation_type"`):
+
+| Authority Label | CIDOC-CRM | Description |
+|----------------|-----------|-------------|
+| `member_of` | P46_is_composed_of (inverse) | Thing is part of another Thing |
+| `contains` | P46_is_composed_of | Thing contains another Thing |
+| `same_as` | P130_shows_features_of | Equivalence between Things |
+| `succeeds` | P134_continued | Thing succeeded another Thing |
+| `connected_to` | P122_borders_with (extended) | Thing connected to another Thing |
+| `coextensive_with` | P121_overlaps_with | Thing spatially coextensive with another |
 
 ## Complete Example
 
-The following example demonstrates the attestation-based model using Medieval Baghdad. This shows how a historical place with multiple names, changing geometries, and complex relationships is represented in RDF:
+The following example demonstrates the graph-based attestation model using Medieval Baghdad:
 
-`````{literalinclude} rdf-examples/baghdad.ttl
-:language: turtle
-:linenos: true
-:caption: Complete Baghdad example in Turtle format
-`````
+```turtle
+@prefix whg: <http://whgazetteer.org/ontology/> .
+@prefix geo: <http://www.opengis.net/ont/geosparql#> .
+@prefix time: <http://www.w3.org/2006/time#> .
+@prefix prov: <http://www.w3.org/ns/prov#> .
+@prefix dcterms: <http://purl.org/dc/terms/> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix ex: <http://whgazetteer.org/place/> .
+@prefix exa: <http://whgazetteer.org/attestation/> .
+@prefix exn: <http://whgazetteer.org/name/> .
+@prefix exg: <http://whgazetteer.org/geometry/> .
+@prefix ext: <http://whgazetteer.org/timespan/> .
+@prefix exauth: <http://whgazetteer.org/authority/> .
+
+# Thing: Baghdad
+ex:baghdad a whg:Thing ;
+    dcterms:identifier "whg:baghdad" ;
+    whg:thingType "location" ;
+    dcterms:description "Historical city, capital of Abbasid Caliphate" .
+
+# Names
+exn:baghdad_arabic a whg:Name ;
+    whg:nameString "بغداد"@ar ;
+    whg:language "ara" ;
+    whg:script "Arab" ;
+    whg:nameType "toponym" .
+
+exn:baghdad_latin a whg:Name ;
+    whg:nameString "Bagdad"@la ;
+    whg:language "lat" ;
+    whg:script "Latn" ;
+    whg:nameType "toponym" .
+
+exn:baghdad_madinat a whg:Name ;
+    whg:nameString "Madinat al-Salam"@ar ;
+    whg:language "ara" ;
+    whg:script "Arab" ;
+    whg:nameType "toponym" ;
+    whg:variant "ceremonial" .
+
+# Geometries
+exg:baghdad_762 a geo:Geometry ;
+    geo:asWKT "POINT(44.4 33.3)"^^geo:wktLiteral ;
+    whg:precision "approximate" ;
+    whg:precisionKm 5 .
+
+exg:baghdad_1200 a geo:Geometry ;
+    geo:asWKT "POLYGON((44.35 33.25, 44.45 33.25, 44.45 33.35, 44.35 33.35, 44.35 33.25))"^^geo:wktLiteral ;
+    whg:precision "approximate" ;
+    whg:precisionKm 2 .
+
+# Timespans
+ext:founding a whg:Timespan ;
+    whg:startEarliest "0762-01-01"^^xsd:date ;
+    whg:startLatest "0762-12-31"^^xsd:date ;
+    whg:endEarliest "0762-01-01"^^xsd:date ;
+    whg:endLatest "0762-12-31"^^xsd:date ;
+    whg:label "Founding of Baghdad" ;
+    whg:precision "year" .
+
+ext:abbasid a whg:Timespan ;
+    whg:startEarliest "0750-01-01"^^xsd:date ;
+    whg:startLatest "0750-12-31"^^xsd:date ;
+    whg:endEarliest "1258-01-01"^^xsd:date ;
+    whg:endLatest "1258-12-31"^^xsd:date ;
+    whg:label "Abbasid Caliphate period" ;
+    whg:precision "year" .
+
+# Sources (Authorities)
+exauth:al_tabari a whg:Authority ;
+    whg:authorityType "source" ;
+    dcterms:bibliographicCitation "Al-Tabari, History of the Prophets and Kings" ;
+    whg:recordId "tabari-vol-27" .
+
+exauth:yaqut a whg:Authority ;
+    whg:authorityType "source" ;
+    dcterms:bibliographicCitation "Yaqut al-Hamawi, Mu'jam al-Buldan" ;
+    whg:recordId "yaqut-baghdad" .
+
+exauth:dataset_islamic a whg:Authority ;
+    whg:authorityType "dataset" ;
+    dcterms:title "Islamic Cities Database" ;
+    dcterms:hasVersion "1.0" ;
+    dcterms:identifier "doi:10.83427/whg-dataset-123" .
+
+# Attestation 1: Arabic name with founding timespan
+exa:att_001 a whg:Attestation ;
+    whg:attests ex:baghdad ;
+    whg:attestsName exn:baghdad_arabic ;
+    whg:attestsTimespan ext:founding ;
+    whg:certainty 0.95 ;
+    whg:certaintyNote "Well-documented in multiple chronicles" ;
+    prov:hadPrimarySource exauth:al_tabari ;
+    dcterms:created "2024-01-15T10:30:00Z"^^xsd:dateTime ;
+    dcterms:contributor "researcher@whg.org" .
+
+# Attestation 2: Ceremonial name during Abbasid period
+exa:att_002 a whg:Attestation ;
+    whg:attests ex:baghdad ;
+    whg:attestsName exn:baghdad_madinat ;
+    whg:attestsTimespan ext:abbasid ;
+    whg:certainty 0.9 ;
+    whg:certaintyNote "Ceremonial name used in official documents" ;
+    prov:hadPrimarySource exauth:yaqut ;
+    dcterms:created "2024-01-15T10:35:00Z"^^xsd:dateTime .
+
+# Attestation 3: Geometry at founding (762 CE)
+exa:att_003 a whg:Attestation ;
+    whg:attests ex:baghdad ;
+    whg:attestsGeometry exg:baghdad_762 ;
+    whg:attestsTimespan ext:founding ;
+    whg:certainty 0.7 ;
+    whg:certaintyNote "Location known, exact boundaries uncertain" ;
+    prov:hadPrimarySource exauth:al_tabari ;
+    dcterms:created "2024-01-15T10:40:00Z"^^xsd:dateTime .
+
+# Attestation 4: Expanded geometry (1200 CE)
+exa:att_004 a whg:Attestation ;
+    whg:attests ex:baghdad ;
+    whg:attestsGeometry exg:baghdad_1200 ;
+    whg:certainty 0.6 ;
+    whg:certaintyNote "City expanded, boundaries approximate" ;
+    prov:hadPrimarySource exauth:yaqut ;
+    dcterms:created "2024-01-15T10:45:00Z"^^xsd:dateTime .
+
+# Thing-to-Thing relationship: Baghdad connected to Basra
+ex:basra a whg:Thing ;
+    dcterms:identifier "whg:basra" ;
+    whg:thingType "location" .
+
+exauth:connected_to a whg:Authority ;
+    whg:authorityType "relation_type" ;
+    rdfs:label "connected_to" ;
+    rdfs:domain whg:Thing ;
+    rdfs:range whg:Thing ;
+    dcterms:description "Places connected by trade or communication" .
+
+exa:att_005 a whg:Attestation ;
+    whg:attests ex:baghdad ;
+    whg:typedBy exauth:connected_to ;
+    whg:relatesTo ex:basra ;
+    whg:connectionMetadata """{
+        "connection_type": "trade",
+        "directionality": "bidirectional",
+        "commodity": ["dates", "textiles"]
+    }"""^^xsd:string ;
+    whg:certainty 0.85 ;
+    prov:hadPrimarySource exauth:yaqut .
+
+# Meta-attestation: One attestation contradicts another
+exa:att_meta_001 a whg:Attestation ;
+    whg:attests exa:att_001 ;
+    whg:typedBy exauth:contradicts ;
+    whg:relatesTo exa:att_002 ;
+    whg:notes "Sources disagree on which name was used officially in 762 CE" ;
+    prov:hadPrimarySource exauth:modern_scholarship .
+
+exauth:contradicts a whg:Authority ;
+    whg:authorityType "relation_type" ;
+    rdfs:label "contradicts" ;
+    dcterms:description "One attestation contradicts another" .
+
+exauth:modern_scholarship a whg:Authority ;
+    whg:authorityType "source" ;
+    dcterms:bibliographicCitation "Kennedy, Hugh. Baghdad: City of Peace, City of Blood" .
+
+# External links
+ex:baghdad owl:sameAs <http://www.wikidata.org/entity/Q1530> ,
+                      <http://vocab.getty.edu/tgn/7001896> ,
+                      <http://sws.geonames.org/98182/> .
+```
 
 **Key features demonstrated:**
 
-1. **Multiple names over time** - Arabic, Latin, and ceremonial names, each with attestations
-2. **Changing geometries** - City extent in 762 CE vs. 1200 CE
-3. **Uncertainty modeling** - Varying certainty values with explanatory notes
-4. **Complex timespans** - Fuzzy temporal bounds for historical periods
-5. **Relationships** - Baghdad connected to Basra, capital of Abbasid Caliphate
-6. **Meta-attestations** - Documenting contradictions between sources
-7. **External links** - Connections to Wikidata, Getty TGN, GeoNames
+1. **Attestations as nodes** - Not reified statements, but first-class entities
+2. **Multiple names over time** - Each with separate attestations
+3. **Changing geometries** - City extent in 762 CE vs. 1200 CE
+4. **Uncertainty modeling** - Varying certainty values with explanatory notes
+5. **Complex timespans** - Separate timespan entities
+6. **Thing-to-Thing relationships** - Via Authority-based relation types
+7. **Meta-attestations** - Documenting contradictions between sources
+8. **External links** - Connections to Wikidata, Getty TGN, GeoNames
 
 ## Temporal Scoping
 
-Any attestation can be temporally scoped to indicate when the relationship held:
+Attestations link to Timespan entities to indicate when relationships held:
 
 ```turtle
-ex:timespan_001 a whg:Timespan ;
-                whg:startEarliest "1200-01-01"^^xsd:date ;
-                whg:startLatest "1250-12-31"^^xsd:date ;
-                whg:endEarliest "1400-01-01"^^xsd:date ;
-                whg:endLatest "1450-12-31"^^xsd:date ;
-                whg:label "Roughly 13th-14th centuries" ;
-                whg:precision "quarter-century" .
+ext:timespan_001 a whg:Timespan ;
+    whg:startEarliest "1200-01-01"^^xsd:date ;
+    whg:startLatest "1250-12-31"^^xsd:date ;
+    whg:endEarliest "1400-01-01"^^xsd:date ;
+    whg:endLatest "1450-12-31"^^xsd:date ;
+    whg:label "Roughly 13th-14th centuries" ;
+    whg:precision "quarter-century" .
+
+exa:att_temporal a whg:Attestation ;
+    whg:attests ex:some_thing ;
+    whg:attestsName ex:some_name ;
+    whg:attestsTimespan ext:timespan_001 .
 ```
 
 The four-point timespan model accommodates historical uncertainty about when periods begin and end.
@@ -188,17 +419,20 @@ Every attestation includes:
 
 - **certainty** - Float value 0.0-1.0 indicating confidence level
 - **certaintyNote** - Optional text explanation of uncertainty
-- **prov:hadPrimarySource** - Link to source document/dataset
-- **sourceType** - Classification of source (chronicle, map, archaeological, etc.)
+- **prov:hadPrimarySource** - Link to Source Authority
+- Authority's `authorityType` indicates source classification
 
 Example:
 
 ```turtle
-ex:attestation_002 a whg:Attestation ;
-                   whg:certainty 0.6 ;
-                   whg:certaintyNote "Two chronicles give different dates; split the difference" ;
-                   prov:hadPrimarySource ex:chronicle_a, ex:chronicle_b ;
-                   whg:sourceType "chronicle" .
+exa:att_002 a whg:Attestation ;
+    whg:certainty 0.6 ;
+    whg:certaintyNote "Two chronicles give different dates; split the difference" ;
+    prov:hadPrimarySource exauth:chronicle_a, exauth:chronicle_b .
+
+exauth:chronicle_a a whg:Authority ;
+    whg:authorityType "source" ;
+    dcterms:bibliographicCitation "Chronicle A, 12th century manuscript" .
 ```
 
 ## Meta-Attestations
@@ -211,12 +445,16 @@ Attestations can themselves be subjects of other attestations, enabling document
 - Relationships between evidence
 
 ```turtle
-ex:attestation_099 a whg:Attestation ;
-                   whg:subject ex:attestation_001 ;
-                   whg:subjectType "attestation" ;
-                   whg:relationType "contradicts" ;
-                   whg:object ex:attestation_002 ;
-                   whg:notes "Source A claims founding in 762, Source B claims 765" .
+exauth:contradicts a whg:Authority ;
+    whg:authorityType "relation_type" ;
+    rdfs:label "contradicts" .
+
+exa:att_099 a whg:Attestation ;
+    whg:attests exa:att_001 ;
+    whg:typedBy exauth:contradicts ;
+    whg:relatesTo exa:att_002 ;
+    whg:notes "Source A claims founding in 762, Source B claims 765" ;
+    prov:hadPrimarySource exauth:modern_analysis .
 ```
 
 ## Integration with Existing Ontologies
@@ -337,23 +575,6 @@ Contributors may submit data using either format (or both). WHG will ensure both
 
 ## Comparison with Other Models
 
-### vs. Geoscience Australia Placenames Ontology
-
-The GA ontology is designed for **official gazetteers** with formal naming authorities:
-
-**GA Ontology emphasizes:**
-- Current administrative status
-- Gazette dates
-- Official naming authorities
-
-**WHG attestation-based model emphasizes:**
-- Multiple competing sources
-- Temporal change
-- Uncertainty and scholarly debate
-- Provenance tracking
-
-Both are valid RDF models serving different purposes.
-
 ### vs. Linked Places Format (LPF)
 
 LPF is already RDF! It uses JSON-LD syntax, which means it's both:
@@ -377,10 +598,12 @@ The RDF representation enables powerful SPARQL queries:
 ### Find all names for Baghdad across all sources
 
 ```sparql
+PREFIX whg: <http://whgazetteer.org/ontology/>
+PREFIX prov: <http://www.w3.org/ns/prov#>
+
 SELECT ?name ?source ?certainty WHERE {
-    ?attestation whg:subject ex:baghdad ;
-                whg:relationType "has_name" ;
-                whg:object ?name_entity ;
+    ?attestation whg:attests <http://whgazetteer.org/place/baghdad> ;
+                whg:attestsName ?name_entity ;
                 whg:certainty ?certainty ;
                 prov:hadPrimarySource ?source .
     ?name_entity whg:nameString ?name .
@@ -390,10 +613,14 @@ SELECT ?name ?source ?certainty WHERE {
 ### Find contradictions between sources
 
 ```sparql
+PREFIX whg: <http://whgazetteer.org/ontology/>
+
 SELECT ?att1 ?att2 ?note WHERE {
-    ?meta_att whg:subject ?att1 ;
-             whg:relationType "contradicts" ;
-             whg:object ?att2 ;
+    ?source_auth whg:authorityType "source" ;
+                rdfs:label "contradicts" .
+    ?meta_att whg:attests ?att1 ;
+             whg:typedBy ?source_auth ;
+             whg:relatesTo ?att2 ;
              whg:notes ?note .
 }
 ```
@@ -401,10 +628,11 @@ SELECT ?att1 ?att2 ?note WHERE {
 ### Find things with uncertain locations
 
 ```sparql
+PREFIX whg: <http://whgazetteer.org/ontology/>
+
 SELECT ?thing ?geometry ?certainty ?note WHERE {
-    ?attestation whg:subject ?thing ;
-                whg:relationType "has_geometry" ;
-                whg:object ?geometry ;
+    ?attestation whg:attests ?thing ;
+                whg:attestsGeometry ?geometry ;
                 whg:certainty ?certainty ;
                 whg:certaintyNote ?note .
     FILTER (?certainty < 0.8)
@@ -416,11 +644,27 @@ SELECT ?thing ?geometry ?certainty ?note WHERE {
 ```sparql
 PREFIX geo: <http://www.opengis.net/ont/geosparql#>
 PREFIX geof: <http://www.opengis.net/def/function/geosparql/>
+PREFIX whg: <http://whgazetteer.org/ontology/>
 
 SELECT ?place ?geom WHERE {
-    ?place geo:hasGeometry ?geom .
+    ?attestation whg:attests ?place ;
+                whg:attestsGeometry ?geom .
     ?geom geo:asWKT ?wkt .
     FILTER(geof:sfWithin(?wkt, "POLYGON(...)"^^geo:wktLiteral))
+}
+```
+
+### Find all members of a period
+
+```sparql
+PREFIX whg: <http://whgazetteer.org/ontology/>
+
+SELECT ?member ?period WHERE {
+    ?member_auth whg:authorityType "relation_type" ;
+                rdfs:label "member_of" .
+    ?attestation whg:attests ?member ;
+                whg:typedBy ?member_auth ;
+                whg:relatesTo ?period .
 }
 ```
 
@@ -430,14 +674,14 @@ SELECT ?place ?geom WHERE {
 
 Our recommended architecture:
 
-1. **Store data internally** in ArangoDB using JSON for performance
+1. **Store data internally** in ArangoDB using graph structure
 2. **Provide RDF export** in multiple serializations (JSON-LD, Turtle, RDF/XML)
 3. **Support SPARQL endpoint** for semantic web integration
 
 This gives you:
 
-✓ Performance benefits of graph database  
-✓ Flexibility of document model  
+✓ Performance benefits of native graph database  
+✓ Flexibility of property graph model  
 ✓ Interoperability through RDF export
 
 ### Accepting Contributions
@@ -467,20 +711,24 @@ WHG accepts contributions in multiple formats:
 ```turtle
 @prefix whg: <http://whgazetteer.org/ontology/> .
 @prefix geo: <http://www.opengis.net/ont/geosparql#> .
+@prefix prov: <http://www.w3.org/ns/prov#> .
 @prefix ex: <http://your-project.org/data/> .
 
 ex:my_place a whg:Thing ;
     dcterms:identifier "your-id" ;
-    dcterms:type "place" ;
+    whg:thingType "location" ;
     dcterms:description "Historical site in Mesopotamia" .
 
 ex:my_place_geom a geo:Geometry ;
     geo:asWKT "POINT(44.4 33.3)"^^geo:wktLiteral .
 
+ex:my_source a whg:Authority ;
+    whg:authorityType "source" ;
+    dcterms:bibliographicCitation "Your source citation" .
+
 ex:att_001 a whg:Attestation ;
-    whg:subject ex:my_place ;
-    whg:relationType "has_geometry" ;
-    whg:object ex:my_place_geom ;
+    whg:attests ex:my_place ;
+    whg:attestsGeometry ex:my_place_geom ;
     whg:certainty 0.9 ;
     prov:hadPrimarySource ex:my_source .
 ```
@@ -499,7 +747,7 @@ Example SHACL constraint:
 whg:ThingShape a sh:NodeShape ;
                sh:targetClass whg:Thing ;
                sh:property [
-                     sh:path [ sh:inversePath whg:subject ] ;
+                     sh:path [ sh:inversePath whg:attests ] ;
                      sh:minCount 1 ;
                      sh:message "Every Thing must have at least one Attestation" ;
                  ] .

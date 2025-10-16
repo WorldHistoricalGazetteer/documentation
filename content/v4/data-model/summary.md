@@ -1,468 +1,155 @@
-# Summary & Future Extensions
+# Summary & Future Directions
 
-## Model Summary
+## Core Architecture
 
-### Core Architecture
+The WHG v4 data model achieves historical place representation through a graph-based attestation architecture:
 
-The World Historical Gazetteer data model achieves a clean separation between:
+**Entity nodes**:
+- **Things** - unified entities (places, periods, routes, networks)
+- **Names** - multilingual labels with semantic embeddings
+- **Geometries** - spatial representations with derived fields
+- **Timespans** - temporal bounds with PeriodO integration
+- **Authorities** - sources, datasets, relation types, periods
 
-**Conceptual entities** (what things are):
-- **Subject**: Places, periods, routes, itineraries, networks, collections
-- **Name**: Labels with semantic types, language/script metadata, vector embeddings
-- **Geometry**: Spatial representations with derived fields for efficient querying
-- **Timespan**: Temporal bounds following PeriodO's four-field model
+**Relationship nodes**:
+- **Attestations** - evidentiary bundles connecting Things to attributes and other Things
+- **Edges** - typed connections between all nodes
 
-**Evidentiary claims** (what we know about them):
-- **Attestation**: Relationships between entities, with sources, certainty, and temporal context
-
-This architecture provides:
-- **Flexibility**: Same model handles diverse contribution types
-- **Provenance**: Every claim explicitly sourced
-- **Temporality**: Time-awareness throughout via Timespan linkages
-- **Scalability**: Graph structure scales to millions of entities and relationships
-
----
-
-### Key Design Decisions
-
-**Unified Subject model**:
-- Single entity type replaces Place/Group distinction
-- Atomic vs. compositional determined by attestations, not schema
-- Accommodates places, periods, routes, itineraries, networks seamlessly
-
-**Timespan as first-class entity**:
-- Removes temporal fields from Attestation
-- Enables PeriodO integration as external Timespan references
-- Supports multiple conflicting temporal claims
-- Allows temporal inheritance and computation
-
-**Attestation-based relationships**:
-- All connections via attestations (not embedded fields)
-- Enables multiple sources for same claim
-- Supports meta-attestations (attestations about attestations)
-- Facilitates temporal dynamics (relationships changing over time)
-
-**Namespaced identifiers**:
-- Compact representation (`pleiades:579885` vs. full URL)
-- Preserves external authority IDs
-- WHG-minted DOIs for contributions
-- Django-managed namespace resolution
-
-**Source arrays**:
-- Multiple sources can support single attestation
-- Acknowledges collaborative evidence-building
-- Enables source comparison and quality assessment
-
-**Vector embeddings**:
-- Required for Name entities (not optional)
-- Enables cross-linguistic toponymic matching
-- Critical for Dynamic Clustering Workflow
-- Supports semantic search across scripts
-
-**Derived geometric fields**:
-- `representative_point`, `bbox`, `hull` pre-computed
-- Enables efficient spatial clustering
-- Supports fast bounding box queries
-- Facilitates geometry inheritance
+This separation of **entities** from **evidence** enables:
+- Multiple conflicting claims to coexist with source attribution
+- Temporal awareness throughout (not just date fields)
+- Flexible relationship vocabulary extensible via AUTHORITY documents
+- Provenance chains from any claim to original sources
 
 ---
 
-### What the Model Achieves
+## Key Design Principles
 
-✅ **Temporal gazetteering**: Not just where, but when was it called X and where was it then
-✅ **Source transparency**: Every claim traceable to evidence
-✅ **Multiple perspectives**: Conflicting sources represented, not synthesized
-✅ **Cross-cultural support**: Multilingual, multi-script with phonetic and semantic matching
-✅ **Network/route modeling**: Beyond points to connections and movements
-✅ **Contribution flexibility**: LPF, CSV, GPX, edge lists all mappable
-✅ **DOI integration**: Dataset-level attribution and citability
-✅ **PeriodO alignment**: Standard period definitions as Timespan entities
-✅ **Dynamic clustering support**: Indexes and fields optimized for similarity grouping
-✅ **Geometry inheritance**: Territories computed from constituent regions
-✅ **Vespa-optimized**: Single system for storage, indexing, querying
+**Graph-first architecture**: Attestations are nodes (not embedded records), making relationships first-class citizens traversable in both directions.
 
----
+**Single table inheritance in AUTHORITY**: One collection with `authority_type` discriminator replaces separate tables for sources, datasets, relation types, and periods—simplifying queries and reducing joins.
 
-## Comparison with Other Models
+**Temporal reification**: Timespans as separate entities (not date fields) enable PeriodO integration, inheritance, and multiple temporal perspectives on the same Thing.
 
-### vs. Linked Places Format (LPF)
+**Vector embeddings as requirement**: Name embeddings power cross-linguistic reconciliation and are mandatory (not optional) for toponymic matching.
 
-**LPF** (interchange format):
-- Document-oriented (places as standalone GeoJSON features)
-- Temporal data embedded in properties
-- Human-readable, contribution-friendly
-- Limited relationship expressivity
+**Derived geometric fields**: Pre-computed `representative_point`, `bbox`, `hull` optimize spatial queries and enable geometry inheritance.
 
-**WHG internal model**:
-- Graph-oriented (entities linked via attestations)
-- Temporal data as separate Timespan entities
-- Query-optimized, analytically powerful
-- Rich relationship vocabulary with CIDOC-CRM alignment
-
-**Relationship**: Bidirectional transformation maintains interoperability while enabling advanced internal queries.
+**Namespaced identifiers**: Compact external references (`pleiades:579885`) preserve authority IDs while Django resolves to full URIs.
 
 ---
 
-### vs. Recogito
+## What This Enables
 
-**Recogito** (annotation-focused):
-- Lightweight place references in texts
-- Annotations link texts to place authorities
-- Web annotation model
+Beyond traditional gazetteers:
 
-**WHG**:
-- Comprehensive gazetteer with full place records
-- Attestations link entities to each other and to evidence
-- Broader scope (not just textual annotations)
+**Temporal gazetteering** - "What was this place called in 800 CE?" not just "Where is X?"
 
-**Complementary**: Recogito can use WHG reconciliation; WHG can ingest Recogito annotations.
+**Historiographical depth** - Multiple sources with varying certainty, not synthesized "facts"
 
----
+**Network/route modeling** - Connections and movements, not just point locations
 
-### vs. Pleiades
+**Cross-cultural representation** - Semantic similarity across scripts via embeddings
 
-**Pleiades** (authoritative ancient places):
-- Curated, high-quality ancient Mediterranean/Near East
-- Editorial workflow with expert review
-- Comprehensive connections and attestations
+**Dynamic clustering** - Multi-dimensional similarity (name + space + time + type) for reconciliation
 
-**WHG**:
-- Aggregates multiple gazetteers including Pleiades
-- Broader temporal/geographic scope
-- Lower barrier to contribution
-- Reconciliation across authorities
+**Contribution flexibility** - LPF, CSV, GPX, edge lists all map to graph structure
 
-**Relationship**: WHG indexes Pleiades and links to it via `same_as` attestations.
+**DOI integration** - Dataset-level citability with persistent identifiers
 
 ---
 
-### vs. GeoNames
+## Implementation Choice: ArangoDB
 
-**GeoNames** (modern place names):
-- Massive contemporary gazetteer
-- Minimal historical depth
-- Hierarchical administrative structure
-- Free, widely used
+The graph model maps naturally to ArangoDB's multi-model architecture:
 
-**WHG**:
-- Historical focus with temporal awareness
-- Multiple names over time
-- Source-based attestations
-- Network/route support
+- **Property graph** natively represents Attestations as nodes with edges
+- **GeoJSON support** handles complex historical geometries (6 types)
+- **Vector indexes** (FAISS-backed) enable semantic similarity search
+- **Unified AQL** integrates graph traversal + spatial + temporal + vector queries
+- **Single system** eliminates synchronization complexity
 
-**Relationship**: WHG indexes GeoNames for modern places, extends with historical data.
-
----
-
-## Possible Future Extensions
-
-### Enhanced Attestation Types
-
-**Uncertain relationships**:
-- `possibly_same_as`: Low-confidence equivalence claims
-- `probably_member_of`: Likely but unconfirmed membership
-- `likely_connected_to`: Hypothesized network connections
-
-**Causal relationships**:
-- `caused_by`: Historical causation (e.g., plague → population decline)
-- `influenced`: Cultural/political influence patterns
-
-**Temporal relationships**:
-- `contemporary_with`: Co-existence assertions
-- `precedes`/`follows`: Temporal ordering beyond succession
+Key tradeoffs:
+- ⚠️ Enterprise Edition required for production scale (Community Edition limited to 100 GiB)
+- ⚠️ Vector search maturity requires early validation at 10M+ scale
+- ⚠️ No `GeometryCollection` support (workaround: multiple Attestations)
+- ✅ Operational simplicity for small team
+- ✅ Real-time consistency (no eventual consistency)
 
 ---
 
-### Meta-Attestations
+## Future Extensions
 
-**Attestations about attestations**:
-- Scholarly critique of existing claims
-- Provenance chains (who attested based on whose work)
-- Confidence updates over time
-- Contradiction flagging
+### Enhanced Relationship Types
 
-**Example**:
-```json
-{
-  "subject_type": "attestation",
-  "subject_id": "whg:attestation-troy-location",
-  "relation_type": "challenges",
-  "object_type": "attestation",
-  "object_id": "whg:attestation-troy-homer",
-  "source": ["Blegen 1963"],
-  "certainty": 0.9,
-  "notes": "Archaeological evidence contradicts Homeric geography"
-}
-```
+**Uncertainty**: `possibly_same_as`, `probably_member_of`, `likely_connected_to`
 
----
+**Causation**: `caused_by`, `influenced` for historical causation patterns
 
-### Advanced Network Analysis
+**Meta-attestations**: Attestations about Attestations for scholarly discourse modeling
 
-**Centrality measures**:
-- Pre-compute betweenness, closeness, eigenvector centrality for network nodes
-- Store as Subject attributes for ranking/filtering
+### Advanced Analytics
 
-**Community detection**:
-- Identify clusters in trade/communication networks
-- Model as computed gazetteer groups
+**Network analysis**: Centrality measures, community detection, flow analysis pre-computed as Thing attributes
 
-**Flow analysis**:
-- Commodity flows through trade networks
-- Information diffusion through communication networks
-- Military/logistical flows through route networks
+**Temporal evolution**: Track network emergence/dissolution, territorial changes, migration patterns
 
-**Temporal network analysis**:
-- Track emergence/dissolution of connections
-- Identify tipping points in network structure
-- Model network resilience to disruptions
+**Machine learning**: Automated reconciliation suggestions, name variant generation, temporal inference, quality assessment
+
+### Interoperability
+
+**IIIF integration**: Link Things to IIIF manifests for maps/manuscripts
+
+**Wikidata sync**: Bidirectional linking with import/export of claims
+
+**RDF exports**: SPARQL endpoint for semantic web integration
+
+**Schema.org markup**: Enable search engine rich snippets
 
 ---
 
-### Complex Itinerary Patterns
+## Research Challenges
 
-**Circular routes**:
-- Return journeys (e.g., round-trip pilgrimages)
-- Sequence wraps back to start
+**Algorithmic**:
+- Efficient geometry inheritance at scale (recursive unions with caching)
+- Temporal reasoning with Allen's interval algebra for complex queries
+- Hierarchical clustering for millions of candidates
 
-**Alternative paths**:
-- Multiple route options between waypoints
-- Conditional segments (taken under certain circumstances)
+**Modeling**:
+- Contested territories (multiple claims on same space/time)
+- Fuzzy boundaries (gradual transitions, borderlands)
+- Uncertainty propagation through inheritance chains
 
-**Parallel itineraries**:
-- Same journey documented by multiple travelers
-- Comparison of sources with conflicting details
-
-**Interrupted itineraries**:
-- Journeys with gaps (lost records, unknown segments)
-- Explicit modeling of uncertainty in sequence
-
----
-
-### Multilingual Enhancements
-
-**Translation networks**:
-- Link Names across languages via attestations
-- Model translation relationships with confidence
-
-**Etymological relationships**:
-- Track name derivations (e.g., Latin → Romance languages)
-- Connect to linguistic databases
-
-**Pronunciation variants**:
-- Multiple IPA representations for different dialects
-- Regional pronunciation variations
+**Interface**:
+- Temporal visualization (time-traveling maps, animation)
+- Network visualization at scale with filtering
+- Source comparison views for conflicting claims
 
 ---
 
-### Spatial-Temporal Analytics
+## Sustainability Model
 
-**Territory change visualization**:
-- Animate border shifts over time
-- Compute area gained/lost per period
+**Data quality**: Editorial review workflows, community flagging, automated checks, version control
 
-**Migration pattern analysis**:
-- Aggregate itineraries to identify common paths
-- Detect migration waves from temporal clustering
+**Community**: Academic credit via DOI citations, teaching integration, comprehensive documentation
 
-**Trade network evolution**:
-- Track route importance changes
-- Identify emerging/declining trade hubs
+**Technical**: Open-source codebase, Pitt CRC hosting, regular updates, standards compliance
 
-**Settlement patterns**:
-- Analyze spatial distributions over time
-- Detect urbanization/ruralization trends
-
----
-
-### Machine Learning Integration
-
-**Automated reconciliation**:
-- Train models on confirmed `same_as` attestations
-- Suggest matches for user review
-
-**Name variant generation**:
-- Generate likely spelling variants
-- Predict transliterations across scripts
-
-**Temporal inference**:
-- Infer dates from related entities
-- Fill temporal gaps with ML predictions
-
-**Quality assessment**:
-- Predict certainty scores from source metadata
-- Flag potentially erroneous claims
-
----
-
-### Enhanced LPF Mapping
-
-**Additional LPF features**:
-- `depictions[]` → Link to visual representations
-- `links[]` → External references beyond sources
-- `descriptions[]` → Multilingual descriptions
-
-**Custom extensions**:
-- WHG-specific LPF extensions for networks, itineraries
-- Encoding connection_metadata in LPF relations
-- Timespan representation aligned with PeriodO
-
----
-
-### Interoperability Enhancements
-
-**IIIF integration**:
-- Link Subjects to IIIF manifests (maps, manuscripts)
-- Embed place references in IIIF annotations
-
-**Wikidata synchronization**:
-- Bidirectional links to Wikidata places
-- Import Wikidata claims as attestations
-- Export WHG data to Wikidata
-
-**LOD publication**:
-- RDF exports following Linked Data principles
-- SPARQL endpoint for semantic web queries
-- Dereferenceable URIs for all entities
-
-**Schema.org markup**:
-- Embed schema.org Place markup in HTML views
-- Enable search engine rich snippets
-- Improve discoverability
-
-**Ontology Alignment**:
-- Map to related ontologies (Pleiades, GeoNames, etc.)
-
----
-
-## Research Agenda
-
-### Algorithmic Challenges
-
-**Geometry inheritance optimization**:
-- Efficient algorithms for recursive union computation
-- Caching strategies for frequently-accessed territorial extents
-- Approximation methods for performance
-
-**Temporal reasoning**:
-- Allen's interval algebra for complex temporal queries
-- Fuzzy temporal boundaries for uncertain periods
-- Temporal constraint propagation
-
-**Clustering at scale**:
-- Efficient similarity computation for millions of candidates
-- Hierarchical clustering for multi-level grouping
-- Incremental clustering for new contributions
-
----
-
-### Modeling Challenges
-
-**Contested territories**:
-- Multiple Subjects claiming same space at same time
-- Overlapping assertions from different political entities
-- Modeling de jure vs. de facto control
-
-**Fuzzy boundaries**:
-- Gradual transitions (not sharp borders)
-- Borderlands and frontier zones
-- Cultural regions without political definition
-
-**Uncertainty quantification**:
-- Propagating uncertainty through inheritance
-- Combining certainty from multiple sources
-- Bayesian approaches to evidence integration
-
----
-
-### User Interface Challenges
-
-**Temporal visualization**:
-- Timeline controls for time-traveling through maps
-- Animation of change over time
-- Simultaneous display of multiple periods
-
-**Network visualization**:
-- Interactive graph layouts at scale
-- Filtering by connection attributes
-- Temporal network animation
-
-**Source comparison**:
-- Side-by-side comparison of conflicting claims
-- Visual uncertainty indicators
-- Provenance tree displays
-
----
-
-## Governance and Sustainability
-
-### Data Quality
-
-**Curation workflows**:
-- Editorial review for high-profile contributions
-- Community flagging of errors
-- Automated quality checks
-
-**Version control**:
-- Track changes to attestations
-- Revert problematic edits
-- Attribution of improvements
-
-**Conflict resolution**:
-- Mediation for contested claims
-- Documentation of scholarly debates
-- Multiple perspectives preserved
-
----
-
-### Community Engagement
-
-**Contribution incentives**:
-- Academic credit for contributions (DOI citations)
-- Teaching use cases in courses
-
-**Documentation**:
-- Comprehensive contribution guides
-- Video tutorials for common workflows
-- API documentation for developers
-
-**Support**:
-- Forums for contributor questions
-
----
-
-### Technical Sustainability
-
-**Code maintenance**:
-- Open-source codebase on GitHub
-- Active development community
-- Regular security updates
-
-**Infrastructure**:
-- Pitt CRC hosting with redundancy
-- Backup and disaster recovery
-- Cost-effective scaling strategies
-
-**Standards compliance**:
-- Follow evolving Linked Data standards
-- Participate in gazetteer standards development
-- Maintain LPF compatibility
+**Governance**: Conflict resolution processes, scholarly debate documentation, multiple perspectives preserved
 
 ---
 
 ## Conclusion
 
-The World Historical Gazetteer v4 data model represents a significant advance in historical place data infrastructure. By:
+The attestation-based graph architecture positions WHG as:
 
-- Separating conceptual entities from evidentiary attestations
-- Treating temporality as a first-class concern via Timespan entities
-- Supporting diverse contribution types (gazetteers, routes, itineraries, networks)
-- Enabling source transparency and multiple perspectives
-- Optimizing for both human contribution and machine querying
-- Integrating with established standards (PeriodO, CIDOC-CRM, LPF)
+- **Not just a gazetteer** - a knowledge graph of historical geographic claims
+- **Not just place lookup** - a platform for critical historical inquiry
+- **Not just where** - but when, according to whom, with what certainty
 
-...the model provides a foundation for rich historical research, teaching, and public engagement with the geographic dimensions of the past.
+This distinguishes WHG from:
+- Commercial mapping platforms (no temporal depth, no source transparency)
+- Search engines/LLMs (no provenance, flatten uncertainty into false consensus)
+- Traditional gazetteers (point locations without networks/routes, limited temporality)
 
-The attestation-based architecture ensures that WHG is not just a database of places, but a knowledge graph of historical geographic claims—with provenance, temporality, and uncertainty explicitly modeled. This positions WHG uniquely among gazetteer projects as a platform for critical historical inquiry, not merely place name lookup.
-
-Future extensions will deepen analytical capabilities (network analysis, ML integration) while maintaining the core principles of evidence-based scholarship, temporal awareness, and cross-cultural representation that distinguish WHG from both commercial mapping platforms and generalist knowledge bases.
+The graph model scales from simple place records to complex research questions about historical geography—from student contributions to scholarly debates—while maintaining rigorous provenance and enabling computational analysis impossible with document-oriented or relational approaches.

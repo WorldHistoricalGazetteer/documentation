@@ -35,6 +35,5 @@ For Thing-to-Thing relationships using `edge_type: "relates_to"`, the edge refer
 ./data-model/rdf-representation.md
 ./data-model/usecases.md
 ./data-model/implementation.md
-./data-model/implementation-alternative.md
 ./data-model/summary.md
 ```

@@ -1,362 +1,684 @@
-# Implementation in Vespa
+# Implementation in ArangoDB
 
-## Document Types
+## Overview
 
-We will need five primary document types in Vespa:
+This document details the implementation of the WHG v4 data model using ArangoDB's multi-model architecture. ArangoDB naturally supports the attestation-based graph model through its combination of document collections and edge collections.
 
-1. **`subject`** — unified conceptual entities (places, periods, routes, itineraries, networks, collections)
-2. **`name`** — name labels with multiple semantic types and vector embeddings
-3. **`geometry`** — spatial representations with derived fields
-4. **`timespan`** — temporal bounds with PeriodO integration
-5. **`attestation`** — temporal, evidentiary relationships
+## Document Collections
 
-**Note**: Provenance/changelog is maintained separately in the Django application database, not in Vespa.
+We use six primary collections:
 
----
+- **things** — unified conceptual entities (locations, historical entities, collections, periods, routes, itineraries, networks)
+- **names** — name labels with multiple semantic types and vector embeddings
+- **geometries** — spatial representations with derived fields
+- **timespans** — temporal bounds with PeriodO integration
+- **attestations** (edge collection) — evidentiary relationships connecting Things to Names, Geometries, Timespans, and other Things
+- **authorities** — unified reference data for sources, datasets, relation types, periods, and certainty levels
+
+### Things Collection
+
+```javascript
+// Document in 'things' collection
+{
+  "_key": "constantinople",
+  "_id": "things/constantinople",
+  "_rev": "_abc123",
+  "thing_type": "location",
+  "description": "Major Byzantine/Ottoman city on the Bosphorus",
+  "namespace": "whg",
+  "primary_name": "Constantinople", // denormalized for quick access
+  "representative_point": [28.98, 41.01], // denormalized for spatial queries
+  "created": "2025-01-15T10:30:00Z",
+  "modified": "2025-03-20T14:22:00Z"
+}
+```
+
+### Names Collection
+
+```javascript
+// Document in 'names' collection
+{
+  "_key": "name-istanbul-tr",
+  "_id": "names/name-istanbul-tr",
+  "name": "İstanbul",
+  "language": "tr",
+  "script": "Latn",
+  "ipa": "isˈtanbuɫ",
+  "name_type": ["preferred", "toponym"],
+  "embedding": [0.234, -0.567, 0.123, ...], // 384-dimensional vector
+  "transliteration_system": null,
+  "romanized": "Istanbul"
+}
+```
+
+### Geometries Collection
+
+```javascript
+// Document in 'geometries' collection
+{
+  "_key": "geom-constantinople-city",
+  "_id": "geometries/geom-constantinople-city",
+  "geom": {
+    "type": "MultiPolygon",
+    "coordinates": [
+      [[[28.94, 41.01], [29.00, 41.01], [29.00, 41.05], [28.94, 41.05], [28.94, 41.01]]],
+      [[[28.90, 41.00], [28.92, 41.00], [28.92, 41.02], [28.90, 41.02], [28.90, 41.00]]]
+    ]
+  },
+  "representative_point": [28.97, 41.03],
+  "bbox": [28.90, 41.00, 29.00, 41.05],
+  "precision": ["historical_approximate", "uncertain_boundary"],
+  "precision_km": [5.0, 2.0],
+  "source_crs": "EPSG:4326"
+}
+```
+
+**Note on GeometryCollection:** ArangoDB does not support the GeoJSON `GeometryCollection` type. For places with heterogeneous geometry sets (e.g., both point and polygon), store multiple geometry attestations—one per geometry type. This aligns naturally with our attestation model where each geometry claim is a separate evidential statement.
+
+### Timespans Collection
+
+```javascript
+// Document in 'timespans' collection
+{
+  "_key": "timespan-byzantine-period",
+  "_id": "timespans/timespan-byzantine-period",
+  "start_earliest": -11644444800000, // Unix timestamp: 330 CE
+  "start_latest": -11612908800000,   // Unix timestamp: 331 CE
+  "stop_earliest": 693878400000,     // Unix timestamp: 1453 CE
+  "stop_latest": 694483200000,       // Unix timestamp: 1453 CE
+  "label": "Byzantine Period in Constantinople",
+  "precision": "year",
+  "precision_value": 1,
+  "periodo_id": "periodo:p0byzantine"
+}
+```
+
+### Authorities Collection
+
+```javascript
+// Source Authority
+{
+  "_key": "source-al-tabari",
+  "_id": "authorities/source-al-tabari",
+  "authority_type": "source",
+  "citation": "Al-Tabari, History of the Prophets and Kings",
+  "source_type": "manuscript",
+  "record_id": "tabari-vol-27",
+  "uri": "https://example.org/tabari"
+}
+
+// Dataset Authority
+{
+  "_key": "dataset-islamic-cities",
+  "_id": "authorities/dataset-islamic-cities",
+  "authority_type": "dataset",
+  "title": "Islamic Cities Database",
+  "publisher": "University Research Center",
+  "version": "1.0",
+  "license": "CC-BY-4.0",
+  "doi": "doi:10.83427/whg-dataset-123"
+}
+
+// Relation Type Authority
+{
+  "_key": "relation-member-of",
+  "_id": "authorities/relation-member-of",
+  "authority_type": "relation_type",
+  "label": "member_of",
+  "inverse": "contains",
+  "domain": ["thing"],
+  "range": ["thing"],
+  "description": "Subject is part of object entity"
+}
+
+// Period Authority (from PeriodO)
+{
+  "_key": "period-abbasid",
+  "_id": "authorities/period-abbasid",
+  "authority_type": "period",
+  "label": "Abbasid Caliphate",
+  "uri": "periodo:p0abbasid",
+  "start_earliest": -11644444800000,
+  "start_latest": -11612908800000,
+  "stop_earliest": 693878400000,
+  "stop_latest": 694483200000
+}
+```
+
+### Attestations Edge Collection
+
+```javascript
+// Edge document in 'attestations' collection
+{
+  "_key": "attestation-const-name-istanbul",
+  "_id": "attestations/attestation-const-name-istanbul",
+  "_from": "things/constantinople",
+  "_to": "names/name-istanbul-tr",
+  "_rev": "_xyz789",
+  "sequence": null, // used for routes/itineraries
+  "connection_metadata": null, // used for network connections
+  "certainty": 1.0,
+  "certainty_note": "Official administrative name change",
+  "notes": "Official name adopted after establishment of Turkish Republic"
+}
+
+// Separate edges for metadata about the attestation
+// (Edge type determined by target collection)
+{
+  "_from": "attestations/attestation-const-name-istanbul",
+  "_to": "authorities/source-turkish-gov",
+  "edge_type": "sourced_by"
+}
+
+{
+  "_from": "attestations/attestation-const-name-istanbul",
+  "_to": "timespans/timespan-modern-turkey",
+  "edge_type": "attests_timespan"
+}
+```
+
+### Edges Collection
+
+```javascript
+// Generic edge collection for all graph relationships
+{
+  "_key": "edge-001",
+  "_id": "edges/edge-001",
+  "_from": "things/constantinople",
+  "_to": "attestations/attestation-const-name-istanbul",
+  "edge_type": "subject_of",
+  "created": "2025-01-15T10:30:00Z"
+}
+
+{
+  "_from": "attestations/attestation-const-name-istanbul",
+  "_to": "names/name-istanbul-tr",
+  "edge_type": "attests_name"
+}
+
+{
+  "_from": "attestations/attestation-capital-of",
+  "_to": "authorities/relation-capital-of",
+  "edge_type": "typed_by"
+}
+
+{
+  "_from": "attestations/attestation-capital-of",
+  "_to": "things/ottoman-empire",
+  "edge_type": "relates_to"
+}
+```
 
 ## Indexing Strategy
 
-### Attestation Records
+### Things Collection Indexes
 
-**Heavily index on:**
-- `subject_id` + `relation_type` (for finding all attestations about a subject)
-- `object_id` + `relation_type` (for reverse lookups)
-- `relation_type` + `subject_type` + `object_type` (for relationship filtering)
-- `source` array (for dataset attribution and provenance filtering, including DOI lookups)
-- `sequence` (for route/itinerary reconstruction with ORDER BY)
-- `connection_metadata` fields (for network filtering by connection type, directionality, etc.)
-- `certainty` (for confidence-weighted queries)
+```javascript
+// Primary key (automatic)
+db.things.ensureIndex({ type: "primary", fields: ["_key"] });
 
-**Index structure recommendations:**
-```
-attestation {
-  field id type string {
-    indexing: summary | attribute
-    attribute: fast-search
-  }
-  
-  field subject_id type string {
-    indexing: summary | attribute
-    attribute: fast-search
-  }
-  
-  field object_id type string {
-    indexing: summary | attribute
-    attribute: fast-search
-  }
-  
-  field relation_type type string {
-    indexing: summary | attribute
-    attribute: fast-search
-  }
-  
-  field sequence type int {
-    indexing: summary | attribute
-    attribute: fast-search
-  }
-  
-  field source type array<string> {
-    indexing: summary | attribute
-    attribute: fast-search
-  }
-  
-  field certainty type float {
-    indexing: summary | attribute
-  }
-  
-  field connection_metadata type string {
-    indexing: summary
-  }
-}
+// Full-text search on description
+db.things.ensureIndex({
+  type: "fulltext",
+  fields: ["description"],
+  minLength: 3
+});
+
+// Thing type for filtering
+db.things.ensureIndex({
+  type: "persistent",
+  fields: ["thing_type"]
+});
+
+// Geospatial index on representative_point
+db.things.ensureIndex({
+  type: "geo",
+  fields: ["representative_point"],
+  geoJson: false // using [lon, lat] array format
+});
 ```
 
----
+### Names Collection Indexes
 
-### Subject Records
+```javascript
+// Full-text search on name
+db.names.ensureIndex({
+  type: "fulltext",
+  fields: ["name"],
+  minLength: 2
+});
 
-**Index on:**
-- `id` (primary key, attribute for fast lookups)
-- Full-text search on `description` field
+// Vector index for semantic similarity (FAISS-backed)
+db.names.ensureIndex({
+  type: "vector",
+  fields: ["embedding"],
+  params: {
+    metric: "cosine",
+    dimension: 384,
+    lists: 1000 // IVF parameter for clustering
+  }
+});
 
-**Index structure:**
-```
-subject {
-  field id type string {
-    indexing: summary | attribute
-    attribute: fast-search
-  }
-  
-  field description type string {
-    indexing: summary | index
-    index: enable-bm25
-  }
-}
-```
+// Language and script for filtering
+db.names.ensureIndex({
+  type: "persistent",
+  fields: ["language", "script"]
+});
 
----
+// IPA for phonetic search
+db.names.ensureIndex({
+  type: "persistent",
+  fields: ["ipa"]
+});
 
-### Name Records
-
-**Index on:**
-- `name` (with language-specific text analyzers)
-- `embedding` vector (for semantic similarity search - critical for Dynamic Clustering)
-- `ipa` (for phonetic search)
-- `name_type` array (for filtering by semantic function)
-- `language` and `script` (for language filtering)
-
-**Index structure:**
-```
-name {
-  field id type string {
-    indexing: summary | attribute
-    attribute: fast-search
-  }
-  
-  field name type string {
-    indexing: summary | index
-    index: enable-bm25
-    match: text
-  }
-  
-  field embedding type tensor<float>(x[384]) {
-    indexing: summary | attribute | index
-    attribute: distance-metric: angular
-    index {
-      hnsw {
-        max-links-per-node: 16
-        neighbors-to-explore-at-insert: 200
-      }
-    }
-  }
-  
-  field ipa type string {
-    indexing: summary | attribute
-    attribute: fast-search
-  }
-  
-  field name_type type array<string> {
-    indexing: summary | attribute
-    attribute: fast-search
-  }
-  
-  field language type string {
-    indexing: summary | attribute
-    attribute: fast-search
-  }
-  
-  field script type string {
-    indexing: summary | attribute
-  }
-}
+// Name type for filtering
+db.names.ensureIndex({
+  type: "persistent",
+  fields: ["name_type[*]"]
+});
 ```
 
-**Notes:**
-- Vector embedding dimension (384) is example - adjust based on chosen model
-- HNSW parameters tunable for performance vs. recall tradeoff
-- Language-specific analyzers needed for non-Latin scripts
+### Geometries Collection Indexes
 
----
+```javascript
+// Geospatial index on main geometry
+db.geometries.ensureIndex({
+  type: "geo",
+  fields: ["geom"],
+  geoJson: true
+});
 
-### Geometry Records
+// Geospatial index on representative point
+db.geometries.ensureIndex({
+  type: "geo",
+  fields: ["representative_point"],
+  geoJson: false
+});
 
-**Index on:**
-- Spatial indexing on `geom` (primary geometry)
-- Spatial indexing on `representative_point` for efficient point queries (critical for Dynamic Clustering)
-- `bbox` for quick spatial filtering
-- `precision` and `precision_km` arrays for quality filtering
+// Bounding box for quick spatial filters
+db.geometries.ensureIndex({
+  type: "persistent",
+  fields: ["bbox"]
+});
 
-**Index structure:**
-```
-geometry {
-  field id type string {
-    indexing: summary | attribute
-    attribute: fast-search
-  }
-  
-  field geom type position {
-    indexing: summary | attribute
-  }
-  
-  field representative_point type position {
-    indexing: summary | attribute
-    attribute: fast-search
-  }
-  
-  field bbox type array<double> {
-    indexing: summary | attribute
-  }
-  
-  field hull type position {
-    indexing: summary
-  }
-  
-  field precision type array<string> {
-    indexing: summary | attribute
-  }
-  
-  field precision_km type array<float> {
-    indexing: summary | attribute
-  }
-  
-  field source_crs type string {
-    indexing: summary | attribute
-  }
-}
+// Precision for quality filtering
+db.geometries.ensureIndex({
+  type: "persistent",
+  fields: ["precision[*]"]
+});
 ```
 
-**Notes on Vespa spatial capabilities:**
-- Vespa natively supports **bounding box queries** on position fields
-- For radius and polygon queries, use two-phase approach:
-  1. Vespa bbox query to get candidates
-  2. Application-level geo-filtering for precise radius/polygon containment
-- `representative_point` enables fast approximate spatial searches for clustering
-- Consider using geohash for additional spatial indexing efficiency
+### Timespans Collection Indexes
 
----
+```javascript
+// Temporal range indexes for point-in-time queries
+db.timespans.ensureIndex({
+  type: "persistent",
+  fields: ["start_latest", "stop_earliest"]
+});
 
-### Timespan Records
+// Temporal bounds for overlap queries
+db.timespans.ensureIndex({
+  type: "persistent",
+  fields: ["start_earliest", "stop_latest"]
+});
 
-**Index on:**
-- Temporal range fields for point-in-time and overlap queries
-- `label` for period name search
-- `precision` for filtering by temporal certainty
+// Full-text search on label
+db.timespans.ensureIndex({
+  type: "fulltext",
+  fields: ["label"]
+});
 
-**Index structure:**
-```
-timespan {
-  field id type string {
-    indexing: summary | attribute
-    attribute: fast-search
-  }
-  
-  field start_earliest type long {
-    indexing: summary | attribute
-    attribute: fast-search
-  }
-  
-  field start_latest type long {
-    indexing: summary | attribute
-    attribute: fast-search
-  }
-  
-  field stop_earliest type long {
-    indexing: summary | attribute
-    attribute: fast-search
-  }
-  
-  field stop_latest type long {
-    indexing: summary | attribute
-    attribute: fast-search
-  }
-  
-  field label type string {
-    indexing: summary | index
-    index: enable-bm25
-  }
-  
-  field precision type string {
-    indexing: summary | attribute
-  }
-  
-  field precision_value type int {
-    indexing: summary | attribute
-  }
-}
+// Precision for temporal certainty filtering
+db.timespans.ensureIndex({
+  type: "persistent",
+  fields: ["precision"]
+});
 ```
 
-**Notes:**
-- Store dates as Unix timestamps (long) or ISO 8601 strings
-- For geological time, use sentinel values (e.g., -999999999000000 for billion years BCE)
-- Enable range queries: `WHERE start_latest <= query_date AND stop_earliest >= query_date`
+### Authorities Collection Indexes
 
----
+```javascript
+// Authority type discriminator
+db.authorities.ensureIndex({
+  type: "persistent",
+  fields: ["authority_type"]
+});
 
-## Query Patterns
+// Full-text search on title/citation
+db.authorities.ensureIndex({
+  type: "fulltext",
+  fields: ["title", "citation", "label"]
+});
+
+// DOI for dataset authorities
+db.authorities.ensureIndex({
+  type: "persistent",
+  fields: ["doi"]
+});
+
+// URI for external authorities
+db.authorities.ensureIndex({
+  type: "persistent",
+  fields: ["uri"]
+});
+
+// Label for relation types
+db.authorities.ensureIndex({
+  type: "persistent",
+  fields: ["label"]
+});
+```
+
+### Attestations Collection Indexes
+
+```javascript
+// Primary key (automatic)
+db.attestations.ensureIndex({ type: "primary", fields: ["_key"] });
+
+// Certainty for confidence filtering
+db.attestations.ensureIndex({
+  type: "persistent",
+  fields: ["certainty"]
+});
+
+// Sequence for ordered relationships (routes/itineraries)
+db.attestations.ensureIndex({
+  type: "persistent",
+  fields: ["sequence"]
+});
+```
+
+### Edges Collection Indexes
+
+```javascript
+// Edge indexes (automatic for _from and _to)
+db.edges.ensureIndex({ type: "edge" });
+
+// Edge type for filtering
+db.edges.ensureIndex({
+  type: "persistent",
+  fields: ["edge_type"]
+});
+
+// Composite index for efficient traversals
+db.edges.ensureIndex({
+  type: "persistent",
+  fields: ["_from", "edge_type"]
+});
+
+db.edges.ensureIndex({
+  type: "persistent",
+  fields: ["_to", "edge_type"]
+});
+```
+
+## Query Patterns in AQL
+
+ArangoDB's unified query language (AQL) integrates graph traversal, document filtering, geospatial queries, and vector similarity seamlessly.
 
 ### Name Resolution Over Time
 
 **Query:** "What was Chang'an called in 700 AD?"
 
-**Vespa YQL:**
-```
-SELECT name.name, attestation.id
-FROM name, attestation, timespan
-WHERE attestation.subject_id = "whg:subject-changan"
-  AND attestation.relation_type = "has_name"
-  AND attestation.object_id = name.id
-  AND attestation2.subject_id = attestation.id
-  AND attestation2.relation_type = "has_timespan"
-  AND attestation2.object_id = timespan.id
-  AND timespan.start_latest <= 700
-  AND timespan.stop_earliest >= 700
-```
+```aql
+LET query_date = DATE_TIMESTAMP("700-01-01")
 
----
+FOR thing IN things
+  FILTER thing._key == "changan"
+  
+  // Traverse to attestations
+  FOR att IN attestations
+    FOR e1 IN edges
+      FILTER e1._from == thing._id
+      FILTER e1._to == att._id
+      FILTER e1.edge_type == "subject_of"
+      
+      // Get the name
+      FOR e2 IN edges
+        FILTER e2._from == att._id
+        FILTER e2.edge_type == "attests_name"
+        LET name = DOCUMENT(e2._to)
+        
+        // Check temporal validity
+        FOR e3 IN edges
+          FILTER e3._from == att._id
+          FILTER e3.edge_type == "attests_timespan"
+          LET ts = DOCUMENT(e3._to)
+          FILTER ts.start_latest <= query_date
+          FILTER ts.stop_earliest >= query_date
+          
+          RETURN {
+            name: name.name,
+            language: name.language,
+            certainty: att.certainty,
+            timespan: ts.label
+          }
+```
 
 ### Spatial Queries with Temporal Filter
 
 **Query:** "Places within 100km of Constantinople in the 13th century"
 
-**Two-phase approach:**
+```aql
+LET constantinople_point = [28.98, 41.01]
+LET query_start = DATE_TIMESTAMP("1200-01-01")
+LET query_end = DATE_TIMESTAMP("1300-12-31")
 
-**Phase 1 - Vespa bbox query:**
-```
-SELECT subject.id, geometry.representative_point
-FROM subject, attestation AS a1, geometry
-WHERE a1.subject_id = subject.id
-  AND a1.relation_type = "has_geometry"
-  AND a1.object_id = geometry.id
-  AND closeness(field, geometry.representative_point) <= 100000
-  AND a1.object_id IN (
-    SELECT a2.subject_id
-    FROM attestation AS a2, timespan
-    WHERE a2.relation_type = "has_timespan"
-      AND a2.object_id = timespan.id
-      AND timespan.start_latest <= 1300
-      AND timespan.stop_earliest >= 1200
+FOR thing IN things
+  // Spatial filter using representative_point
+  FILTER GEO_DISTANCE(thing.representative_point, constantinople_point) <= 100000
+  
+  // Verify temporal validity via graph traversal
+  LET temporal_check = (
+    FOR att IN attestations
+      FOR e1 IN edges
+        FILTER e1._from == thing._id
+        FILTER e1._to == att._id
+        FILTER e1.edge_type == "subject_of"
+        
+        FOR e2 IN edges
+          FILTER e2._from == att._id
+          FILTER e2.edge_type == "attests_geometry"
+          
+          FOR e3 IN edges
+            FILTER e3._from == att._id
+            FILTER e3.edge_type == "attests_timespan"
+            LET ts = DOCUMENT(e3._to)
+            FILTER ts.start_latest <= query_end
+            FILTER ts.stop_earliest >= query_start
+            RETURN true
   )
+  
+  FILTER LENGTH(temporal_check) > 0
+  
+  // Get full geometries
+  LET geometries = (
+    FOR att IN attestations
+      FOR e1 IN edges
+        FILTER e1._from == thing._id
+        FILTER e1._to == att._id
+        
+        FOR e2 IN edges
+          FILTER e2._from == att._id
+          FILTER e2.edge_type == "attests_geometry"
+          LET geom = DOCUMENT(e2._to)
+          FILTER GEO_DISTANCE(geom.representative_point, constantinople_point) <= 100000
+          RETURN geom
+  )
+  
+  FILTER LENGTH(geometries) > 0
+  
+  RETURN {
+    thing: thing,
+    distance: GEO_DISTANCE(thing.representative_point, constantinople_point),
+    geometries: geometries
+  }
 ```
-
-**Phase 2 - Application-level filtering:**
-- Calculate precise geodesic distance for candidates
-- Filter to exact 100km radius
-
----
 
 ### Vector Similarity Search for Toponyms
 
 **Query:** "Find names similar to 'Chang'an' across languages"
 
-**Vespa ANN query:**
-```
-SELECT name.name, name.language
-FROM name
-WHERE {targetHits: 10}nearestNeighbor(embedding, query_embedding)
+```aql
+LET query_embedding = @query_vector // passed as bind parameter
+
+FOR name IN names
+  LET similarity = APPROX_NEAR_COSINE(name.embedding, query_embedding)
+  FILTER similarity > 0.8
+  SORT similarity DESC
+  LIMIT 10
+  
+  RETURN {
+    name: name.name,
+    language: name.language,
+    script: name.script,
+    similarity: similarity,
+    name_type: name.name_type
+  }
 ```
 
-Where `query_embedding` is the vector for "Chang'an" from the same model used for indexing.
-
----
+**Important:** Use `APPROX_NEAR_COSINE()` for index-accelerated searches. The non-indexed `COSINE_SIMILARITY()` function is available but will be much slower at scale.
 
 ### Network Connection Query
 
 **Query:** "All trade connections from Constantinople 1200-1300 CE"
 
-**Vespa YQL:**
-```
-SELECT attestation.object_id, attestation.connection_metadata
-FROM attestation, timespan
-WHERE attestation.subject_id = "pleiades:520998"
-  AND attestation.relation_type = "connected_to"
-  AND attestation.connection_metadata contains "\"connection_type\":\"trade\""
-  AND attestation2.subject_id = attestation.id
-  AND attestation2.relation_type = "has_timespan"
-  AND attestation2.object_id = timespan.id
-  AND timespan.start_latest <= 1300
-  AND timespan.stop_earliest >= 1200
+```aql
+LET query_start = DATE_TIMESTAMP("1200-01-01")
+LET query_end = DATE_TIMESTAMP("1300-12-31")
+
+FOR thing IN things
+  FILTER thing._key == "constantinople"
+  
+  // Find outgoing attestations
+  FOR att IN attestations
+    FOR e1 IN edges
+      FILTER e1._from == thing._id
+      FILTER e1._to == att._id
+      FILTER e1.edge_type == "subject_of"
+      
+      // Check if it's a connection
+      FOR e2 IN edges
+        FILTER e2._from == att._id
+        FILTER e2.edge_type == "typed_by"
+        LET rel_type = DOCUMENT(e2._to)
+        FILTER rel_type.label == "connected_to"
+        FILTER att.connection_metadata LIKE "%trade%"
+        
+        // Get the connected Thing
+        FOR e3 IN edges
+          FILTER e3._from == att._id
+          FILTER e3.edge_type == "relates_to"
+          LET connected_thing = DOCUMENT(e3._to)
+          
+          // Check temporal validity
+          FOR e4 IN edges
+            FILTER e4._from == att._id
+            FILTER e4.edge_type == "attests_timespan"
+            LET ts = DOCUMENT(e4._to)
+            FILTER ts.start_latest <= query_end
+            FILTER ts.stop_earliest >= query_start
+            
+            RETURN {
+              connected_place: connected_thing,
+              connection_type: att.connection_metadata,
+              certainty: att.certainty,
+              timespan: ts
+            }
 ```
 
----
+### Complex Multi-Constraint Query
+
+**Example:** Combining vector search, geospatial constraints, temporal filtering, and graph traversal.
+
+```aql
+LET query_embedding = @query_vector
+LET query_point = @query_location
+LET query_date = @query_date
+
+FOR thing IN things
+  // Geospatial constraint
+  FILTER GEO_DISTANCE(thing.representative_point, query_point) < 50000
+  
+  // Find names with vector similarity
+  LET matching_names = (
+    FOR att IN attestations
+      FOR e1 IN edges
+        FILTER e1._from == thing._id
+        FILTER e1._to == att._id
+        FILTER e1.edge_type == "subject_of"
+        
+        FOR e2 IN edges
+          FILTER e2._from == att._id
+          FILTER e2.edge_type == "attests_name"
+          LET name = DOCUMENT(e2._to)
+          LET similarity = APPROX_NEAR_COSINE(name.embedding, query_embedding)
+          FILTER similarity > 0.8
+          SORT similarity DESC
+          LIMIT 5
+          RETURN {name: name.name, similarity: similarity}
+  )
+  
+  FILTER LENGTH(matching_names) > 0
+  
+  // Check temporal validity
+  LET temporal_valid = (
+    FOR att IN attestations
+      FOR e1 IN edges
+        FILTER e1._from == thing._id
+        FILTER e1._to == att._id
+        
+        FOR e2 IN edges
+          FILTER e2._from == att._id
+          FILTER e2.edge_type == "attests_timespan"
+          LET ts = DOCUMENT(e2._to)
+          FILTER ts.start_latest <= query_date
+          FILTER ts.stop_earliest >= query_date
+          RETURN true
+  )
+  
+  FILTER LENGTH(temporal_valid) > 0
+  
+  // Find trade network partners
+  LET trade_partners = (
+    FOR att IN attestations
+      FOR e1 IN edges
+        FILTER e1._from == thing._id
+        FILTER e1._to == att._id
+        
+        FOR e2 IN edges
+          FILTER e2._from == att._id
+          FILTER e2.edge_type == "typed_by"
+          LET rel = DOCUMENT(e2._to)
+          FILTER rel.label == "connected_to"
+          FILTER att.connection_metadata LIKE "%trade%"
+          
+          // Temporal filter on connections
+          FOR e3 IN edges
+            FILTER e3._from == att._id
+            FILTER e3.edge_type == "attests_timespan"
+            LET ts = DOCUMENT(e3._to)
+            FILTER ts.start_latest <= query_date
+            FILTER ts.stop_earliest >= query_date
+            
+            FOR e4 IN edges
+              FILTER e4._from == att._id
+              FILTER e4.edge_type == "relates_to"
+              LET partner = DOCUMENT(e4._to)
+              RETURN {place: partner, relation: att}
+  )
+  
+  LIMIT 10
+  
+  RETURN {
+    thing: thing,
+    names: matching_names,
+    name_similarity: matching_names[0].similarity,
+    distance: GEO_DISTANCE(thing.representative_point, query_point),
+    trade_partners: trade_partners
+  }
+```
 
 ## Handling Temporal Nulls and Geological Time
 
@@ -370,685 +692,664 @@ For `start_earliest`, `start_latest`, `stop_earliest`, `stop_latest` fields repr
 
 **Geological time:**
 - Billion years BCE: `-999999999-01-01` → `-31556889832000000000` (approximate)
-- Use large negative/positive long values
+- Use large negative/positive integer values
 
 **PeriodO identifiers:**
-- Can represent geological periods (e.g., `periodo:p0pleistocene`)
+- Store PeriodO URIs in AUTHORITY documents
 - Import PeriodO temporal bounds into Timespan records
 
 ### Query Logic
 
-**Point-in-time queries:**
-```
-WHERE timespan.start_latest <= query_date
-  AND timespan.stop_earliest >= query_date
+```aql
+// Point-in-time query
+FOR ts IN timespans
+  FILTER ts.start_latest <= @query_date
+  FILTER ts.stop_earliest >= @query_date
+  RETURN ts
+
+// Overlap query
+FOR ts IN timespans
+  FILTER ts.start_latest <= @query_end
+  FILTER ts.stop_earliest >= @query_start
+  RETURN ts
+
+// Unknown bounds handling
+FOR ts IN timespans
+  FILTER (ts.start_earliest == null OR ts.start_earliest <= @query_date)
+  FILTER (ts.stop_latest == null OR ts.stop_latest >= @query_date)
+  RETURN ts
 ```
 
-**Overlap queries:**
-```
-WHERE timespan.start_latest <= query_end
-  AND timespan.stop_earliest >= query_start
-```
+## ArangoDB Capabilities Assessment
 
-**Unknown bounds handling:**
-```
-WHERE (timespan.start_earliest IS NULL OR timespan.start_earliest <= query_date)
-  AND (timespan.stop_latest IS NULL OR timespan.stop_latest >= query_date)
-```
+### What ArangoDB Handles Well
 
----
-
-## Vespa Capabilities Assessment
-
-### What Vespa Handles Well
-
-**Temporal Range Queries:**
-✅ Efficient range queries on numeric/timestamp fields
-✅ Multi-field predicates for complex temporal logic
-✅ Fast "point-in-time" queries with proper indexing
+**Property Graph Queries:**
+- ✅ Native graph database with efficient edge traversals
+- ✅ Multi-hop queries optimized (1-10+ hops)
+- ✅ Bidirectional traversals (OUTBOUND, INBOUND, ANY)
+- ✅ Named graphs for domain separation
+- ✅ Shortest path algorithms built-in
 
 **Spatial Queries:**
-✅ Native bounding box queries on position fields
-⚠️ Radius queries: bbox first, then app-level filtering
-⚠️ Polygon queries: bbox first, then app-level filtering
-✅ Efficient nearest-neighbor on `representative_point`
-✅ Combined spatial + temporal predicates
+- ✅ Native GeoJSON support (Point, MultiPoint, LineString, MultiLineString, Polygon, MultiPolygon)
+- ✅ S2-based geospatial indexing for spherical geometry
+- ✅ `GEO_DISTANCE`, `GEO_CONTAINS`, `GEO_INTERSECTS` functions
+- ✅ Efficient spatial filtering with geo indexes
+- ❌ No `GeometryCollection` support (workaround: multiple geometry attestations)
 
 **Vector/Semantic Search:**
-✅ Built-in HNSW for approximate nearest neighbor (ANN)
-✅ Perfect for Name `embedding` fields (critical for Dynamic Clustering)
-✅ Can combine vector similarity with filters (language, name_type, etc.)
+- ✅ Vector indexes powered by FAISS
+- ✅ `APPROX_NEAR_COSINE()` for index-accelerated similarity
+- ✅ Cosine, Euclidean, and other distance metrics
+- ⚠️ Performance validation needed for 10M+ vectors
 
-**Graph-style Queries:**
-⚠️ Not a native graph database
-✅ Can handle attestation-based relationships efficiently
-✅ Parent/child document references for single-hop queries
-⚠️ Multi-hop traversals require application-level logic or multiple query phases
-✅ Network queries benefit from indexed `connection_metadata`
+**Temporal Range Queries:**
+- ✅ Efficient range queries on numeric timestamp fields
+- ✅ Multi-field predicates for complex temporal logic
+- ✅ Fast point-in-time and overlap queries with proper indexing
 
-**Full-Text Search:**
-✅ Rich text search with language-specific analyzers
-✅ BM25 ranking for relevance
-✅ Supports multiple languages and scripts
+**Document Search:**
+- ✅ Full-text search with language analyzers
+- ✅ JSON document storage with flexible schemas
+- ✅ Complex filtering on nested fields
 
-**Source Attribution:**
-✅ Efficient filtering by `source` array
-✅ DOI-based queries for dataset tracking
+**Unified Query Language:**
+- ✅ AQL integrates all capabilities (graph, document, spatial, vector)
+- ✅ Single query syntax reduces cognitive load
+- ✅ No need to combine multiple query languages or systems
 
-**Sequence-based Queries:**
-✅ Indexed `sequence` field for route/itinerary ordering
-✅ Fast ORDER BY on sequence
-
----
-
-### Advantages of Vespa-Only Approach
-
-**vs. Postgres + ElasticSearch:**
-- ✅ Single system eliminates sync issues and data duplication
-- ✅ No eventual consistency problems
-- ✅ Simpler architecture, easier maintenance
-- ✅ Built-in distributed computing
-- ✅ Real-time indexing (no lag between write and query)
-
-**Performance:**
-- ✅ Low-latency queries (sub-100ms for most patterns)
-- ✅ Horizontal scalability for read load
-- ✅ Native vector search without external plugin
-
-**Features:**
-- ✅ Machine-learned ranking models (can train on user behavior)
-- ✅ Streaming search for large result sets
-- ✅ Content similarity features
-
----
+**Operational Benefits:**
+- ✅ Single system for all data types
+- ✅ No data synchronization between systems
+- ✅ Unified backup/recovery strategy
+- ✅ Real-time consistency (no eventual consistency issues)
 
 ### Considerations and Tradeoffs
 
-**Optimized for read-heavy workloads:**
-- ✅ Great for WHG's query-dominant usage
-- ⚠️ Write throughput lower than specialized OLTP databases
+**Vector Search Maturity:**
+- ⚠️ Vector indexes added more recently than core features
+- ⚠️ Requires early benchmarking with WHG's phonetic embedding workload
+- ⚠️ Validate performance with 10M+ name embeddings
 
-**Complex graph traversals:**
-- ⚠️ Multi-hop queries (e.g., "friends of friends") require application logic
-- ✅ Single-hop attestation queries work well
-- ✅ Can denormalize frequently-accessed paths for performance
+**GeometryCollection Limitation:**
+- ❌ Cannot store heterogeneous geometry collections in single document
+- ✅ Workaround: Multiple geometry attestations (aligns with attestation model)
+- ✅ Alternative: Convert to MultiPolygon by buffering points/lines
 
-**Geometry inheritance:**
-- ⚠️ Recursive computation should happen at index time, not query time
-- ✅ Pre-compute inherited geometries during ingestion
-- ✅ Store as materialized field or separate derived document
+**Licensing:**
+- ⚠️ Community Edition limited to 100 GiB (insufficient for WHG)
+- ⚠️ Enterprise Edition required for production use (expected 500GB-1TB dataset)
+- ⚠️ Academic licensing terms require negotiation
 
-**Django/Postgres still needed for:**
+**Vendor Ecosystem:**
+- ⚠️ Smaller community than PostgreSQL
+- ⚠️ Fewer third-party tools and integrations
+- ⚠️ Limited pool of developers with ArangoDB experience
+- ⚠️ Proprietary query language (AQL) creates some lock-in
+
+**Django/PostgreSQL Still Needed For:**
 - ✅ User accounts, sessions, authentication
 - ✅ Admin interface (Django Admin)
-- ✅ Changelog and audit trails
+- ✅ Audit trails and provenance changelog
 - ✅ Namespace schema mapping
-- ✅ Traditional CRUD operations on metadata
-
-**Connection metadata as JSON:**
-- ⚠️ Requires string matching for complex filters
-- ✅ Consider flattening frequently-queried fields to top-level attributes
-
----
+- ✅ Traditional CRUD operations on application metadata
 
 ## Schema Design Best Practices
 
 ### Denormalization for Performance
 
-**When to denormalize:**
-- Frequently co-queried data (e.g., primary name with subject)
-- Avoid multiple joins for common patterns
+When to denormalize:
+
+- Frequently co-queried data (e.g., primary name with Thing)
+- Avoid multiple traversals for common patterns
 - Pre-compute aggregations (e.g., member counts)
 
-**Example:**
-Add `primary_name` field to Subject document:
-```
-subject {
-  field id type string { ... }
-  field description type string { ... }
-  field primary_name type string {
-    indexing: summary | index
-  }
+**Example:** Add `primary_name` and `representative_point` fields to Things:
+
+```javascript
+// Denormalized Thing document
+{
+  "_key": "constantinople",
+  "_id": "things/constantinople",
+  "thing_type": "location",
+  "description": "...",
+  "primary_name": "Constantinople", // denormalized
+  "representative_point": [28.98, 41.01] // denormalized
 }
 ```
 
-Updated during indexing by:
-1. Finding attestation with `relation_type: "has_name"` and highest certainty
-2. Copying name string to Subject's `primary_name` field
-3. Re-indexing when attestations change
+**Update Strategy:**
+
+```javascript
+// When name attestation changes
+db._query(aql`
+  FOR att IN attestations
+    FOR e1 IN edges
+      FILTER e1._from == "things/constantinople"
+      FILTER e1._to == att._id
+      FILTER e1.edge_type == "subject_of"
+      
+      FOR e2 IN edges
+        FILTER e2._from == att._id
+        FILTER e2.edge_type == "attests_name"
+        
+        LET name = DOCUMENT(e2._to)
+        FILTER att.certainty >= 0.9
+        SORT att.certainty DESC
+        LIMIT 1
+        
+        UPDATE { _key: "constantinople" }
+          WITH { primary_name: name.name }
+          IN things
+        
+        RETURN NEW
+`);
+```
 
 **Tradeoff:** Storage duplication vs. query speed. For high-traffic queries, worth it.
 
----
+### Materialized Views via Computed Fields
 
-### Parent-Child Relationships
+For expensive computations, create derived collections:
 
-**For closely related documents:**
-
-Use Vespa's parent-child feature to co-locate related documents:
-
-```
-subject {
-  field id type string { ... }
+```javascript
+// Collection: things_with_inherited_geometry
+{
+  "_key": "constantinople-computed",
+  "thing_id": "things/constantinople",
+  "inherited_geom": {
+    "type": "Polygon",
+    "coordinates": [...]
+  },
+  "computed_at": 1710345600000
 }
+```
 
-attestation {
-  field id type string { ... }
-  field subject_id type string {
-    indexing: summary | attribute
-    attribute: fast-search
+**Update Strategy:**
+
+```python
+# Django signal triggers geometry inheritance computation
+@receiver(post_save, sender=Attestation)
+def update_inherited_geometry(sender, instance, **kwargs):
+    # Check if this is a geometry attestation
+    for edge in Edge.objects.filter(from_id=instance.id, edge_type='attests_geometry'):
+        compute_and_store_inherited_geometry(instance.thing_id)
+```
+
+### Named Graphs for Domain Separation
+
+ArangoDB supports named graphs to organize different relationship types:
+
+```javascript
+// Define named graph for spatial-temporal relationships
+db._createGraph('spatio-temporal', [
+  {
+    collection: 'edges',
+    from: ['things', 'attestations'],
+    to: ['attestations', 'geometries', 'timespans', 'names', 'authorities']
   }
-  
-  import field subject_id from parent.id {}
-}
+]);
+
+// Define named graph for network relationships
+db._createGraph('networks', [
+  {
+    collection: 'edges',
+    from: ['things', 'attestations'],
+    to: ['attestations', 'things', 'authorities']
+  }
+]);
 ```
 
-**Benefits:**
-- Efficient joins without cross-shard queries
-- Atomic updates of related documents
+**Query with named graph:**
 
----
-
-### Materialized Views
-
-**For expensive computations:**
-
-Create derived document types for pre-computed results:
-
-**Example: Subject with inherited geometry**
+```aql
+FOR v, e, p IN 1..3 OUTBOUND "things/constantinople" 
+  GRAPH "networks"
+  FILTER p.edges[*].edge_type ALL == "relates_to"
+  RETURN v
 ```
-subject_with_geometry {
-  field subject_id type string { ... }
-  field inherited_geom type position { ... }
-  field computed_at type long { ... }
-}
-```
-
-Updated via:
-- Django signal triggers geometry inheritance computation
-- Writes derived document to Vespa
-- Query reads from materialized view instead of computing recursively
-
----
-
-### Handling Updates
-
-**Update strategies:**
-
-**Full re-index:**
-- When schema changes significantly
-- Periodic rebuilds for consistency
-
-**Partial updates:**
-- Update individual documents without full re-index
-- Use Vespa's update API for field-level changes
-
-**Cascade updates:**
-- When attestation changes, update denormalized fields in related documents
-- Django handles update propagation logic
-- Vespa receives updated documents
-
----
 
 ## Dynamic Clustering Support
 
 ### Required Indexes for Clustering
 
 **Toponymic clustering (Name similarity):**
-```
-name.embedding: tensor<float>(x[384]) with HNSW index
-name.name_type: array<string> with fast-search
-name.language: string with fast-search
-```
+- `names.embedding`: vector index with FAISS
+- `names.name_type`: persistent index
+- `names.language`: persistent index
 
 **Spatial clustering (Geometry proximity):**
-```
-geometry.representative_point: position with attribute
-geometry.bbox: array<double> with attribute
-geometry.precision_km: array<float> for confidence filtering
-```
+- `geometries.representative_point`: geo index
+- `geometries.bbox`: persistent index
+- `geometries.precision_km`: persistent index
 
 **Temporal clustering (Timespan overlap):**
-```
-timespan.start_earliest: long with fast-search
-timespan.start_latest: long with fast-search
-timespan.stop_earliest: long with fast-search
-timespan.stop_latest: long with fast-search
-```
+- `timespans.start_earliest`, `start_latest`: persistent indexes
+- `timespans.stop_earliest`, `stop_latest`: persistent indexes
 
 **Typological clustering (Classification):**
-```
-attestation.relation_type: string with fast-search (filter to has_type)
-attestation.object_id: string with fast-search (the classification value)
-```
-
----
+- `edges.edge_type`: persistent index
+- `authorities.label`: persistent index for relation types
 
 ### Clustering Query Pattern
 
-**Phase 1: Pre-filter candidates**
-```sql
-SELECT subject.id
-FROM subject, attestation AS a1, geometry, attestation AS a2, timespan
-WHERE a1.subject_id = subject.id
-  AND a1.relation_type = "has_geometry"
-  AND a1.object_id = geometry.id
-  AND geometry.bbox within query_bbox
-  AND a2.subject_id = subject.id
-  AND a2.relation_type = "has_timespan"
-  AND a2.object_id = timespan.id
-  AND timespan.start_latest <= query_end
-  AND timespan.stop_earliest >= query_start
+```aql
+LET query_point = @location
+LET query_bbox = @bounding_box
+LET query_start = @temporal_start
+LET query_end = @temporal_end
+LET query_embedding = @name_vector
+
+// Phase 1: Pre-filter candidates
+FOR thing IN things
+  // Spatial pre-filter
+  FILTER GEO_DISTANCE(thing.representative_point, query_point) < 100000
+  
+  // Get detailed geometry via graph traversal
+  LET geometries = (
+    FOR att IN attestations
+      FOR e1 IN edges
+        FILTER e1._from == thing._id
+        FILTER e1._to == att._id
+        
+        FOR e2 IN edges
+          FILTER e2._from == att._id
+          FILTER e2.edge_type == "attests_geometry"
+          RETURN DOCUMENT(e2._to)
+  )
+  FILTER LENGTH(geometries) > 0
+  
+  // Temporal filter via graph traversal
+  LET temporal_valid = (
+    FOR att IN attestations
+      FOR e1 IN edges
+        FILTER e1._from == thing._id
+        FILTER e1._to == att._id
+        
+        FOR e2 IN edges
+          FILTER e2._from == att._id
+          FILTER e2.edge_type == "attests_timespan"
+          LET ts = DOCUMENT(e2._to)
+          FILTER ts.start_latest <= query_end
+          FILTER ts.stop_earliest >= query_start
+          RETURN ts
+  )
+  FILTER LENGTH(temporal_valid) > 0
+  
+  // Phase 2: Similarity scoring
+  LET names = (
+    FOR att IN attestations
+      FOR e1 IN edges
+        FILTER e1._from == thing._id
+        FILTER e1._to == att._id
+        
+        FOR e2 IN edges
+          FILTER e2._from == att._id
+          FILTER e2.edge_type == "attests_name"
+          LET name = DOCUMENT(e2._to)
+          LET similarity = APPROX_NEAR_COSINE(name.embedding, query_embedding)
+          FILTER similarity > 0.7
+          SORT similarity DESC
+          LIMIT 3
+          RETURN {name: name.name, similarity: similarity}
+  )
+  
+  FILTER LENGTH(names) > 0
+  
+  LET spatial_score = 1 - (GEO_DISTANCE(thing.representative_point, query_point) / 100000)
+  LET name_score = names[0].similarity
+  LET temporal_score = 1.0 // could compute overlap percentage
+  
+  // Combined score (configurable weights)
+  LET combined_score = (name_score * 0.5) + (spatial_score * 0.3) + (temporal_score * 0.2)
+  
+  SORT combined_score DESC
+  LIMIT 50
+  
+  RETURN {
+    thing: thing,
+    names: names,
+    combined_score: combined_score,
+    spatial_score: spatial_score,
+    name_score: name_score
+  }
 ```
 
-**Phase 2: Similarity scoring**
-For each candidate subject:
-1. Retrieve Names via `has_name` attestations
-2. Compute vector similarity to query names
-3. Score spatial distance using representative_point
-4. Score temporal overlap
-5. Combine scores with configurable weights
+### Cluster Merging via Relationship Traversal
 
-**Phase 3: Cluster merging**
-```sql
-SELECT attestation.object_id
-FROM attestation
-WHERE attestation.subject_id IN (candidate_ids)
-  AND attestation.relation_type IN ("same_as", "coextensive_with", "succeeds")
+```aql
+// Phase 3: Find existing cluster relationships
+LET candidate_ids = @candidate_thing_ids
+
+FOR thing_id IN candidate_ids
+  LET thing = DOCUMENT(thing_id)
+  
+  // Find same_as relationships via graph traversal
+  LET same_as_links = (
+    FOR att IN attestations
+      FOR e1 IN edges
+        FILTER e1._from == thing._id
+        FILTER e1._to == att._id
+        
+        FOR e2 IN edges
+          FILTER e2._from == att._id
+          FILTER e2.edge_type == "typed_by"
+          LET rel_type = DOCUMENT(e2._to)
+          FILTER rel_type.label IN ["same_as", "coextensive_with"]
+          FILTER att.certainty >= 0.8
+          
+          FOR e3 IN edges
+            FILTER e3._from == att._id
+            FILTER e3.edge_type == "relates_to"
+            LET target = DOCUMENT(e3._to)
+            
+            RETURN {
+              target: target,
+              relation: rel_type.label,
+              certainty: att.certainty
+            }
+  )
+  
+  RETURN {
+    thing: thing,
+    cluster_members: same_as_links
+  }
 ```
 
-Apply merge logic based on relationship predicates and certainty thresholds.
-
----
-
-### Performance Optimization for Clustering
-
-**Batch queries:**
-- Use Vespa's multi-search API for parallel candidate retrieval
-- Group by spatial regions to reduce query load
-
-**Caching:**
-- Cache vector embeddings for frequent query terms
-- Cache bounding boxes for regions
-
-**Sampling:**
-- For large candidate sets, sample before detailed similarity computation
-- Refine top-N matches with full computation
-
----
-
-## Monitoring and Performance Tuning
-
-### Key Metrics
-
-**Query performance:**
-- Latency percentiles (p50, p95, p99)
-- Throughput (queries per second)
-- Cache hit rates
-
-**Index health:**
-- Document count per type
-- Index size and growth rate
-- Reindexing duration
-
-**Resource usage:**
-- CPU utilization
-- Memory usage
-- Disk I/O
-
----
-
-### Optimization Techniques
-
-**Query optimization:**
-- Use `timeout` parameter to fail fast
-- Limit result counts with `hits` parameter
-- Use `summary` fields sparingly
-
-**Index optimization:**
-- Tune HNSW parameters for vector search (max-links-per-node, neighbors-to-explore)
-- Adjust attribute fast-search settings based on query patterns
-- Consider multi-value attribute packing
-
-**Caching:**
-- Enable Vespa's query result cache for repeated queries
-- Use CDN for static geographic regions
-
----
-
-### Scaling Strategy
-
-**Horizontal scaling:**
-- Add content nodes for increased storage/query capacity
-- Partition data across nodes by geographic region or temporal period
-- Replicate frequently-accessed documents
-
-**Vertical scaling:**
-- Increase memory for larger indexes
-- Faster CPUs for vector similarity computations
-
-**Hybrid approach:**
-- Scale out for read capacity
-- Scale up for complex queries (clustering, vector search)
-
----
-
-## Migration from Postgres + ElasticSearch
+## Migration from PostgreSQL + ElasticSearch
 
 ### Migration Strategy
 
-**Phase 1: Parallel run**
+**Phase 1: Parallel Run**
 - Keep existing Postgres + ElasticSearch
-- Populate Vespa alongside
+- Populate ArangoDB alongside
 - Compare query results for validation
 
-**Phase 2: Read migration**
-- Route read queries to Vespa
+**Phase 2: Read Migration**
+- Route read queries to ArangoDB
 - Keep writes to both systems
 - Monitor performance and correctness
 
-**Phase 3: Write migration**
-- Direct writes to Vespa only
-- Django signals update Vespa instead of ElasticSearch
+**Phase 3: Write Migration**
+- Direct writes to ArangoDB only
+- Django signals update ArangoDB instead of ElasticSearch
 - Deprecate ElasticSearch
 
 **Phase 4: Cleanup**
 - Remove ElasticSearch cluster
 - Archive Postgres historical data
-- Vespa becomes source of truth for place data
-
----
+- ArangoDB becomes source of truth for place data
 
 ### Data Migration Process
 
-**Extract from Postgres:**
+**Extract from PostgreSQL:**
+
 ```python
-# Django ORM queries, for example:
+# Django ORM queries
 places = Place.objects.all()
 names = Name.objects.all()
 geometries = Geometry.objects.all()
 attestations = Attestation.objects.all()
 ```
 
-**Transform to Vespa schema:**
+**Transform to ArangoDB schema:**
+
 ```python
-def transform_place_to_subject(place):
+def transform_place_to_thing(place):
     return {
-        "id": f"whg:subject-{place.id}",
-        "description": place.description
+        "_key": f"{place.id}",
+        "thing_type": "location",
+        "description": place.description,
+        "namespace": "whg",
+        "created": place.created.isoformat(),
+        "modified": place.modified.isoformat()
     }
 
 def transform_name(name):
-    embedding = compute_embedding(name.name)
+    # Compute embedding if not present
+    embedding = compute_embedding(name.name) if not name.embedding else name.embedding
+    
     return {
-        "id": f"whg:name-{name.id}",
+        "_key": f"name-{name.id}",
         "name": name.name,
         "language": name.language,
+        "script": name.script,
+        "ipa": name.ipa,
         "embedding": embedding.tolist(),
-        "name_type": name.name_types  # array
+        "name_type": name.name_types,  # array
+        "romanized": name.romanized
     }
+
+def transform_geometry(geometry):
+    return {
+        "_key": f"geom-{geometry.id}",
+        "geom": geometry.geojson,  # native GeoJSON
+        "representative_point": [geometry.lon, geometry.lat],
+        "bbox": geometry.bbox,
+        "precision": geometry.precision_list,
+        "precision_km": geometry.precision_km_list,
+        "source_crs": "EPSG:4326"
+    }
+
+def transform_attestation(attestation):
+    """Transform attestation to node + edges"""
+    att_doc = {
+        "_key": f"attestation-{attestation.id}",
+        "sequence": attestation.sequence,
+        "connection_metadata": attestation.connection_metadata,
+        "certainty": attestation.certainty,
+        "certainty_note": attestation.certainty_note,
+        "notes": attestation.notes
+    }
+    
+    # Create edges
+    edges = [
+        # Thing to Attestation
+        {
+            "_from": f"things/{attestation.subject_id}",
+            "_to": f"attestations/attestation-{attestation.id}",
+            "edge_type": "subject_of"
+        }
+    ]
+    
+    # Add appropriate edges based on attestation type
+    # This would be expanded based on the specific attestation
+    
+    return att_doc, edges
 ```
 
-**Load into Vespa:**
+**Load into ArangoDB:**
+
 ```python
-import requests
+from arango import ArangoClient
 
-def index_document(doc_type, doc_id, document):
-    url = f"http://vespa:8080/document/v1/whg/{doc_type}/docid/{doc_id}"
-    response = requests.post(url, json={"fields": document})
-    return response.status_code == 200
+client = ArangoClient(hosts='http://localhost:8529')
+db = client.db('whg', username='root', password='password')
+
+def index_document(collection_name, document):
+    """Insert or update document in ArangoDB"""
+    collection = db.collection(collection_name)
+    try:
+        collection.insert(document)
+        return True
+    except Exception as e:
+        print(f"Error indexing document: {e}")
+        return False
+
+def batch_index(documents, collection_name):
+    """Batch insert documents"""
+    collection = db.collection(collection_name)
+    try:
+        result = collection.import_bulk(documents)
+        return result['created']
+    except Exception as e:
+        print(f"Error in batch indexing: {e}")
+        return 0
 ```
 
-**Batch loading:**
+**Parallel batch loading:**
+
 ```python
 from concurrent.futures import ThreadPoolExecutor
+from itertools import islice
 
-def batch_index(documents, doc_type):
-    with ThreadPoolExecutor(max_workers=10) as executor:
-        futures = [
-            executor.submit(index_document, doc_type, doc["id"], doc)
-            for doc in documents
-        ]
-        results = [f.result() for f in futures]
-    return sum(results)  # count successes
+def chunked(iterable, size):
+    """Split iterable into chunks"""
+    iterator = iter(iterable)
+    while chunk := list(islice(iterator, size)):
+        yield chunk
+
+def migrate_collection(django_queryset, transform_func, collection_name, batch_size=1000):
+    """Migrate a collection with progress tracking"""
+    total = django_queryset.count()
+    completed = 0
+    
+    for batch in chunked(django_queryset.iterator(), batch_size):
+        documents = [transform_func(obj) for obj in batch]
+        created = batch_index(documents, collection_name)
+        completed += created
+        print(f"Migrated {completed}/{total} to {collection_name}")
+    
+    return completed
+
+# Execute migration
+migrate_collection(Place.objects.all(), transform_place_to_thing, 'things')
+migrate_collection(Name.objects.all(), transform_name, 'names')
+migrate_collection(Geometry.objects.all(), transform_geometry, 'geometries')
+migrate_collection(Timespan.objects.all(), transform_timespan, 'timespans')
+# Attestations require special handling for edges
 ```
-
----
 
 ### Validation
 
 **Query comparison:**
+
 ```python
-def compare_results(query):
-    vespa_results = query_vespa(query)
-    postgres_results = query_postgres(query)
+def compare_results(query_params):
+    """Compare results between legacy system and ArangoDB"""
+    arango_results = query_arangodb(query_params)
+    postgres_results = query_postgres(query_params)
     
-    vespa_ids = set(r["id"] for r in vespa_results)
+    arango_ids = set(r["id"] for r in arango_results)
     postgres_ids = set(r["id"] for r in postgres_results)
     
-    recall = len(vespa_ids & postgres_ids) / len(postgres_ids)
-    precision = len(vespa_ids & postgres_ids) / len(vespa_ids)
+    recall = len(arango_ids & postgres_ids) / len(postgres_ids) if postgres_ids else 0
+    precision = len(arango_ids & postgres_ids) / len(arango_ids) if arango_ids else 0
     
-    return recall, precision
+    return {
+        'recall': recall,
+        'precision': precision,
+        'arango_count': len(arango_ids),
+        'postgres_count': len(postgres_ids),
+        'missing_in_arango': postgres_ids - arango_ids,
+        'extra_in_arango': arango_ids - postgres_ids
+    }
+
+# Run validation suite
+test_queries = [
+    {'type': 'name_search', 'name': 'Constantinople'},
+    {'type': 'spatial', 'point': [28.98, 41.01], 'radius': 50000},
+    {'type': 'temporal', 'date': '1200-01-01'},
+]
+
+for query in test_queries:
+    result = compare_results(query)
+    print(f"Query: {query}")
+    print(f"Recall: {result['recall']:.2%}, Precision: {result['precision']:.2%}")
 ```
 
 **Acceptance criteria:**
-- Recall > 0.99 (Vespa finds nearly all Postgres results)
-- Precision > 0.95 (Vespa results are mostly correct)
+- Recall > 0.99 (ArangoDB finds nearly all PostgreSQL results)
+- Precision > 0.95 (ArangoDB results are mostly correct)
 - Latency improvement > 2x
-
----
-
-## Django Integration
-
-### Django Signals for Vespa Updates
-
-**On Subject create/update:**
-```python
-from django.db.models.signals import post_save
-from django.dispatch import receiver
-
-@receiver(post_save, sender=Subject)
-def update_vespa_subject(sender, instance, **kwargs):
-    vespa_doc = {
-        "id": instance.get_namespaced_id(),
-        "description": instance.description
-    }
-    index_to_vespa("subject", vespa_doc)
-```
-
-**On Attestation create:**
-```python
-@receiver(post_save, sender=Attestation)
-def update_vespa_attestation(sender, instance, **kwargs):
-    vespa_doc = {
-        "id": instance.get_namespaced_id(),
-        "subject_id": instance.subject.get_namespaced_id(),
-        "relation_type": instance.relation_type,
-        "object_id": instance.object.get_namespaced_id() if instance.object else None,
-        "source": instance.source_list,  # array
-        "sequence": instance.sequence,
-        "certainty": instance.certainty
-    }
-    index_to_vespa("attestation", vespa_doc)
-    
-    # If denormalized fields exist, update parent documents
-    if instance.relation_type == "has_name" and instance.certainty > 0.9:
-        update_subject_primary_name(instance.subject)
-```
-
-**On Name create with embedding:**
-```python
-@receiver(post_save, sender=Name)
-def update_vespa_name(sender, instance, **kwargs):
-    # Compute embedding if not present
-    if not instance.embedding:
-        instance.embedding = compute_embedding(instance.name)
-        instance.save()
-    
-    vespa_doc = {
-        "id": instance.get_namespaced_id(),
-        "name": instance.name,
-        "language": instance.language,
-        "script": instance.script,
-        "embedding": instance.embedding.tolist(),
-        "name_type": instance.name_types
-    }
-    index_to_vespa("name", vespa_doc)
-```
-
----
-
-### Django Views for Queries
-
-**Reconciliation API:**
-```python
-from rest_framework.views import APIView
-from rest_framework.response import Response
-
-class ReconciliationView(APIView):
-    def post(self, request):
-        query_name = request.data.get("name")
-        query_date = request.data.get("date")  # optional
-        
-        # Get embedding for query name
-        query_embedding = compute_embedding(query_name)
-        
-        # Vector search in Vespa
-        vespa_query = {
-            "yql": "select * from name where {targetHits:10}nearestNeighbor(embedding,q)",
-            "ranking.features.query(q)": query_embedding.tolist()
-        }
-        
-        candidates = query_vespa(vespa_query)
-        
-        # If temporal filter, apply via attestations
-        if query_date:
-            candidates = filter_by_timespan(candidates, query_date)
-        
-        return Response(candidates)
-```
-
----
-
-### Namespace Resolution
-
-**Django model:**
-```python
-class NamespaceMapping(models.Model):
-    namespace = models.CharField(max_length=50, unique=True)
-    url_root = models.URLField()
-    description = models.TextField(blank=True)
-    
-    class Meta:
-        db_table = "namespace_mappings"
-```
-
-**Signal to sync to Vespa:**
-```python
-@receiver(post_save, sender=NamespaceMapping)
-def sync_namespace_to_vespa(sender, instance, **kwargs):
-    # Store namespace mappings in Vespa config
-    # or as special document type for resolution
-    pass
-```
-
-**Resolution function:**
-```python
-def resolve_id(namespaced_id):
-    namespace, local_id = namespaced_id.split(":", 1)
-    mapping = NamespaceMapping.objects.get(namespace=namespace)
-    return f"{mapping.url_root}{local_id}"
-```
-
----
 
 ## Migrating Legacy closeMatch Data
 
 ### Overview
 
-The V3 system contains approximately **38,000 curated closeMatch attestations** in the Django-managed `close_matches` table. These represent valuable human-reviewed linkages between places that must be preserved and migrated to the V4 attestation-based model.
+The V3 system contains approximately 38,000 curated `closeMatch` attestations representing valuable human-reviewed linkages between places. These must be preserved and migrated to the V4 attestation-based model in ArangoDB.
 
-### Legacy closeMatch Structure
+### Migration to ArangoDB Graph Model
 
-**V3 `close_matches` table:**
-```python
-class CloseMatch(models.Model):
-    place = models.ForeignKey(Place, related_name='close_matches')
-    matched_place = models.ForeignKey(Place, related_name='matched_to')
-    authority = models.CharField(max_length=50)  # 'whg', 'wikidata', 'geonames', etc.
-    matched_id = models.CharField(max_length=255)
-    created = models.DateTimeField(auto_now_add=True)
-    reviewed_by = models.ForeignKey(User, null=True)
-    confidence = models.FloatField(default=1.0)
-    notes = models.TextField(blank=True)
-```
-
-### Migration Strategy
-
-#### Phase 1: Data Extraction and Validation
-
-1. **Extract from V3 database:**
-```python
-# Extract all close matches with related data
-close_matches = CloseMatch.objects.select_related(
-    'place', 'matched_place', 'reviewed_by'
-).all()
-
-# Group by place to identify clusters
-place_clusters = defaultdict(set)
-for cm in close_matches:
-    place_clusters[cm.place.id].add(cm.matched_id)
-```
-
-2. **Validate data quality:**
-  - Check for orphaned references (places that no longer exist)
-  - Identify circular references
-  - Verify authority URIs are well-formed
-  - Flag low-confidence matches (< 0.5) for re-review
-
-3. **Resolve identity conflicts:**
-  - When Place A links to both Place B and Place C, but B and C aren't linked to each other
-  - Requires transitive closure analysis
-  - May need human review for ambiguous cases
-
-#### Phase 2: Mapping to V4 Attestation Model
-
-**V3 closeMatch → V4 Attestation mapping:**
+**V3 closeMatch → V4 attestation + edges mapping:**
 
 ```python
-def migrate_close_match(close_match, v4_subject_map):
+def migrate_close_match_to_arangodb(close_match, v4_thing_map):
     """
     Convert V3 closeMatch to V4 same_as attestation
     
     Args:
         close_match: V3 CloseMatch instance
-        v4_subject_map: Dict mapping V3 place IDs to V4 Subject IDs
+        v4_thing_map: Dict mapping V3 place IDs to V4 Thing _keys
     """
-    
-    # Get V4 Subject IDs
-    subject_id = v4_subject_map[close_match.place.id]
+    subject_key = v4_thing_map[close_match.place.id]
     object_id = resolve_authority_id(
-        close_match.authority, 
+        close_match.authority,
         close_match.matched_id
     )
     
-    # Create Attestation
+    # Create attestation document
     attestation = {
-        "id": f"whg:attestation-migrated-cm-{close_match.id}",
-        "subject_type": "subject",
-        "subject_id": subject_id,
-        "relation_type": "same_as",
-        "object_type": "subject",
-        "object_id": object_id,
-        "source": [f"WHG V3 closeMatch (migrated)", close_match.notes],
-        "source_type": ["dataset", "annotation"],
+        "_key": f"migrated-cm-{close_match.id}",
         "certainty": close_match.confidence,
-        "certainty_note": f"Curated by {close_match.reviewed_by.username} on {close_match.created.date()}" if close_match.reviewed_by else "Automated match",
-        "notes": f"Migrated from V3 close_matches table. Original ID: {close_match.id}"
+        "certainty_note": (
+            f"Curated by {close_match.reviewed_by.username} on {close_match.created.date()}"
+            if close_match.reviewed_by
+            else "Automated match"
+        ),
+        "notes": f"Migrated from V3 close_matches table. Original ID: {close_match.id}",
+        "sequence": None,
+        "connection_metadata": None
     }
     
-    return attestation
+    # Create AUTHORITY for same_as relation type if not exists
+    same_as_authority = {
+        "_key": "relation-same-as",
+        "authority_type": "relation_type",
+        "label": "same_as",
+        "inverse": "same_as",
+        "description": "Subject represents the same entity as object"
+    }
+    
+    # Create source AUTHORITY
+    source_authority = {
+        "_key": f"source-whg-v3-cm-{close_match.id}",
+        "authority_type": "source",
+        "citation": "WHG V3 closeMatch (migrated)",
+        "source_type": "dataset",
+        "notes": close_match.notes if close_match.notes else ""
+    }
+    
+    # Create edges
+    edges = [
+        # Thing to Attestation
+        {
+            "_from": f"things/{subject_key}",
+            "_to": f"attestations/migrated-cm-{close_match.id}",
+            "edge_type": "subject_of"
+        },
+        # Attestation to relation type
+        {
+            "_from": f"attestations/migrated-cm-{close_match.id}",
+            "_to": "authorities/relation-same-as",
+            "edge_type": "typed_by"
+        },
+        # Attestation to target
+        {
+            "_from": f"attestations/migrated-cm-{close_match.id}",
+            "_to": object_id,
+            "edge_type": "relates_to"
+        },
+        # Attestation to source
+        {
+            "_from": f"attestations/migrated-cm-{close_match.id}",
+            "_to": f"authorities/source-whg-v3-cm-{close_match.id}",
+            "edge_type": "sourced_by"
+        }
+    ]
+    
+    return attestation, same_as_authority, source_authority, edges
 
 def resolve_authority_id(authority, matched_id):
     """Map V3 authority references to V4 namespaced IDs"""
@@ -1057,183 +1358,392 @@ def resolve_authority_id(authority, matched_id):
         'geonames': 'geonames:',
         'pleiades': 'pleiades:',
         'tgn': 'tgn:',
-        'whg': 'whg:subject-'  # Internal WHG places
+        'whg': 'things/'  # Internal WHG places
     }
-    
     prefix = authority_map.get(authority.lower(), 'unknown:')
     return f"{prefix}{matched_id}"
 ```
 
-#### Phase 3: Handling Special Cases
+**Batch migration with validation:**
 
-**1. WHG-internal closeMatches (whg→whg):**
-- Both subject and object are WHG Subjects
-- These form the core of Place Portal clusters
-- Preserve cluster topology exactly
-
-**2. Authority closeMatches (whg→external):**
-- Map external IDs to proper namespaces
-- Validate that external authority still exists (some Wikidata/GeoNames IDs may have changed)
-- Update to current identifier if redirected
-
-**3. Bidirectional relationships:**
-- V3 may have both A→B and B→A recorded separately
-- V4 should treat `same_as` as inherently bidirectional
-- Migrate only one direction, document as symmetric
-
-**4. Conflicting matches:**
-- A→B with certainty 0.9
-- A→C with certainty 0.7
-- If B and C are not linked, this may indicate:
-  - Legitimate ambiguity (homonyms)
-  - Error requiring resolution
-- Tag for post-migration review
-
-#### Phase 4: Temporal Considerations
-
-**Adding temporal context post-migration:**
-
-Legacy closeMatches lack temporal information. After migration, consider:
-
-1. **Inherit temporality from linked Subjects:**
 ```python
-# If Subject A (York) has Timespan "71-present"
-# And Subject B (Eboracum) has Timespan "71-400"
-# The same_as attestation could be given Timespan "71-400"
-# (intersection of the two)
+def migrate_all_close_matches():
+    """Migrate all V3 closeMatches to ArangoDB"""
+    close_matches = CloseMatch.objects.select_related(
+        'place', 'matched_place', 'reviewed_by'
+    ).all()
+    
+    # Build Thing mapping
+    v4_thing_map = {}
+    for place in Place.objects.all():
+        v4_thing_map[place.id] = str(place.id)
+    
+    attestations = []
+    authorities = {}  # deduplicate authorities
+    edges = []
+    errors = []
+    
+    for cm in close_matches:
+        try:
+            att, same_as_auth, source_auth, att_edges = migrate_close_match_to_arangodb(cm, v4_thing_map)
+            attestations.append(att)
+            authorities[same_as_auth["_key"]] = same_as_auth
+            authorities[source_auth["_key"]] = source_auth
+            edges.extend(att_edges)
+        except Exception as e:
+            errors.append({'close_match_id': cm.id, 'error': str(e)})
+    
+    # Batch insert
+    att_created = batch_index(attestations, 'attestations')
+    auth_created = batch_index(list(authorities.values()), 'authorities')
+    edge_created = batch_index(edges, 'edges')
+    
+    print(f"Migrated {att_created}/{len(close_matches)} closeMatches")
+    print(f"Created {auth_created} authorities, {edge_created} edges")
+    print(f"Errors: {len(errors)}")
+    
+    return {
+        'created': att_created,
+        'authorities': auth_created,
+        'edges': edge_created,
+        'errors': errors
+    }
 ```
 
-2. **Flag for temporal review:**
-- closeMatches between subjects with non-overlapping timespans
-- May indicate name succession rather than identity
-- Consider `succeeds` relation instead of `same_as`
+### Post-Migration Validation
 
-#### Phase 5: Quality Assurance
+```python
+def validate_closematch_migration():
+    """Validate closeMatch migration completeness"""
+    # Count V3 closeMatches
+    v3_count = CloseMatch.objects.count()
+    
+    # Count migrated attestations in ArangoDB
+    query = """
+    FOR a IN attestations
+      FILTER STARTS_WITH(a._key, "migrated-cm-")
+      COLLECT WITH COUNT INTO count
+      RETURN count
+    """
+    v4_count = db.aql.execute(query).next()
+    
+    # Verify sample matches resolve correctly
+    sample_cms = CloseMatch.objects.order_by('?')[:100]
+    resolution_errors = 0
+    
+    for cm in sample_cms:
+        query = f"""
+        FOR a IN attestations
+          FILTER a._key == "migrated-cm-{cm.id}"
+          RETURN a
+        """
+        result = list(db.aql.execute(query))
+        if not result:
+            resolution_errors += 1
+    
+    report = {
+        'v3_count': v3_count,
+        'v4_count': v4_count,
+        'migration_rate': v4_count / v3_count if v3_count > 0 else 0,
+        'sample_resolution_errors': resolution_errors
+    }
+    
+    print(f"Migration validation: {report}")
+    return report
+```
 
-**Post-migration validation:**
+## Django Integration
 
-1. **Count verification:**
-  - Confirm all 38k closeMatches migrated
-  - Check for duplicates
-  - Verify no data loss
+### ArangoDB Connection Setup
 
-2. **Cluster integrity:**
-  - Verify Place Portal pages reconstruct correctly
-  - Test queries that depend on `same_as` links
-  - Confirm transitive closure maintained
-
-3. **Authority link validation:**
-  - Test sample of external links still resolve
-  - Update any broken/redirected authority IDs
-  - Document any authorities no longer available
-
-4. **User attribution:**
-  - Preserve reviewer information in certainty_note
-  - Maintain audit trail from V3
-  - Enable future queries by reviewer
-
-#### Phase 6: Documentation
-
-**Migration metadata to preserve:**
-
-```json
-{
-  "migration_event": {
-    "date": "2026-01-15",
-    "source_system": "WHG V3",
-    "source_table": "close_matches",
-    "records_migrated": 38247,
-    "records_failed": 23,
-    "attestation_id_pattern": "whg:attestation-migrated-cm-*",
-    "validation_report": "https://whgazetteer.org/admin/migration/close-matches-report.json"
-  }
+```python
+# settings.py
+ARANGO_CONFIG = {
+    'hosts': os.environ.get('ARANGO_HOSTS', 'http://localhost:8529'),
+    'username': os.environ.get('ARANGO_USER', 'root'),
+    'password': os.environ.get('ARANGO_PASSWORD'),
+    'database': os.environ.get('ARANGO_DB', 'whg'),
 }
+
+# utils/arango_client.py
+from arango import ArangoClient
+from django.conf import settings
+
+class ArangoConnection:
+    _instance = None
+    
+    def __new__(cls):
+        if cls._instance is None:
+            cls._instance = super().__new__(cls)
+            client = ArangoClient(hosts=settings.ARANGO_CONFIG['hosts'])
+            cls._instance.db = client.db(
+                settings.ARANGO_CONFIG['database'],
+                username=settings.ARANGO_CONFIG['username'],
+                password=settings.ARANGO_CONFIG['password']
+            )
+        return cls._instance
+    
+    @property
+    def database(self):
+        return self.db
+
+# Usage
+arango = ArangoConnection()
+db = arango.database
 ```
 
-**User-facing documentation:**
-- Explain that existing Place Portal clusters will be preserved
-- Note any changes in cluster behavior due to improved algorithms
-- Provide migration report showing what was updated
+### Django Signals for ArangoDB Updates
 
-### Implementation Timeline
+```python
+from django.db.models.signals import post_save, post_delete
+from django.dispatch import receiver
+from .utils.arango_client import arango
 
-**Week 1-2: Preparation**
-- Extract and validate V3 data
-- Identify and resolve conflicts
-- Build migration scripts
+@receiver(post_save, sender=Thing)
+def sync_thing_to_arango(sender, instance, created, **kwargs):
+    """Sync Thing changes to ArangoDB"""
+    db = arango.database
+    things = db.collection('things')
+    
+    doc = {
+        "_key": str(instance.id),
+        "thing_type": instance.thing_type,
+        "description": instance.description,
+        "namespace": instance.namespace,
+        "created": instance.created.isoformat(),
+        "modified": instance.modified.isoformat()
+    }
+    
+    if created:
+        things.insert(doc)
+    else:
+        things.update({"_key": str(instance.id)}, doc)
 
-**Week 3: Migration**
-- Run migration in staging environment
-- Validate results
-- Fix any issues
+@receiver(post_save, sender=Name)
+def sync_name_to_arango(sender, instance, created, **kwargs):
+    """Sync Name with embedding to ArangoDB"""
+    db = arango.database
+    names = db.collection('names')
+    
+    # Compute embedding if not present
+    embedding = instance.embedding
+    if not embedding:
+        embedding = compute_embedding(instance.name)
+        instance.embedding = embedding
+        instance.save(update_fields=['embedding'])
+    
+    doc = {
+        "_key": str(instance.id),
+        "name": instance.name,
+        "language": instance.language,
+        "script": instance.script,
+        "ipa": instance.ipa,
+        "embedding": embedding.tolist() if hasattr(embedding, 'tolist') else embedding,
+        "name_type": instance.name_types,
+        "romanized": instance.romanized
+    }
+    
+    if created:
+        names.insert(doc)
+    else:
+        names.update({"_key": str(instance.id)}, doc)
+```
 
-**Week 4: Testing**
-- Compare V3 vs V4 Place Portal pages
-- Test search and reconciliation with migrated links
-- User acceptance testing
+### Django Views for Queries
 
-**Week 5: Production**
-- Execute production migration
-- Monitor for issues
-- Document any anomalies
+**Reconciliation API:**
 
-### Rollback Plan
+```python
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from .utils.arango_client import arango
+from .utils.embeddings import compute_embedding
 
-**If migration fails:**
-1. V3 data remains intact (read-only during migration)
-2. V4 attestations can be deleted by pattern: `whg:attestation-migrated-cm-*`
-3. Restore from pre-migration Vespa snapshot
-4. Investigate issues and re-run
+class ReconciliationView(APIView):
+    def post(self, request):
+        query_name = request.data.get("name")
+        query_date = request.data.get("date")  # optional ISO date
+        query_location = request.data.get("location")  # optional [lon, lat]
+        
+        # Get embedding for query name
+        query_embedding = compute_embedding(query_name)
+        
+        db = arango.database
+        
+        # Build AQL query
+        bind_vars = {
+            'query_embedding': query_embedding.tolist(),
+            'similarity_threshold': 0.7
+        }
+        
+        aql = """
+        FOR name IN names
+          LET similarity = APPROX_NEAR_COSINE(name.embedding, @query_embedding)
+          FILTER similarity > @similarity_threshold
+          SORT similarity DESC
+          LIMIT 20
+          
+          // Find associated Things via graph traversal
+          FOR att IN attestations
+            FOR e IN edges
+              FILTER e._to == att._id
+              FILTER e.edge_type == "subject_of"
+              
+              FOR e2 IN edges
+                FILTER e2._from == att._id
+                FILTER e2.edge_type == "attests_name"
+                FILTER e2._to == name._id
+                
+                LET thing = DOCUMENT(e._from)
+        """
+        
+        # Add temporal filter if date provided
+        if query_date:
+            aql += """
+            LET temporal_valid = (
+              FOR e3 IN edges
+                FILTER e3._from == att._id
+                FILTER e3.edge_type == "attests_timespan"
+                LET ts = DOCUMENT(e3._to)
+                FILTER ts.start_latest <= @query_date
+                FILTER ts.stop_earliest >= @query_date
+                RETURN true
+            )
+            FILTER LENGTH(temporal_valid) > 0
+            """
+            bind_vars['query_date'] = query_date
+        
+        # Add spatial filter if location provided
+        if query_location:
+            aql += """
+            FILTER GEO_DISTANCE(thing.representative_point, @query_location) < 100000
+            """
+            bind_vars['query_location'] = query_location
+        
+        aql += """
+          RETURN {
+            thing_id: thing._key,
+            thing_type: thing.thing_type,
+            matched_name: name.name,
+            primary_name: thing.primary_name,
+            similarity: similarity,
+            description: thing.description
+          }
+        """
+        
+        cursor = db.aql.execute(aql, bind_vars=bind_vars)
+        candidates = list(cursor)
+        
+        return Response({
+            'query': query_name,
+            'candidates': candidates,
+            'count': len(candidates)
+        })
+```
 
-### Success Metrics
+## Monitoring and Performance Tuning
 
-- ✅ 100% of closeMatches migrated (allowing for a small failure rate on corrupt data)
-- ✅ Place Portal pages show same or more linked records
-- ✅ No broken authority links (or documented as expected)
-- ✅ User reviewers credited in attestations
-- ✅ Migration audit trail complete
+### Key Metrics
 
-### Future Enhancements
+**Query Performance:**
+- Latency percentiles (p50, p95, p99)
+- Throughput (queries per second)
+- Query execution plans
 
-Post-migration, the attestation model enables:
-- **Temporal refinement**: Add Timespan attestations to clarify when identities held
-- **Source enrichment**: Add citations for closeMatch claims where available
-- **Confidence updates**: Users can update certainty scores with new evidence
-- **Relationship refinement**: Convert some `same_as` to `succeeds` where appropriate
+**Index Health:**
+- Document count per collection
+- Index size and memory usage
+- Vector index recall metrics
 
----
+**Resource Usage:**
+- CPU utilization
+- Memory usage (especially for vector indexes)
+- Disk I/O
+- Network throughput (for cluster setups)
+
+### Query Optimization Techniques
+
+**Explain plans:**
+
+```python
+def explain_query(aql_query, bind_vars=None):
+    """Explain query execution plan"""
+    db = arango.database
+    result = db.aql.explain(aql_query, bind_vars=bind_vars)
+    
+    print(f"Estimated cost: {result['plan']['estimatedCost']}")
+    print(f"Estimated items: {result['plan']['estimatedNrItems']}")
+    print("\nExecution nodes:")
+    for node in result['plan']['nodes']:
+        print(f"  - {node['type']}")
+    
+    return result
+```
+
+**Vector search tuning:**
+
+```javascript
+// Tune vector index parameters
+db.names.ensureIndex({
+  type: "vector",
+  fields: ["embedding"],
+  params: {
+    metric: "cosine",
+    dimension: 384,
+    lists: 1000,  // Increase for better recall, decrease for speed
+    nprobe: 10    // Number of lists to search (higher = better recall, slower)
+  }
+});
+```
 
 ## Summary
 
-### Vespa Strengths for WHG
+### ArangoDB Strengths for WHG
 
-✅ **Unified storage and indexing** - eliminates sync complexity
-✅ **Native vector search** - essential for Dynamic Clustering toponymic similarity
-✅ **Spatial indexing** - bbox queries with app-level refinement
-✅ **Temporal range queries** - efficient point-in-time and overlap queries
-✅ **Real-time updates** - no indexing lag
-✅ **Horizontal scalability** - handles growth in data and query load
-✅ **Rich query language** - YQL supports complex filters and joins
+✅ **Native property graph** - Direct mapping to attestation model with Attestations as nodes
+✅ **Unified multi-model** - Graph + document + geospatial + vector in single system  
+✅ **Superior GeoJSON** - Native support for complex historical geometries  
+✅ **Elegant queries** - AQL integrates all capabilities seamlessly  
+✅ **Operational simplicity** - Single system for small team  
+✅ **Real-time consistency** - No sync issues between systems  
+✅ **Flexible schema** - JSON documents adapt easily to evolving requirements
+
+### Key Considerations
+
+⚠️ **Licensing required** - Enterprise Edition needed for production dataset size  
+⚠️ **Vector search maturity** - Early benchmarking essential for phonetic embedding workload  
+⚠️ **GeometryCollection limitation** - Workaround via multiple attestations (aligns with model)  
+⚠️ **Smaller ecosystem** - Fewer third-party tools than PostgreSQL  
+⚠️ **Vendor lock-in** - Proprietary AQL creates some switching costs
 
 ### Implementation Priorities
 
-1. **Core document types** - Subject, Name, Geometry, Timespan, Attestation
-2. **Essential indexes** - Embeddings (HNSW), spatial (representative_point), temporal (range fields)
-3. **Django signals** - Keep Vespa in sync with database changes
-4. **Query patterns** - Name resolution, spatial+temporal, vector similarity
-5. **Dynamic Clustering support** - Pre-filtering and similarity scoring
-6. **Namespace resolution** - Django→Vespa sync for ID mappings
-7. **Denormalization** - Primary names, frequently-accessed relationships
-8. **Monitoring** - Query latency, index health, resource usage
+1. **Core collections** - Things, Names, Geometries, Timespans, Attestations, Authorities, Edges
+2. **Essential indexes** - Vector (FAISS), geospatial, temporal, edge
+3. **Django integration** - Signals for real-time sync
+4. **Query patterns** - Name resolution, spatio-temporal, vector similarity
+5. **Dynamic Clustering** - Multi-dimensional similarity scoring
+6. **Migration pipeline** - From Postgres + ElasticSearch
+7. **closeMatch migration** - Preserve 38K curated relationships
+8. **Monitoring** - Query performance, index health, resource usage
+9. **Performance testing** - Validate at production scale
+10. **Documentation** - Query examples, operational procedures
 
 ### Next Steps
 
-1. Set up Vespa cluster (development → staging → production)
-2. Define schemas for five document types
-3. Implement Django signals for synchronization
-4. Build data migration pipeline from Postgres
-5. Validate query results against existing system
-6. Performance test with production-scale data
-7. Develop Dynamic Clustering queries
-8. Cutover to Vespa for reads, then writes
-9. Decommission Postgres+ElasticSearch for place data
+1. **Licensing discussion** - Negotiate academic terms with ArangoDB
+2. **Proof of concept** - Build prototype with representative data
+3. **Benchmark vector search** - Test FAISS-backed phonetic embeddings at 10M+ scale
+4. **Validate query patterns** - Test combined graph + spatial + temporal + vector queries
+5. **Capacity planning** - Determine hardware requirements
+6. **Migration strategy** - Plan phased rollout with validation gates
+7. **Training** - Develop AQL expertise and operational procedures
+8. **Monitoring setup** - Establish metrics and alerting
+9. **Decision point** - Commit to architecture based on validation results
+
+---
+
+**Related Documentation:**
+- [Database Technology Assessment](database.md) - Evaluation of database options
+- [WHG v4 Data Model Overview](overview.md) - Core data model specification
+- [Attestations & Relations](attestations.md) - Detailed attestation patterns

@@ -3,7 +3,7 @@
 ## TL;DR
 
 **WHG v4** is transitioning to a property graph data model centered on attestations (source-backed claims about historical places). We need a database that natively supports:
-- Property graphs with rich edge metadata
+- Property graphs with rich node and edge metadata
 - GeoJSON geometries for complex historical boundaries
 - Vector similarity search for phonetic name matching
 - Temporal queries
@@ -35,20 +35,21 @@ The World Historical Gazetteer (WHG) is undergoing a fundamental redesign of its
 
 **Understanding the Data Model**
 
-WHG v4 is built around **Things** (entities such as locations, historical entities, collections, periods, routes, itineraries, and networks) connected through **Attestations** (source-backed claims with temporal bounds and certainty assessments).
+WHG v4 is built around **Things** (entities such as locations, historical entities, collections, periods, routes, itineraries, and networks) connected through **Attestations** (nodes that bundle source-backed claims with temporal bounds and certainty assessments).
 
 **Complete technical details**: [WHG v4 Data Model Documentation](https://docs.whgazetteer.org/content/v4/data-model.html)
 
 **Key concepts**:
 - **Thing**: Any entity that can be described (what we used to call "places" but now expanded)
-- **Attestation**: A claim connecting a Thing to information (names, geometries, timespans, types, or other Things)
-- **Provenance**: Every claim cites sources, has certainty assessment, and temporal bounds
-- **Graph structure**: Attestations form edges in a property graph where nodes are Things, Names, Geometries, and Timespans
+- **Attestation**: A node that bundles claims connecting a Thing to information (names, geometries, timespans, types, or other Things)
+- **Authority**: Unified reference data for sources, datasets, relation types, periods, and certainty levels
+- **Provenance**: Every claim cites sources via AUTHORITY nodes, has certainty assessment, and temporal bounds
+- **Graph structure**: Attestations are nodes (not just edges) in a property graph where edges connect Things → Attestations → Names/Geometries/Timespans/Things
 
 **Current Status**: Previous documentation references Vespa as the intended backend. However, the shift to an attestation-based graph model requires reassessment of technology choices.
 
 **Key Requirements**:
-- Property graph with rich edge properties (attestations)
+- Property graph with Attestations as first-class nodes (not just edge metadata)
 - Native GeoJSON support for complex historical geometries
 - Vector similarity search for phonetic name matching across scripts/languages
 - Temporal query capabilities
@@ -78,25 +79,26 @@ WHG v4 is built around **Things** (entities such as locations, historical entiti
 ### WHG Attestation Layer
 
 Per Thing averages:
-- 5 name attestations × 1KB = 5KB
-- 2 geometry attestations × 2KB = 4KB
-- 3 timespan attestations × 0.5KB = 1.5KB
-- 5 relation attestations × 1KB = 5KB
-- 2 type attestations × 0.5KB = 1KB
+- 5 name attestations (nodes) × 1KB = 5KB
+- 2 geometry attestations (nodes) × 2KB = 4KB
+- 3 timespan attestations (nodes) × 0.5KB = 1.5KB
+- 5 relation attestations (nodes) × 1KB = 5KB
+- 2 type attestations (nodes) × 0.5KB = 1KB
+- Edges connecting nodes × 0.3KB × ~20 edges = 6KB
 
-**Attestation overhead**: 73M Things × 16.5KB = **~1.2TB**
+**Attestation overhead**: 73M Things × 22.5KB = **~1.6TB**
 
 ### Total Storage Requirements
 
-**Raw data**: 116-156GB + 1.2TB = **~1.3-1.4TB**
-**With compression** (2-3x typical): **500-700GB**
-**With indexes** (vector, spatial, full-text): **+300GB**
+**Raw data**: 116-156GB + 1.6TB = **~1.7-1.8TB**
+**With compression** (2-3x typical): **600-900GB**
+**With indexes** (vector, spatial, full-text, edge): **+300GB**
 
-**Final estimate**: **800GB - 1TB** working set
+**Final estimate**: **900GB - 1.2TB** working set
 
 ### Growth Projections
 
-**Year 1**: 800GB-1TB
+**Year 1**: 900GB-1.2TB
 **Year 3**: 1.5-2TB (with new contributions)
 **Year 5**: 2.5-3TB (if major datasets added)
 
@@ -106,42 +108,112 @@ Per Thing averages:
 
 **1. Optimal Data Model Alignment**
 
-ArangoDB's native multi-model architecture (graph + document + geospatial) maps directly to WHG's attestation model:
+ArangoDB's native multi-model architecture (graph + document + geospatial) maps directly to WHG's attestation model where **Attestations are nodes** (not just edges):
 
 ```javascript
-// Things as documents with graph capabilities
+// Things as documents
 {
     "_key": "constantinople",
     "_id": "things/constantinople",
     "thing_type": "location",
-    "description": "Major Byzantine/Ottoman city on the Bosphorus"
+    "description": "Major Byzantine/Ottoman city on the Bosphorus",
+    "primary_name": "Constantinople",  // denormalized
+    "representative_point": [28.98, 41.01]  // denormalized
 }
 
-// Attestations as graph edges with properties
+// Names as documents with embeddings
+{
+    "_key": "name-istanbul-tr",
+    "_id": "names/name-istanbul-tr",
+    "name": "İstanbul",
+    "language": "tr",
+    "script": "Latn",
+    "embedding": [0.234, -0.567, ...]  // 384-dimensional
+}
+
+// Attestations as nodes (not edges)
+{
+    "_key": "att-001",
+    "_id": "attestations/att-001",
+    "certainty": 1.0,
+    "certainty_note": "Official administrative name change",
+    "notes": "Adopted after establishment of Turkish Republic"
+}
+
+// Edges connect the graph
 {
     "_from": "things/constantinople",
-    "_to": "names/istanbul",
-    "relation_type": "has_name",
-    "source": ["Turkish Geographic Board decision", "1930"],
-    "certainty": 1.0,
-    "timespan": {
-    "start_earliest": "1930-01-01",
-        "stop_latest": null
+    "_to": "attestations/att-001",
+    "edge_type": "subject_of"
 }
+
+{
+    "_from": "attestations/att-001",
+    "_to": "names/name-istanbul-tr",
+    "edge_type": "attests_name"
+}
+
+{
+    "_from": "attestations/att-001",
+    "_to": "authorities/source-turkish-gov",
+    "edge_type": "sourced_by"
 }
 ```
 
-This eliminates impedance mismatch between application logic and database structure.
+**Key advantage**: Attestations as nodes enables meta-attestations (attestations about attestations), rich provenance chains, and natural modeling of scholarly discourse.
 
-**2. Superior GeoJSON Support**
+**2. Unified AUTHORITY Collection**
+
+Single table inheritance via `authority_type` discriminator replaces multiple collections:
+
+```javascript
+// Source authority
+{
+    "_id": "authorities/al-tabari",
+    "authority_type": "source",
+    "citation": "Al-Tabari, History of the Prophets and Kings",
+    "source_type": "manuscript"
+}
+
+// Dataset authority
+{
+    "_id": "authorities/dataset-123",
+    "authority_type": "dataset",
+    "title": "Islamic Cities Database",
+    "doi": "doi:10.83427/whg-dataset-123"
+}
+
+// Relation type authority
+{
+    "_id": "authorities/member-of",
+    "authority_type": "relation_type",
+    "label": "member_of",
+    "inverse": "contains",
+    "description": "Subject is part of object entity"
+}
+
+// Period authority (PeriodO integration)
+{
+    "_id": "authorities/abbasid",
+    "authority_type": "period",
+    "label": "Abbasid Caliphate",
+    "uri": "periodo:p0abbasid",
+    "start_earliest": "750-01-01",
+    "stop_latest": "1258-12-31"
+}
+```
+
+This eliminates multiple table joins and simplifies queries.
+
+**3. Superior GeoJSON Support**
 
 ArangoDB provides native GeoJSON storage and querying with support for Point, MultiPoint, LineString, MultiLineString, Polygon, and MultiPolygon types:
 
 ```javascript
 // Store complex geometries
-db.things.insert({
-    _key: "constantinople",
-    geometry: {
+db.geometries.insert({
+    _key: "geom-constantinople",
+    geom: {
         type: "MultiPolygon",
         coordinates: [
             // First polygon: city center
@@ -161,17 +233,15 @@ db.things.insert({
                 [28.90, 41.00]
             ]]
         ]
-    }
+    },
+    representative_point: [28.97, 41.03],
+    precision: ["historical_approximate"]
 })
 
 // Geospatial queries
-db.things.find({
-    geometry: {
-        $geoWithin: {
-            $geometry: queryPolygon
-        }
-    }
-})
+FOR geom IN geometries
+  FILTER GEO_DISTANCE(geom.representative_point, @query_point) < 50000
+  RETURN geom
 ```
 
 **Key advantages**:
@@ -181,53 +251,94 @@ db.things.find({
 - No encoding or workarounds required
 
 **Note on GeometryCollection**: ArangoDB does not support the GeometryCollection type. For WHG data containing heterogeneous geometry sets (e.g., a place represented by both a point and a polygon), we would either:
-- Store multiple geometry attestations (one per geometry type) - aligns naturally with our attestation model
+- Store multiple geometry attestations (one per geometry type) - **aligns naturally with our attestation model where each geometry is a separate claim**
 - Convert to MultiPolygon by buffering points and lines into small polygons where single-geometry representation is required
 
 **Comparison**: PostgreSQL PostGIS supports GeometryCollection natively; Neo4j spatial plugin has limited GeoJSON support; Vespa has no GeoJSON support.
 
-**3. Unified Query Language (AQL)**
+**4. Unified Query Language (AQL)**
 
-AQL integrates graph traversal, document filtering, geospatial queries, and vector similarity in a single, coherent language:
+AQL integrates graph traversal, document filtering, geospatial queries, and vector similarity in a single, coherent language. With our model where Attestations are nodes:
 
 ```aql
-// Complex query combining multiple capabilities
-FOR thing IN Things
-  // Vector similarity search (index-accelerated with FAISS)
-  LET similarity = APPROX_NEAR_COSINE(thing.name_embedding, @query_embedding)
-  FILTER similarity > 0.8
-  SORT similarity DESC
+// Complex query: Find places with similar names near Constantinople in 13th century
+LET query_embedding = @query_vector
+LET query_point = [28.98, 41.01]
+LET query_start = DATE_TIMESTAMP("1200-01-01")
+LET query_end = DATE_TIMESTAMP("1300-12-31")
+
+FOR thing IN things
+  // Spatial constraint
+  FILTER GEO_DISTANCE(thing.representative_point, query_point) < 50000
   
-  // Geospatial constraint
-  FILTER GEO_DISTANCE(thing.geometry, @query_point) < 50000
+  // Find names via graph traversal
+  LET matching_names = (
+    FOR att IN attestations
+      FOR e1 IN edges
+        FILTER e1._from == thing._id
+        FILTER e1._to == att._id
+        FILTER e1.edge_type == "subject_of"
+        
+        FOR e2 IN edges
+          FILTER e2._from == att._id
+          FILTER e2.edge_type == "attests_name"
+          LET name = DOCUMENT(e2._to)
+          
+          // Vector similarity (index-accelerated)
+          LET similarity = APPROX_NEAR_COSINE(name.embedding, query_embedding)
+          FILTER similarity > 0.8
+          
+          // Check temporal validity
+          FOR e3 IN edges
+            FILTER e3._from == att._id
+            FILTER e3.edge_type == "attests_timespan"
+            LET ts = DOCUMENT(e3._to)
+            FILTER ts.start_latest <= query_end
+            FILTER ts.stop_earliest >= query_start
+            
+            RETURN {name: name.name, similarity: similarity}
+  )
   
-  // Graph traversal for network relationships
-  LET partners = (
-    FOR v, e IN 1..3 OUTBOUND thing Attestations
-      FILTER e.relation_type == "connected_to"
-      FILTER e.timespan.start_earliest <= @query_end
-      FILTER e.timespan.stop_latest >= @query_start
-      RETURN {place: v, relation: e}
+  FILTER LENGTH(matching_names) > 0
+  
+  // Find network connections
+  LET trade_partners = (
+    FOR att IN attestations
+      FOR e1 IN edges
+        FILTER e1._from == thing._id
+        FILTER e1._to == att._id
+        
+        FOR e2 IN edges
+          FILTER e2._from == att._id
+          FILTER e2.edge_type == "typed_by"
+          LET rel_type = DOCUMENT(e2._to)
+          FILTER rel_type.label == "connected_to"
+          
+          FOR e3 IN edges
+            FILTER e3._from == att._id
+            FILTER e3.edge_type == "relates_to"
+            LET partner = DOCUMENT(e3._to)
+            RETURN partner
   )
   
   LIMIT 10
   RETURN {
     thing: thing,
-    similarity: similarity,
-    trade_partners: partners
+    names: matching_names,
+    trade_partners: trade_partners
   }
 ```
 
-This eliminates the need to combine multiple query languages or systems.
+This eliminates the need to combine multiple query languages or systems. The graph traversal naturally handles the Attestation-as-node pattern.
 
-**4. Operational Simplicity**
+**5. Operational Simplicity**
 
 **Critical for small team**: Single system handles:
-- ✅ Graph queries (paths, networks, traversals)
+- ✅ Graph queries (Attestations as nodes, multi-hop traversals)
 - ✅ Document search (full-text, filtering)
-- ✅ Vector similarity (name matching)
+- ✅ Vector similarity (name matching via embeddings)
 - ✅ Geospatial (GeoJSON native)
-- ✅ Temporal queries (JSON documents)
+- ✅ Temporal queries (efficient range queries)
 
 **Impact**:
 - One database to maintain and monitor
@@ -236,15 +347,15 @@ This eliminates the need to combine multiple query languages or systems.
 - No data synchronization between systems
 - Reduced cognitive load for solo developer
 
-**5. JSON-Native Architecture**
+**6. JSON-Native Architecture**
 
 Every node is a JSON document, matching WHG's data modeling approach and facilitating:
-- Flexible schema evolution
+- Flexible schema evolution (AUTHORITY discriminator pattern)
 - Natural representation of complex temporal structures
 - Direct mapping from [Linked Places Format (LPF)](https://github.com/LinkedPasts/linked-places-format)
 - Easy integration with Django REST framework
 
-**6. Vector Indexes for Phonetic Name Matching**
+**7. Vector Indexes for Phonetic Name Matching**
 
 ArangoDB provides vector indexes for approximate nearest neighbor search, powered by the FAISS library:
 
@@ -264,6 +375,7 @@ db.names.ensureIndex({
 ```aql
 FOR name IN names
   LET similarity = APPROX_NEAR_COSINE(name.embedding, @query_embedding)
+  FILTER similarity > 0.8
   SORT similarity DESC
   LIMIT 10
   RETURN {name: name.name, similarity: similarity}
@@ -287,12 +399,12 @@ WHG intends to host ArangoDB on University of Pittsburgh infrastructure:
 **Hardware Requirements** (estimated for 1TB working set):
 - **CPU**: 16-32 cores for query parallelization and indexing
 - **RAM**: 128-256GB
-    - Minimum: 128GB (for reasonable in-memory operations)
-    - Recommended: 256GB (for optimal performance with vector indexes)
-    - Working set should fit in memory for best performance
+  - Minimum: 128GB (for reasonable in-memory operations)
+  - Recommended: 256GB (for optimal performance with vector indexes and graph traversals)
+  - Working set should fit in memory for best performance
 - **Storage**:
-    - Primary: 5-10TB NVMe SSD (for database, indexes, growth)
-    - Backup: Additional storage for snapshots
+  - Primary: 5-10TB NVMe SSD (for database, indexes, growth)
+  - Backup: Additional storage for snapshots
 - **Network**: High-bandwidth internal network for cluster coordination (if clustered)
 
 **Software Requirements**:
@@ -326,7 +438,7 @@ Given practical considerations, we are **open to ArangoDB-managed hosting** (Ara
 **Community Edition** (v3.12+):
 - 100 GiB dataset limit per cluster
 - Restricted to non-commercial use under BSL 1.1
-- **Insufficient for WHG** (requires 500GB-1TB)
+- **Insufficient for WHG** (requires 900GB-1.2TB)
 
 **Enterprise Edition**:
 - Required for WHG's dataset size
@@ -337,9 +449,9 @@ Given practical considerations, we are **open to ArangoDB-managed hosting** (Ara
 **2. GeometryCollection Not Supported**
 
 ArangoDB does not support the GeoJSON GeometryCollection type. For WHG:
-- **Workaround**: Store separate geometry attestations for each geometry type (aligns with our attestation model)
+- **Workaround**: Store separate geometry attestations for each geometry type - **this aligns perfectly with our attestation model where each geometry is a separate claim with its own provenance**
 - **Alternative**: Convert to MultiPolygon where needed by buffering points/lines
-- **Impact**: Minimal - our attestation model naturally accommodates multiple geometries per Thing
+- **Impact**: Minimal - our attestation-as-node model naturally accommodates multiple geometries per Thing, each with separate sources and temporal bounds
 
 **3. Vendor Ecosystem**
 
@@ -359,8 +471,10 @@ ArangoDB does not support the GeoJSON GeometryCollection type. For WHG:
 ### Assessment for WHG
 
 ArangoDB represents the **best technical fit** for WHG's requirements:
-- Direct data model mapping
-- Excellent GeoJSON support (covering our needs despite GeometryCollection limitation)
+- Attestations as nodes enable rich provenance and meta-attestations
+- AUTHORITY collection pattern simplifies queries
+- Graph traversal naturally handles complex relationship patterns
+- Excellent GeoJSON support (GeometryCollection limitation addressed by our model)
 - Unified architecture for small team
 - Scales to anticipated dataset size
 - Single system reduces operational complexity
@@ -462,7 +576,36 @@ ORDER BY phonetic_embedding <=> query_vector
 LIMIT 10;
 ```
 
-**5. Massive Ecosystem**
+**5. Graph Support via Apache AGE**
+
+Apache AGE enables property graph modeling in PostgreSQL with Cypher queries. For our Attestation-as-node model:
+
+```sql
+-- Create graph schema
+SELECT create_graph('whg_graph');
+
+-- Insert nodes (Things, Attestations, Names, Authorities)
+SELECT * FROM cypher('whg_graph', $$
+  CREATE (t:Thing {id: 'constantinople', type: 'location'})
+  CREATE (a:Attestation {id: 'att-001', certainty: 1.0})
+  CREATE (n:Name {id: 'name-istanbul', name: 'İstanbul'})
+  CREATE (auth:Authority {id: 'source-123', type: 'source'})
+  CREATE (t)-[:SUBJECT_OF]->(a)
+  CREATE (a)-[:ATTESTS_NAME]->(n)
+  CREATE (a)-[:SOURCED_BY]->(auth)
+$$) AS (result agtype);
+
+-- Query graph
+SELECT * FROM cypher('whg_graph', $$
+  MATCH (t:Thing)-[:SUBJECT_OF]->(a:Attestation)-[:ATTESTS_NAME]->(n:Name)
+  WHERE t.id = 'constantinople'
+  RETURN t, a, n
+$$) AS (thing agtype, attestation agtype, name agtype);
+```
+
+**Note**: AGE is newer than other PostgreSQL extensions and less mature than Neo4j, but actively developed.
+
+**6. Massive Ecosystem**
 
 - Huge community (largest of any database)
 - Extensive tooling (monitoring, backup, replication)
@@ -478,7 +621,7 @@ LIMIT 10;
 **Hardware Requirements** (for 1TB working set):
 - **CPU**: 16-32 cores
 - **RAM**: 128-256GB
-    - Recommended: 256GB for multiple large indexes (PostGIS, pgvector, AGE)
+  - Recommended: 256GB for multiple large indexes (PostGIS, pgvector, AGE)
 - **Storage**: 5-10TB NVMe SSD
 - **Note**: May require more resources than ArangoDB due to extension overhead
 
@@ -497,10 +640,11 @@ LIMIT 10;
 
 Apache AGE provides Cypher queries over PostgreSQL, but:
 
-- Newer extension (2021), less mature than Neo4j
+- Newer extension (2021), less mature than Neo4j or ArangoDB
 - Graph traversals slower than native graph databases
 - Combining SQL and Cypher requires switching contexts
 - Multi-hop queries can require careful optimization
+- **Attestations-as-nodes pattern adds complexity** - more node hops than if attestations were just edge properties
 
 **2. Multi-Extension Complexity**
 
@@ -512,11 +656,18 @@ Three extensions to coordinate (PostGIS, pgvector, AGE), each with its own query
 
 Combining all capabilities requires mixing SQL, Cypher, and spatial functions - significantly more verbose than ArangoDB's unified AQL.
 
+Example of the same query as ArangoDB above would require:
+- Cypher for graph traversal (Attestations as nodes)
+- SQL for vector similarity (pgvector functions)
+- PostGIS for spatial filtering
+- Complex CTEs or subqueries to combine results
+
 **4. Graph Performance Ceiling**
 
 - Not optimized for graph traversals
 - Deep graph queries (4+ hops) may require denormalization
-- Network analysis algorithms less efficient than Neo4j
+- **Attestation-as-node pattern increases hop count** (Thing → Attestation → Name is 2 hops vs. 1 edge)
+- Network analysis algorithms less efficient than native graph databases
 
 ### Assessment for WHG
 
@@ -527,30 +678,50 @@ PostgreSQL provides a **viable alternative** with:
 - ✅ Familiar to university IT environments
 
 **Trade-offs**:
-- More complex query patterns
+- More complex query patterns (especially with Attestations as nodes)
 - Requires more careful optimization
 - Multiple extensions to coordinate
+- Graph performance ceiling for deep traversals
 
 ---
 
 ## Option 3: Neo4j
 
+### Advantages
+
+**1. Best Graph Performance**
+- Native graph storage and processing
+- Optimized for multi-hop traversals
+- **Attestations as nodes** is natural pattern
+
+**2. Mature Graph Capabilities**
+- Cypher query language well-established
+- Rich graph algorithms library
+- Excellent for complex relationship queries
+
 ### Limitations
 
 **1. Weaker Spatial Support**
 - Limited GeoJSON support, **no GeometryCollection support**
-- **Would likely need secondary system for spatial queries**
+- Spatial plugin less mature than PostGIS
+- **Would likely need secondary system for complex spatial queries**
 
 **2. Vector Search in Enterprise Only**
-- Enterprise Edition required for phonetic embeddings
+- Enterprise Edition required for vector indexes (phonetic embeddings)
 - Introduces licensing costs
+- No vector search in Community Edition
 
 **3. Multi-System Architecture Required**
+- Would need separate database for spatial/vector operations
 - **Problematic for solo developer**
+- Data synchronization complexity
 
 ### Assessment for WHG
 
-**Not recommended** given operational constraints and licensing requirements.
+**Not recommended** given:
+- Need for secondary system (spatial/vector)
+- Licensing costs for Enterprise Edition
+- Operational complexity for small team
 
 ---
 
@@ -558,17 +729,29 @@ PostgreSQL provides a **viable alternative** with:
 
 ### Context
 
-**Note**: Previous WHG v4 documentation references Vespa as the intended backend. This assessment reflects re-evaluation following the data model redesign toward property graphs.
+**Note**: Previous WHG v4 documentation references Vespa as the intended backend. This assessment reflects re-evaluation following the data model redesign toward property graphs with Attestations as nodes.
 
 ### Limitations for WHG v4
 
-**1. Not a Graph Database** - Fundamental mismatch with attestation model
-**2. No GeoJSON Support** - Cannot handle historical geometries
-**3. No GeometryCollection** - Would require extensive custom encoding
+**1. Not a Graph Database**
+- Fundamental mismatch with attestation-as-node model
+- Would require manual graph logic in application layer
+- No native graph traversal
+
+**2. No GeoJSON Support**
+- Cannot handle historical geometries without extensive encoding
+- Would require custom spatial logic
+
+**3. No GeometryCollection**
+- Would require extensive custom encoding
+
+**4. Excellent Vector Search**
+- Best-in-class vector capabilities
+- But insufficient alone given other limitations
 
 ### Assessment
 
-Vespa is **unsuitable for the redesigned data model**.
+Vespa is **unsuitable for the redesigned data model** where Attestations are nodes and graph traversal is core functionality.
 
 ---
 
@@ -579,6 +762,7 @@ Vespa is **unsuitable for the redesigned data model**.
 | **Licensing Model** | BSL 1.1 CE / Commercial EE | PostgreSQL (permissive) | GPL CE / Commercial EE | Apache 2.0 |
 | **Academic Viability** | Requires negotiation | ✅ Guaranteed | Requires negotiation | ✅ Guaranteed |
 | **Dataset Limits** | 100GB CE / None EE | ✅ None | ✅ None | ✅ None |
+| **Attestations as Nodes** | ✅✅✅ Natural | ✅ Via AGE | ✅✅✅ Natural | ❌ Manual |
 | **Graph Queries** | ✅✅ Native AQL | ⚠️ AGE/Cypher | ✅✅✅ Native Cypher | ❌ Manual |
 | **Graph Performance** | ✅✅ Excellent | ⚠️ Good with tuning | ✅✅✅ Best | ❌ Poor |
 | **Vector Search** | ✅ Good (v3.10+) | ✅ Good (pgvector) | ✅ EE only (v5.11+) | ✅✅✅ Best |
@@ -596,12 +780,13 @@ Vespa is **unsuitable for the redesigned data model**.
 
 **ArangoDB represents the best technical fit for WHG v4** based on:
 
-1. **Data Model Alignment**: Native property graph with document properties directly matches attestation architecture (see [WHG v4 Data Model](https://docs.whgazetteer.org/content/v4/data-model.html))
-2. **GeoJSON Support**: Native support for 6 GeoJSON types sufficient for our needs; GeometryCollection limitation addressed by our multi-attestation model
-3. **Query Integration**: Unified AQL for all operations reduces complexity
-4. **Operational Simplicity**: Single system manageable by small team
-5. **Adequate Scale**: Handles anticipated 1TB dataset
-6. **Vector Capabilities**: Suitable for phonetic name embedding search
+1. **Data Model Alignment**: Native property graph with **Attestations as nodes** (not just edge metadata) directly matches our architecture (see [WHG v4 Data Model](https://docs.whgazetteer.org/content/v4/data-model.html))
+2. **AUTHORITY Pattern**: Single collection with discriminator pattern simplifies queries
+3. **GeoJSON Support**: Native support for 6 GeoJSON types sufficient for our needs; GeometryCollection limitation naturally addressed by our multi-attestation model where each geometry is a separate claim
+4. **Query Integration**: Unified AQL for graph traversal + spatial + vector + temporal operations reduces complexity
+5. **Operational Simplicity**: Single system manageable by small team
+6. **Adequate Scale**: Handles anticipated 1.2TB dataset
+7. **Vector Capabilities**: Suitable for phonetic name embedding search
 
 **Critical dependency**: Securing sustainable licensing terms for academic/research use.
 
@@ -622,9 +807,10 @@ Vespa is **unsuitable for the redesigned data model**.
 **PostgreSQL provides a viable fallback** with:
 - Guaranteed long-term sustainability
 - Full GeometryCollection support via PostGIS
+- Graph capabilities via Apache AGE (with Attestations as nodes)
 - All required capabilities (with greater complexity)
 
-**Scenario**: If ArangoDB licensing proves unsustainable, PostgreSQL is a defensible alternative that meets all requirements.
+**Scenario**: If ArangoDB licensing proves unsustainable, PostgreSQL is a defensible alternative that meets all requirements, though with more complex query patterns for our graph model.
 
 ## Next Steps
 
@@ -632,17 +818,25 @@ Vespa is **unsuitable for the redesigned data model**.
 2. **Provide project details**: scale, funding model, technical team size, mission
 3. **Explore deployment options**: self-hosted vs. managed hosting pricing
 4. **Benchmark vector search**: Test `APPROX_NEAR_COSINE()` performance with realistic phonetic embeddings (10M+ vectors) early in evaluation process
-5. **Validate combined queries**: Test queries mixing graph traversal, geospatial constraints, and vector filtering to verify unified query performance
+5. **Validate graph queries**: Test Attestation-as-node pattern with multi-hop queries combining graph traversal, geospatial constraints, and vector filtering
 6. **Decision timeline**: Required for v4 development planning (target: Q2 2025)
 
 ## Conclusion
 
-The shift to an attestation-based property graph model necessitates reconsideration of the database backend documented in previous WHG v4 plans (Vespa). For full details on the data model, see [WHG v4 Data Model Documentation](https://docs.whgazetteer.org/content/v4/data-model.html).
+The shift to an attestation-based property graph model with **Attestations as nodes** (not just edge metadata) necessitates reconsideration of the database backend documented in previous WHG v4 plans (Vespa). For full details on the data model, see [WHG v4 Data Model Documentation](https://docs.whgazetteer.org/content/v4/data-model.html).
 
-**ArangoDB emerges as the optimal technical solution**, offering native support for graph, document, geospatial, and vector capabilities in an integrated, operationally simple architecture suited to a small technical team. The lack of GeometryCollection support is adequately addressed by our attestation model, which naturally accommodates multiple geometry attestations per Thing.
+**ArangoDB emerges as the optimal technical solution**, offering native support for:
+- Property graphs where Attestations are first-class nodes
+- Document collections for Things, Names, Geometries, Timespans, and Authorities
+- Unified AUTHORITY collection pattern via discriminator
+- GeoJSON geometries for complex historical boundaries
+- Vector similarity search for phonetic name matching
+- All capabilities integrated in a single system with unified AQL query language
+
+The lack of GeometryCollection support is adequately addressed by our attestation model, which naturally accommodates multiple geometry attestations per Thing—each with its own provenance, temporal bounds, and certainty assessment.
 
 **The viability of ArangoDB depends on establishing sustainable licensing** appropriate for an academic, non-commercial research infrastructure project funded primarily by University of Pittsburgh.
 
-**PostgreSQL with extensions provides a proven alternative** that guarantees sustainability and includes full GeometryCollection support, but requires accepting greater query complexity and careful performance optimization.
+**PostgreSQL with extensions provides a proven alternative** that guarantees sustainability and includes full GeometryCollection support, but requires accepting greater query complexity (especially for graph traversals with Attestations as nodes) and careful performance optimization.
 
 The database choice is a critical architectural decision that will shape WHG v4's development timeline, operational requirements, and long-term sustainability.
