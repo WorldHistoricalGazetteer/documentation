@@ -10,8 +10,7 @@ erDiagram
         string _from "any collection/xyz"
         string _to "any collection/abc"
         string edge_type "subject_of, attests_name, attests_geometry, attests_timespan, relates_to, meta_attestation, typed_by, sourced_by, part_of"
-        string role "subject, object, related_thing (for disambiguation)"
-        string meta_type "bundles, contradicts, supersedes (for meta_attestations)"
+        string meta_type "bundles, contradicts, supersedes, challenges, supports (for meta_attestations only)"
         json properties "flexible storage for edge-specific attributes"
         timestamp created
     }
@@ -26,6 +25,8 @@ erDiagram
         string _id "things/xyz"
         text description
         string thing_type "location, historical_entity, collection, period, route, itinerary, network"
+        string primary_name "denormalized from highest-certainty name attestation"
+        point representative_point "denormalized from geometry for spatial indexing"
         timestamp created
         timestamp modified
     }
@@ -35,68 +36,69 @@ erDiagram
         string name
         string language "ISO 639-3"
         string script "ISO 15924"
-        string variant "official, colloquial, historical, etc"
-        string transliteration
+        array name_type "toponym, chrononym, ethnonym, odonym, hydronym"
         string ipa "International Phonetic Alphabet"
-        vector embedding "for semantic search"
-        array name_type "toponym, chrononym, ethnonym, etc"
+        string romanized "romanized/transliterated form"
+        string transliteration_system "e.g., Pinyin, BGN/PCGN, ISO 259"
+        vector embedding "REQUIRED: 384-dimensional vector for semantic search"
     }
     TIMESPAN {
         string _key PK
         string _id "timespans/xyz"
-        date start_earliest
-        date start_latest
-        date stop_earliest
-        date stop_latest
+        bigint start_earliest "Unix timestamp (milliseconds) or geological time"
+        bigint start_latest "Unix timestamp (milliseconds)"
+        bigint stop_earliest "Unix timestamp (milliseconds)"
+        bigint stop_latest "Unix timestamp (milliseconds) or future sentinel"
         string label "human-readable period name"
         string precision "year, decade, century, era, geological_period"
-        integer precision_value
+        integer precision_value "numeric precision in years"
+        string periodo_id "PeriodO URI for standard period definitions"
     }
     ATTESTATION {
         string _key PK
         string _id "attestations/xyz"
-        integer sequence "for ordered sequences in routes/itineraries"
-        json connection_metadata "for networks: trade goods, flow direction, etc"
-        float certainty "0.0 to 1.0"
+        integer sequence "for ordered sequences in routes/itineraries (nullable)"
+        json connection_metadata "for networks: trade goods, flow direction, route_type"
+        float certainty "0.0 to 1.0 (nullable if unknown)"
         text certainty_note "explanation of certainty assessment"
-        text notes "additional context"
+        text notes "additional context or commentary"
         timestamp created
         timestamp modified
-        string contributor "user or system that created attestation"
     }
     GEOMETRY {
         string _key PK
         string _id "geometries/xyz"
-        geometry geom "GeoJSON: Point, Polygon, LineString, Multi*"
-        point representative_point "for indexing"
-        geometry hull "Convex hull"
+        geometry geom "GeoJSON: Point, MultiPoint, LineString, MultiLineString, Polygon, MultiPolygon"
+        point representative_point "single point for spatial indexing and distance queries"
+        geometry hull "convex hull for quick spatial filters"
         array bbox "[min_lon, min_lat, max_lon, max_lat]"
-        string precision "exact, approximate, uncertain"
-        integer precision_km
-        string source_crs "EPSG code or historical CRS"
+        array precision "e.g., [exact, approximate, uncertain, historical_approximate]"
+        array precision_km "uncertainty radius in km (can be multiple if heterogeneous)"
+        string source_crs "EPSG:4326 or historical/custom CRS identifier"
     }
 %% Authority collection (single table inheritance)
     AUTHORITY {
         string _key PK
         string _id "authorities/xyz"
-        string authority_type "dataset, source, relation_type, period, certainty_level"
-        string title "for datasets"
-        string citation "for sources"
-        string record_id "source ID in original dataset"
-        string label "for relation_types, periods, certainty_levels"
-        string inverse "for relation_types (e.g., name_of is inverse of has_name)"
-        array domain "for relation_types: valid subject types"
-        array range "for relation_types: valid object types"
-        string version "for datasets"
-        string publisher "for datasets"
-        string license "for datasets"
-        string uri "external URI (PeriodO, source URL, etc)"
-        date start_earliest "for periods"
-        date start_latest "for periods"
-        date stop_earliest "for periods"
-        date stop_latest "for periods"
-        float level "for certainty_levels (0.0-1.0)"
-        text description
+        string authority_type "dataset, source, relation_type, period"
+        text description "general description applicable to all types"
         timestamp created
         timestamp modified
+        string title "for datasets: dataset name"
+        string version "for datasets: version identifier"
+        string publisher "for datasets: publishing institution"
+        string license "for datasets: CC-BY, CC0, etc"
+        string doi "for datasets: persistent identifier"
+        string citation "for sources: bibliographic citation"
+        array source_type "for sources: manuscript, inscription, archaeological, archival, etc"
+        string record_id "for sources: identifier in original source/dataset"
+        string uri "for all types: external URI (PeriodO, source URL, dataset landing page)"
+        string label "for relation_types and periods: machine-readable identifier"
+        string inverse "for relation_types: inverse relation label"
+        array domain "for relation_types: valid subject entity types"
+        array range "for relation_types: valid object entity types"
+        bigint start_earliest "for periods: temporal bounds"
+        bigint start_latest "for periods: temporal bounds"
+        bigint stop_earliest "for periods: temporal bounds"
+        bigint stop_latest "for periods: temporal bounds"
     }
