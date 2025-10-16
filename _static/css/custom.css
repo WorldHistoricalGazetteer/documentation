@@ -23,17 +23,23 @@ h1.logo {
 }
 
 g[id^="entity-THING-"] > rect.entityBox {
-    fill: #f6e16b !important;
+    fill: #e489b3 !important;
 }
 
 g[id^="entity-ATTESTATION-"] > rect.entityBox {
     fill: rgb(117, 202, 85) !important;
 }
 
-g[id^="entity-NAME-"] > rect.entityBox,
-g[id^="entity-GEOMETRY-"] > rect.entityBox,
-g[id^="entity-TIMESPAN-"] > rect.entityBox {
+g[id^="entity-AUTHORITY-"] > rect.entityBox {
+    fill: #f6e16b !important;
+}
+
+g[id^="entity-EDGE-"] > rect.entityBox {
     fill: rgb(166, 196, 227) !important;
+}
+
+g[id^="entity-NAME-"] > rect.entityBox {
+    fill: rgb(234, 234, 253) !important;
 }
 
 img[alt="v4.0-beta"] {

@@ -7,15 +7,26 @@
 :caption: Entity–relationship diagram for the WHG v4 data model.
 ```
 ```{note}
-**AUTHORITY Collection (Single Table Inheritance):** Uses the `authority_type` field to distinguish between datasets, sources, relation_types, periods, and certainty_levels within a single collection. While still part of the graph structure (attestations reference authority documents), this collection has a more relational "lookup table" character, serving as reference data rather than semantic entities. This approach provides two key efficiencies:
+**Single EDGE Collection:** The v4 model uses a unified edge collection with an `edge_type` field to distinguish between different relationship types ("subject_of", "attests_name", "attests_geometry", "attests_timespan", "relates_to", "meta_attestation", "typed_by", "sourced_by", "part_of"). This approach provides several key advantages:
+
+1. **Simplified schema management** - One collection to maintain rather than separate collections for each relationship type
+2. **Flexible relationship vocabulary** - New edge types can be added without schema changes
+3. **Efficient graph traversal** - Graph algorithms can traverse all relationships uniformly
+4. **Reduced operational overhead** - Fewer indexes, backups, and permissions to manage
+
+**AUTHORITY Collection (Single Table Inheritance):** Reference data (datasets, sources, relation_types, periods, certainty_levels) is unified in a single AUTHORITY collection using an `authority_type` discriminator field. This provides two key efficiencies:
+
 1. **Reduced operational overhead** - Managing one collection is simpler than maintaining five separate small collections (fewer indexes, backups, permissions to manage)
-2. **Eliminated redundancy** - Source metadata is stored once and referenced by attestations, rather than duplicated across millions of attestations that cite the same sources
+2. **Eliminated redundancy** - Source metadata is stored once and referenced by multiple attestations through edges, rather than duplicated across millions of attestations that cite the same sources
+
+For Thing-to-Thing relationships using `edge_type: "relates_to"`, the edge references an AUTHORITY document where `authority_type: "relation_type"` to specify the semantic nature of the relationship (e.g., "capital_of", "successor_to"). This keeps the core model stable while allowing the vocabulary of historical relationships to grow organically as new use cases emerge.
 ```
 <br>
 
 ```{toctree}
 :maxdepth: 3
 
+./data-model/introduction.md
 ./data-model/overview.md
 ./data-model/attestations.md
 ./data-model/vocabularies.md

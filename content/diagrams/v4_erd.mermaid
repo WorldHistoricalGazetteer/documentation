@@ -1,49 +1,49 @@
 erDiagram
-%% All relationships go through ATTESTATION
-    THING ||--o{ ATTESTATION : "thing_of"
-    THING ||--o{ ATTESTATION : "relates_to"
-    ATTESTATION ||--o{ ATTESTATION : "meta-attestation"
-    ATTESTATION o{--|| GEOMETRY : "locates"
-    ATTESTATION o{--|| TIMESPAN : "temporally_bounds"
-    ATTESTATION o{--|| NAME : "describes"
-    AUTHORITY ||--o{ ATTESTATION : "relation_type"
-    AUTHORITY ||--o{ ATTESTATION : "sources (array)"
-    AUTHORITY ||--o{ AUTHORITY : "dataset_id"
+%% Single edge collection connecting all entities
+    THING ||--o{ EDGE : ""
+    AUTHORITY ||--o{ EDGE : ""
+    ATTESTATION ||--o{ EDGE : ""
 
-%% Core entities
+%% Single unified edge collection
+    EDGE {
+        string _key PK
+        string _from "any collection/xyz"
+        string _to "any collection/abc"
+        string edge_type "subject_of, attests_name, attests_geometry, attests_timespan, relates_to, meta_attestation, typed_by, sourced_by, part_of"
+        string role "subject, object, related_thing (for disambiguation)"
+        string meta_type "bundles, contradicts, supersedes (for meta_attestations)"
+        json properties "flexible storage for edge-specific attributes"
+        timestamp created
+    }
+
+    EDGE }o--|| NAME : ""
+    EDGE }o--|| GEOMETRY : ""
+    EDGE }o--|| TIMESPAN : ""
+
+%% Core entity collections (document collections - vertices/nodes)
     THING {
-        string id PK
+        string _key PK "ArangoDB key"
+        string _id "things/xyz"
         text description
         string thing_type "location, historical_entity, collection, period, route, itinerary, network"
         timestamp created
         timestamp modified
     }
-
     NAME {
-        string id PK
+        string _key PK
+        string _id "names/xyz"
         string name
         string language "ISO 639-3"
         string script "ISO 15924"
         string variant "official, colloquial, historical, etc"
         string transliteration
         string ipa "International Phonetic Alphabet"
-        vector embedding
+        vector embedding "for semantic search"
         array name_type "toponym, chrononym, ethnonym, etc"
     }
-
-    GEOMETRY {
-        string id PK
-        geometry geom "GeoJSON: Point, Polygon, LineString, Multi*"
-        point representative_point
-        geometry hull "Convex hull"
-        array bbox "[min_lon, min_lat, max_lon, max_lat]"
-        string precision "exact, approximate, uncertain"
-        integer precision_km
-        string source_crs "EPSG code or historical CRS"
-    }
-
     TIMESPAN {
-        string id PK
+        string _key PK
+        string _id "timespans/xyz"
         date start_earliest
         date start_latest
         date stop_earliest
@@ -52,16 +52,11 @@ erDiagram
         string precision "year, decade, century, era, geological_period"
         integer precision_value
     }
-
     ATTESTATION {
-        string id PK
-        string thing_id FK "references Thing being described"
-        string relation_type FK "references AUTHORITY with authority_type=relation_type"
-        string object_type "name, geometry, timespan, thing, classification"
-        string object_id FK "references Name, Geometry, Timespan, Thing, or classification string"
-        integer sequence "for routes and itineraries"
+        string _key PK
+        string _id "attestations/xyz"
+        integer sequence "for ordered sequences in routes/itineraries"
         json connection_metadata "for networks: trade goods, flow direction, etc"
-        array sources FK "array of AUTHORITY ids with authority_type=source"
         float certainty "0.0 to 1.0"
         text certainty_note "explanation of certainty assessment"
         text notes "additional context"
@@ -69,22 +64,33 @@ erDiagram
         timestamp modified
         string contributor "user or system that created attestation"
     }
-
+    GEOMETRY {
+        string _key PK
+        string _id "geometries/xyz"
+        geometry geom "GeoJSON: Point, Polygon, LineString, Multi*"
+        point representative_point "for indexing"
+        geometry hull "Convex hull"
+        array bbox "[min_lon, min_lat, max_lon, max_lat]"
+        string precision "exact, approximate, uncertain"
+        integer precision_km
+        string source_crs "EPSG code or historical CRS"
+    }
+%% Authority collection (single table inheritance)
     AUTHORITY {
-        string id PK
+        string _key PK
+        string _id "authorities/xyz"
         string authority_type "dataset, source, relation_type, period, certainty_level"
         string title "for datasets"
         string citation "for sources"
+        string record_id "source ID in original dataset"
         string label "for relation_types, periods, certainty_levels"
-        string dataset_id FK "sources reference parent dataset"
-        string record_id "source's ID in original dataset"
-        string uri "external URI (PeriodO, source URL, etc)"
-        string version "for datasets"
-        string publisher "for datasets"
-        string license "for datasets"
         string inverse "for relation_types (e.g., name_of is inverse of has_name)"
         array domain "for relation_types: valid subject types"
         array range "for relation_types: valid object types"
+        string version "for datasets"
+        string publisher "for datasets"
+        string license "for datasets"
+        string uri "external URI (PeriodO, source URL, etc)"
         date start_earliest "for periods"
         date start_latest "for periods"
         date stop_earliest "for periods"

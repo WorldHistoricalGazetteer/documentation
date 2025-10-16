@@ -1,449 +1,615 @@
 # Attestations & Relations
 
-## The Attestation Record
+## The Attestation as Graph Node
 
-**Attestation records** are the core mechanism for recording evidentiary claims about all entities. They link Subjects to Names, Geometries, Timespans, and other Subjects, with explicit source attribution.
+In WHG v4, **Attestations are nodes** (vertices) in the graph, not records with embedded relationship fields. They serve as **junction points** that bundle together claims about a Thing with its attributes (Names, Geometries, Timespans) and provenance (Sources).
 
-**Fields:**
-- `id` (String, Required): Namespaced identifier (e.g., `whg:attestation-{uuid}`)
-- `subject_type` (String, Required): Entity type: "subject", "name", "geometry", "timespan"
-- `subject_id` (String, Required): ID of the entity being attested
-- `relation_type` (String, Required): Type of relationship being attested (see Relation Types below)
-- `object_type` (String, Optional): Type of related entity (if applicable)
-- `object_id` (String, Optional): ID of related entity (if applicable)
-- `sequence` (Integer, Optional): Sequential ordering for route/itinerary segments
-- `connection_metadata` (JSON, Optional): Additional metadata for network connections
-- `source` (Array[String], Required): Citations, dataset identifiers (including DOIs), or other references for the historical evidence
-- `source_type` (Array[String], Required): Types corresponding to each source: "inscription", "manuscript", "map", "archaeological", "dataset", "oral_tradition"
-- `certainty` (Float, Optional): Confidence level (0.0–1.0)
-- `certainty_note` (Text, Optional): Qualitative explanation of certainty assessment
-- `notes` (Text, Optional): Free-text explanatory note
+### Attestation Node Structure
 
-**Notes:**
-- The `source` field identifies the historical/scholarly evidence for the claim
-- Multiple sources can support a single attestation (hence array)
-- For contributed datasets, sources include DOIs (e.g., `["doi:10.83427/whg-dataset-657", "Codex Mendoza"]`)
-- **Temporal information**: Handled via relationships to Timespan entities (not embedded in Attestation)
-- Attestation creation/modification history tracked in Django changelog
+An Attestation node contains only metadata:
 
----
-
-## Relation Types
-
-The `relation_type` field specifies what is being attested. Where possible, relation types align with **CIDOC-CRM** predicates for interoperability with cultural heritage standards.
-
-### Core Relations
-
-| Relation Type | CIDOC-CRM Alignment | Definition | Object Type |
-|---------------|---------------------|------------|-------------|
-| `has_name` | P1_is_identified_by | Subject was known by this name | name |
-| `has_geometry` | P53_has_former_or_current_location | Subject had this spatial extent/location | geometry |
-| `has_timespan` | P4_has_time-span | Subject existed/was valid during this timespan | timespan |
-| `has_type` | P2_has_type | Subject was classified as this type | classification |
-| `existence` | E77_Persistent_Item | Subject existed | null |
-| `same_as` | P130_shows_features_of | Equivalence claim between subjects | subject |
-
-**Notes:**
-- `has_name`, `has_geometry`, and `has_timespan` can link to either Subjects or other Attestations (meta-attestations)
-- `has_type` object is a classification string (e.g., "gazetteer", "period", "P.PPLA")
-- `same_as` enables reconciliation and cross-gazetteer linkage
-
----
-
-### Hierarchical/Membership Relations
-
-| Relation Type | CIDOC-CRM Alignment | Definition | Object Type |
-|---------------|---------------------|------------|-------------|
-| `member_of` | P46_is_composed_of (inverse) | Subject was part of another subject | subject |
-| `contains` | P46_is_composed_of | Subject contained another subject | subject |
-| `succeeds` | P134_continued (approximate) | Subject succeeded/replaced another | subject |
-| `coextensive_with` | P121_overlaps_with | Subject spatially coextensive with another | subject |
-
-**Notes:**
-- Use `sequence` field with `member_of` for route/itinerary segments
-- `succeeds` enables temporal succession chains (e.g., Constantinople → Istanbul)
-- `coextensive_with` supports dynamic clustering merge logic (same place, different sources)
-
----
-
-### Network Relations
-
-| Relation Type | CIDOC-CRM Alignment | Definition | Object Type |
-|---------------|---------------------|------------|-------------|
-| `connected_to` | P122_borders_with (extended) | Subject had connection/relationship to another | subject |
-
-**Connection Metadata Structure:**
-```json
+```javascript
 {
-  "connection_type": "trade|diplomatic|postal|telecommunication|administrative|social|religious",
-  "directionality": "bidirectional|from_subject_to_object|from_object_to_subject",
-  "intensity": 0.5,
-  "frequency": "daily|weekly|monthly|seasonal|annual|irregular",
-  "commodity": ["spices", "textiles"],
-  "notes": "Free text"
+  "_key": "att-001",
+  "_id": "attestations/att-001",
+  "sequence": null,                    // For ordered sequences in routes/itineraries
+  "connection_metadata": null,         // For network relationships
+  "certainty": 0.95,                   // Confidence level (0.0-1.0)
+  "certainty_note": "Well-documented in primary sources",
+  "notes": "Additional context",
+  "created": "2024-01-15T10:30:00Z",
+  "modified": "2024-02-20T14:45:00Z",
+  "contributor": "researcher@example.edu"
 }
 ```
 
-**Notes:**
-- Networks use `connected_to` rather than `member_of` to represent non-sequential relationships
-- Multiple attestations with same `connected_to` but different Timespan associations represent changing connections over time
-- Connection metadata allows rich domain-specific annotation
+**Key Properties:**
+- `_key`, `_id`: ArangoDB identifiers
+- `sequence`: Integer for ordering waypoints in routes/itineraries
+- `connection_metadata`: JSON for network connection details (trade goods, flow direction, etc.)
+- `certainty`: Confidence value (0.0-1.0)
+- `certainty_note`: Explanation of certainty assessment
+- `notes`: Free-text context
+- `created`, `modified`: Temporal metadata
+- `contributor`: User or system that created the attestation
+
+**What's NOT in the Attestation:**
+- No `subject_id` or `object_id` fields
+- No `relation_type` field
+- No `source` array
+
+These are all expressed through **edges** in the EDGE collection.
 
 ---
 
-## Relationship Examples
+## Relationships Through Edges
 
-### Subject and Name
+All relationships are expressed through the unified **EDGE** collection. Each edge has:
 
-**Attestation:** "The city in modern Mexico was known as Tenochtitlan during the Aztec period"
-
-```json
+```javascript
 {
-  "id": "whg:attestation-001",
-  "subject_type": "subject",
-  "subject_id": "whg:subject-mexico-city",
-  "relation_type": "has_name",
-  "object_type": "name",
-  "object_id": "whg:name-tenochtitlan",
-  "source": ["doi:10.83427/whg-dataset-123", "Codex Mendoza"],
-  "source_type": ["dataset", "manuscript"],
-  "certainty": 0.95
+  "_from": "attestations/att-001",     // Source node
+  "_to": "things/constantinople",      // Target node
+  "edge_type": "subject_of",           // Type of relationship
+  "role": "subject",                   // Optional disambiguation
+  "properties": {},                    // Optional edge-specific data
+  "created": "2024-01-15T10:30:00Z"
 }
 ```
 
-**Temporal attestation (separate):**
-```json
+### Core Edge Types
+
+| Edge Type | Direction | Meaning |
+|-----------|-----------|---------|
+| `subject_of` | Thing → Attestation | This attestation is about this Thing |
+| `attests_name` | Attestation → Name | This attestation claims this Name |
+| `attests_geometry` | Attestation → Geometry | This attestation claims this Geometry |
+| `attests_timespan` | Attestation → Timespan | This attestation claims this Timespan |
+| `sourced_by` | Attestation → Authority | This attestation is backed by this Source |
+| `relates_to` | Attestation → Thing | This attestation connects to another Thing |
+| `typed_by` | Attestation → Authority | This attestation uses this Relation Type |
+| `meta_attestation` | Attestation → Attestation | This attestation comments on another |
+| `part_of` | Authority → Authority | This Source is part of this Dataset |
+
+---
+
+## Relation Types via AUTHORITY Collection
+
+For Thing-to-Thing relationships (when `edge_type: "relates_to"`), the semantic meaning is specified through an AUTHORITY document with `authority_type: "relation_type"`.
+
+### Core Relation Types
+
+These align with **CIDOC-CRM** predicates where possible:
+
+| Relation Type Label | CIDOC-CRM | Definition |
+|---------------------|-----------|------------|
+| `has_name` | P1_is_identified_by | Thing is identified by Name (system edge) |
+| `has_geometry` | P53_has_former_or_current_location | Thing has spatial location (system edge) |
+| `has_timespan` | P4_has_time-span | Thing exists during Timespan (system edge) |
+| `member_of` | P46_is_composed_of (inverse) | Thing is part of another Thing |
+| `contains` | P46_is_composed_of | Thing contains another Thing |
+| `same_as` | P130_shows_features_of | Equivalence between Things |
+| `succeeds` | P134_continued | Thing succeeded another Thing |
+| `connected_to` | P122_borders_with (extended) | Thing connected to another Thing |
+| `coextensive_with` | P121_overlaps_with | Thing spatially coextensive with another |
+
+**Note:** `has_name`, `has_geometry`, and `has_timespan` are implemented as system edge types (`attests_name`, `attests_geometry`, `attests_timespan`), not via AUTHORITY lookups.
+
+### Custom Relation Types
+
+Users can define domain-specific relation types through AUTHORITY documents:
+
+```javascript
 {
-  "id": "whg:attestation-001a",
-  "subject_type": "attestation",
-  "subject_id": "whg:attestation-001",
-  "relation_type": "has_timespan",
-  "object_type": "timespan",
-  "object_id": "whg:timespan-aztec-tenochtitlan",
-  "source": ["Codex Mendoza"],
-  "source_type": ["manuscript"]
+  "_id": "authorities/capital-of",
+  "authority_type": "relation_type",
+  "label": "capital_of",
+  "inverse": "has_capital",
+  "domain": ["city", "location"],
+  "range": ["political_entity", "empire", "kingdom"],
+  "description": "This city served as the capital of this political entity"
 }
 ```
 
-Where `whg:timespan-aztec-tenochtitlan` has:
-```json
+---
+
+## Complete Examples
+
+### Example 1: Thing with Name and Timespan
+
+**Scenario:** "The city was called 'Tenochtitlan' during 1325-1521 CE"
+
+**Graph structure:**
+```
+Thing(mexico-city) ←[subject_of]← Attestation(att-001) 
+                                         ↓ [attests_name]
+                                      Name(tenochtitlan)
+                                         ↓ [attests_timespan]
+                                      Timespan(1325-1521)
+                                         ↓ [sourced_by]
+                                      Authority(codex-mendoza)
+```
+
+**Documents:**
+
+Thing:
+```javascript
 {
+  "_id": "things/mexico-city",
+  "thing_type": "location",
+  "description": "Major city in modern Mexico"
+}
+```
+
+Attestation:
+```javascript
+{
+  "_id": "attestations/att-001",
+  "certainty": 0.95,
+  "notes": "Aztec period name"
+}
+```
+
+Name:
+```javascript
+{
+  "_id": "names/tenochtitlan",
+  "name": "Tenochtitlan",
+  "language": "nah",
+  "name_type": ["toponym"]
+}
+```
+
+Timespan:
+```javascript
+{
+  "_id": "timespans/aztec-tenochtitlan",
   "start_earliest": "1325-01-01",
   "start_latest": "1325-12-31",
   "stop_earliest": "1521-08-13",
   "stop_latest": "1521-08-13",
-  "precision": "circa"
+  "precision": "year"
+}
+```
+
+Authority (Source):
+```javascript
+{
+  "_id": "authorities/codex-mendoza",
+  "authority_type": "source",
+  "citation": "Codex Mendoza, 16th century",
+  "uri": "https://example.org/codex-mendoza"
+}
+```
+
+**Edges:**
+```javascript
+// Thing to Attestation
+{
+  "_from": "things/mexico-city",
+  "_to": "attestations/att-001",
+  "edge_type": "subject_of"
+}
+
+// Attestation to Name
+{
+  "_from": "attestations/att-001",
+  "_to": "names/tenochtitlan",
+  "edge_type": "attests_name"
+}
+
+// Attestation to Timespan
+{
+  "_from": "attestations/att-001",
+  "_to": "timespans/aztec-tenochtitlan",
+  "edge_type": "attests_timespan"
+}
+
+// Attestation to Source
+{
+  "_from": "attestations/att-001",
+  "_to": "authorities/codex-mendoza",
+  "edge_type": "sourced_by"
 }
 ```
 
 ---
 
-### Subject and Geometry
+### Example 2: Thing with Geometry and Different Timespan
 
-**Attestation:** "The capital of the Tang Dynasty was located at these coordinates"
+**Scenario:** "The Tang Dynasty capital had these boundaries during 618-907 CE"
 
-```json
-{
-  "id": "whg:attestation-002",
-  "subject_type": "subject",
-  "subject_id": "whg:subject-changan",
-  "relation_type": "has_geometry",
-  "object_type": "geometry",
-  "object_id": "whg:geometry-changan-tang",
-  "source": ["Tang Dynasty Archaeological Survey 2020"],
-  "source_type": ["archaeological"],
-  "certainty": 0.98
-}
+**Graph structure:**
+```
+Thing(changan) ←[subject_of]← Attestation(att-002)
+                                    ↓ [attests_geometry]
+                                 Geometry(tang-walls)
+                                    ↓ [attests_timespan]
+                                 Timespan(tang-dynasty)
+                                    ↓ [sourced_by]
+                                 Authority(archaeological-survey)
 ```
 
-**Temporal attestation:**
-```json
+**Edges:**
+```javascript
 {
-  "id": "whg:attestation-002a",
-  "subject_type": "attestation",
-  "subject_id": "whg:attestation-002",
-  "relation_type": "has_timespan",
-  "object_type": "timespan",
-  "object_id": "periodo:p0tang",
-  "source": ["Historical Atlas of China"],
-  "source_type": ["map"]
+  "_from": "things/changan",
+  "_to": "attestations/att-002",
+  "edge_type": "subject_of"
 }
-```
 
----
-
-### Subject Classification
-
-**Attestation:** "The Abbasid Caliphate was classified as an empire"
-
-```json
 {
-  "id": "whg:attestation-003",
-  "subject_type": "subject",
-  "subject_id": "whg:subject-abbasid-caliphate",
-  "relation_type": "has_type",
-  "object_type": "classification",
-  "object_id": "empire",
-  "source": ["Historical Geography of the Islamic World"],
-  "source_type": ["dataset"],
-  "certainty": 1.0
+  "_from": "attestations/att-002",
+  "_to": "geometries/tang-walls",
+  "edge_type": "attests_geometry"
 }
-```
 
-**With temporal attestation:**
-```json
 {
-  "id": "whg:attestation-003a",
-  "subject_type": "attestation",
-  "subject_id": "whg:attestation-003",
-  "relation_type": "has_timespan",
-  "object_type": "timespan",
-  "object_id": "whg:timespan-abbasid",
-  "source": ["Historical Geography of the Islamic World"],
-  "source_type": ["dataset"]
+  "_from": "attestations/att-002",
+  "_to": "timespans/tang-dynasty",
+  "edge_type": "attests_timespan"
+}
+
+{
+  "_from": "attestations/att-002",
+  "_to": "authorities/archaeological-survey-2020",
+  "edge_type": "sourced_by"
 }
 ```
 
 ---
 
-### Subject Membership (Period)
+### Example 3: Thing-to-Thing Relationship
 
-**Attestation:** "Chang'an was part of the Tang Dynasty period"
+**Scenario:** "Alexandria was the capital of Ptolemaic Egypt"
 
-```json
-{
-  "id": "whg:attestation-004",
-  "subject_type": "subject",
-  "subject_id": "whg:subject-changan",
-  "relation_type": "member_of",
-  "object_type": "subject",
-  "object_id": "whg:subject-tang-dynasty",
-  "source": ["Ming Shilu"],
-  "source_type": ["manuscript"],
-  "certainty": 0.99
-}
+**Graph structure:**
+```
+Thing(alexandria) ←[subject_of]← Attestation(att-003)
+                                       ↓ [typed_by]
+                                    Authority(capital-of relation)
+                                       ↓ [relates_to]
+                                    Thing(ptolemaic-egypt)
+                                       ↓ [sourced_by]
+                                    Authority(source)
 ```
 
-**With temporal attestation:**
-```json
+**Edges:**
+```javascript
+// Thing to Attestation
 {
-  "id": "whg:attestation-004a",
-  "subject_type": "attestation",
-  "subject_id": "whg:attestation-004",
-  "relation_type": "has_timespan",
-  "object_type": "timespan",
-  "object_id": "periodo:p0tang",
-  "source": ["Ming Shilu"],
-  "source_type": ["manuscript"]
+  "_from": "things/alexandria",
+  "_to": "attestations/att-003",
+  "edge_type": "subject_of"
+}
+
+// Attestation to Relation Type
+{
+  "_from": "attestations/att-003",
+  "_to": "authorities/capital-of",
+  "edge_type": "typed_by"
+}
+
+// Attestation to Related Thing
+{
+  "_from": "attestations/att-003",
+  "_to": "things/ptolemaic-egypt",
+  "edge_type": "relates_to"
+}
+
+// Attestation to Source
+{
+  "_from": "attestations/att-003",
+  "_to": "authorities/historical-geography",
+  "edge_type": "sourced_by"
 }
 ```
 
 ---
 
-### Route Segment (no temporal data)
+### Example 4: Route Segment (Ordered Sequence)
 
-**Attestation:** "The Silk Road included Samarkand as a waypoint"
+**Scenario:** "Samarkand was the 15th waypoint on the Silk Road"
 
-```json
+**Graph structure:**
+```
+Thing(samarkand) ←[subject_of]← Attestation(att-005)
+                                      ↓ [typed_by]
+                                   Authority(member-of relation)
+                                      ↓ [relates_to]
+                                   Thing(silk-road)
+```
+
+**Attestation with sequence:**
+```javascript
 {
-  "id": "whg:attestation-005",
-  "subject_type": "subject",
-  "subject_id": "whg:subject-samarkand",
-  "relation_type": "member_of",
-  "object_type": "subject",
-  "object_id": "whg:subject-silk-road",
+  "_id": "attestations/att-005",
   "sequence": 15,
-  "source": ["Historical Atlas of Central Asia"],
-  "source_type": ["map"]
+  "certainty": 0.9
 }
 ```
 
-**Note:** No Timespan attestation - this is a route, not an itinerary. The sequence indicates ordering, but no specific traversal dates.
-
----
-
-### Itinerary Segment (with temporal data)
-
-**Attestation:** "Marco Polo's journey included Venice as the first segment"
-
-```json
+**Edges:**
+```javascript
 {
-  "id": "whg:attestation-006",
-  "subject_type": "subject",
-  "subject_id": "whg:subject-venice",
-  "relation_type": "member_of",
-  "object_type": "subject",
-  "object_id": "whg:subject-marco-polo-journey",
-  "sequence": 1,
-  "source": ["The Travels of Marco Polo"],
-  "source_type": ["manuscript"],
-  "certainty": 0.85
+  "_from": "things/samarkand",
+  "_to": "attestations/att-005",
+  "edge_type": "subject_of"
 }
-```
 
-**Temporal attestation:**
-```json
 {
-  "id": "whg:attestation-006a",
-  "subject_type": "attestation",
-  "subject_id": "whg:attestation-006",
-  "relation_type": "has_timespan",
-  "object_type": "timespan",
-  "object_id": "whg:timespan-polo-venice",
-  "source": ["The Travels of Marco Polo"],
-  "source_type": ["manuscript"]
+  "_from": "attestations/att-005",
+  "_to": "authorities/member-of",
+  "edge_type": "typed_by"
 }
-```
 
-Where `whg:timespan-polo-venice` has:
-```json
 {
-  "start_earliest": "1271-01-01",
-  "start_latest": "1271-03-01",
-  "stop_earliest": "1271-05-01",
-  "stop_latest": "1271-06-30",
-  "precision": "circa",
-  "precision_value": 30
+  "_from": "attestations/att-005",
+  "_to": "things/silk-road",
+  "edge_type": "relates_to"
+}
+
+{
+  "_from": "attestations/att-005",
+  "_to": "authorities/historical-atlas",
+  "edge_type": "sourced_by"
 }
 ```
 
 ---
 
-### Network Connection
+### Example 5: Network Connection with Metadata
 
-**Attestation:** "Constantinople had trade connections with Venice"
+**Scenario:** "Constantinople had trade connections with Venice, exchanging spices and textiles"
 
-```json
+**Graph structure:**
+```
+Thing(constantinople) ←[subject_of]← Attestation(att-007)
+                                           ↓ [typed_by]
+                                        Authority(connected-to relation)
+                                           ↓ [relates_to]
+                                        Thing(venice)
+                                           ↓ [attests_timespan]
+                                        Timespan(byzantine-venetian)
+```
+
+**Attestation with connection metadata:**
+```javascript
 {
-  "id": "whg:attestation-007",
-  "subject_type": "subject",
-  "subject_id": "pleiades:520998",
-  "relation_type": "connected_to",
-  "object_type": "subject",
-  "object_id": "pleiades:393473",
+  "_id": "attestations/att-007",
   "connection_metadata": {
     "connection_type": "trade",
     "directionality": "bidirectional",
     "commodity": ["spices", "textiles", "metals"],
     "intensity": 0.9
   },
-  "source": ["Mediterranean Trade Networks Database", "doi:10.83427/whg-network-042"],
-  "source_type": ["dataset", "dataset"],
   "certainty": 0.92
 }
 ```
 
-**Temporal attestation:**
-```json
+**Edges:**
+```javascript
 {
-  "id": "whg:attestation-007a",
-  "subject_type": "attestation",
-  "subject_id": "whg:attestation-007",
-  "relation_type": "has_timespan",
-  "object_type": "timespan",
-  "object_id": "whg:timespan-byzantine-venetian-trade",
-  "source": ["Mediterranean Trade Networks Database"],
-  "source_type": ["dataset"]
+  "_from": "things/constantinople",
+  "_to": "attestations/att-007",
+  "edge_type": "subject_of"
+}
+
+{
+  "_from": "attestations/att-007",
+  "_to": "authorities/connected-to",
+  "edge_type": "typed_by"
+}
+
+{
+  "_from": "attestations/att-007",
+  "_to": "things/venice",
+  "edge_type": "relates_to"
+}
+
+{
+  "_from": "attestations/att-007",
+  "_to": "timespans/byzantine-venetian-trade",
+  "edge_type": "attests_timespan"
+}
+
+{
+  "_from": "attestations/att-007",
+  "_to": "authorities/trade-networks-db",
+  "edge_type": "sourced_by"
 }
 ```
 
 ---
 
-### Contributed Dataset Attribution
+### Example 6: Meta-Attestation
 
-**Attestation:** "This place record is from a contributed dataset with DOI"
+**Scenario:** "A modern scholarly article contradicts the Byzantine chronicle's claim about Constantinople's name"
 
-```json
+**Graph structure:**
+```
+Attestation(att-001) ←[meta_attestation]← Attestation(att-meta)
+                                                ↓ [sourced_by]
+                                             Authority(modern-article)
+```
+
+**Meta-attestation:**
+```javascript
 {
-  "id": "whg:attestation-008",
-  "subject_type": "subject",
-  "subject_id": "whg:subject-place-xyz",
-  "relation_type": "existence",
-  "source": ["doi:10.83427/whg-dataset-657"],
-  "source_type": ["dataset"],
-  "notes": "From 'Historical Places of West Africa' collection"
+  "_id": "attestations/att-meta",
+  "certainty": 0.85,
+  "notes": "Recent archaeological evidence suggests different dating"
 }
 ```
 
-**With temporal attestation:**
-```json
+**Edge:**
+```javascript
 {
-  "id": "whg:attestation-008a",
-  "subject_type": "attestation",
-  "subject_id": "whg:attestation-008",
-  "relation_type": "has_timespan",
-  "object_type": "timespan",
-  "object_id": "whg:timespan-west-africa-medieval",
-  "source": ["doi:10.83427/whg-dataset-657"],
-  "source_type": ["dataset"]
-}
-```
-
----
-
-## Attestation Patterns for Timespans
-
-Timespans are first-class entities, and attestations can link to them in multiple ways:
-
-### Direct Timespan Attestation
-
-Subject directly attested to a Timespan (e.g., "Chang'an existed during the Tang Dynasty"):
-
-```json
-{
-  "subject_id": "whg:subject-changan",
-  "relation_type": "has_timespan",
-  "object_id": "periodo:p0tang",
-  "source": ["Historical Atlas of China"],
-  "source_type": ["map"]
+  "_from": "attestations/att-meta",
+  "_to": "attestations/att-001",
+  "edge_type": "meta_attestation",
+  "meta_type": "contradicts"  // Could also be "supports", "supersedes", "bundles"
 }
 ```
 
 ---
 
-### Meta-Attestation Timespan
+## Multiple Attestations for Same Thing
 
-An attestation itself has a Timespan (e.g., "The name 'Eboracum' was used 71-400 CE"):
+A single Thing can have multiple Attestations with different:
+- Names at different times
+- Geometries at different times
+- Conflicting claims from different sources
 
-```json
-{
-  "subject_type": "attestation",
-  "subject_id": "whg:attestation-eboracum-name",
-  "relation_type": "has_timespan",
-  "object_id": "whg:timespan-eboracum-roman",
-  "source": ["Roman Inscriptions of Britain"],
-  "source_type": ["inscription"]
-}
+**Example: Constantinople through time**
+
+```
+Thing(constantinople) ←[subject_of]← Attestation(att-ancient)
+                                           ↓ [attests_name]
+                                        Name(byzantion)
+                                           ↓ [attests_timespan]
+                                        Timespan(667-BCE-330-CE)
+
+Thing(constantinople) ←[subject_of]← Attestation(att-byzantine)
+                                           ↓ [attests_name]
+                                        Name(konstantinoupolis)
+                                           ↓ [attests_timespan]
+                                        Timespan(330-1453-CE)
+
+Thing(constantinople) ←[subject_of]← Attestation(att-ottoman)
+                                           ↓ [attests_name]
+                                        Name(istanbul)
+                                           ↓ [attests_timespan]
+                                        Timespan(1453-present)
+```
+
+Each attestation is independent, with its own:
+- Name
+- Timespan
+- Source(s)
+- Certainty value
+- Notes
+
+---
+
+## Querying Patterns
+
+### Find all names for a Thing at a specific time
+
+```aql
+// Find names for Constantinople in year 800 CE
+FOR thing IN things
+  FILTER thing._id == "things/constantinople"
+  
+  FOR att IN attestations
+    FOR e1 IN edges
+      FILTER e1._from == thing._id
+      FILTER e1._to == att._id
+      FILTER e1.edge_type == "subject_of"
+      
+      // Get the name
+      FOR e2 IN edges
+        FILTER e2._from == att._id
+        FILTER e2.edge_type == "attests_name"
+        LET name = DOCUMENT(e2._to)
+        
+        // Get the timespan
+        FOR e3 IN edges
+          FILTER e3._from == att._id
+          FILTER e3.edge_type == "attests_timespan"
+          LET timespan = DOCUMENT(e3._to)
+          
+          // Check if 800 CE falls within the timespan
+          FILTER timespan.start_earliest <= "0800-01-01"
+          FILTER timespan.stop_latest >= "0800-12-31"
+          
+          RETURN {
+            name: name.name,
+            language: name.language,
+            timespan: timespan.label,
+            certainty: att.certainty
+          }
+```
+
+### Find all Things connected via a specific relation type
+
+```aql
+// Find all capitals of empires
+FOR att IN attestations
+  // Get the relation type
+  FOR e1 IN edges
+    FILTER e1._from == att._id
+    FILTER e1.edge_type == "typed_by"
+    LET relationType = DOCUMENT(e1._to)
+    FILTER relationType.label == "capital_of"
+    
+    // Get subject Thing
+    FOR e2 IN edges
+      FILTER e2._to == att._id
+      FILTER e2.edge_type == "subject_of"
+      LET subject = DOCUMENT(e2._from)
+      
+      // Get object Thing
+      FOR e3 IN edges
+        FILTER e3._from == att._id
+        FILTER e3.edge_type == "relates_to"
+        LET object = DOCUMENT(e3._to)
+        
+        RETURN {
+          capital: subject.description,
+          empire: object.description,
+          certainty: att.certainty
+        }
 ```
 
 ---
 
-### Multiple Conflicting Timespans
+## Design Benefits
 
-Same Subject, multiple Timespan attestations from different sources:
+**Flexibility:** Each attestation is independent, allowing:
+- Multiple names/geometries per Thing across time
+- Conflicting claims to coexist
+- Rich provenance tracking
 
-**Legendary/literary dates:**
+**Reusability:** Entities are shared:
+- Same Name can apply to multiple Things
+- Same Geometry can represent different Things at different times
+- Same Timespan can be referenced by many Attestations
+
+**Provenance:** Every claim is traceable:
+- Source attribution via edges
+- Certainty values per attestation
+- Meta-attestations for scholarly discourse
+
+**Extensibility:** New relation types can be added:
+- Through AUTHORITY documents
+- Without schema changes
+- With semantic validation (domain/range)
+
+---
+
+## Migration from v3
+
+The v3 attestation model embedded relationships within attestation records. The v4 model externalizes these into edges:
+
+**v3 Pattern:**
 ```json
 {
-  "subject_id": "whg:subject-troy",
-  "relation_type": "has_timespan",
-  "object_id": "whg:timespan-troy-homer",
-  "source": ["Iliad"],
-  "source_type": ["manuscript"],
-  "certainty": 0.3,
-  "certainty_note": "Legendary dates from literary source"
+  "subject_id": "place-123",
+  "relation_type": "has_name",
+  "object_id": "name-456",
+  "source": ["source1"],
+  "timespan_id": "timespan-789"
 }
 ```
 
-**Archaeological dates:**
-```json
-{
-  "subject_id": "whg:subject-troy",
-  "relation_type": "has_timespan",
-  "object_id": "whg:timespan-troy-archaeological",
-  "source": ["doi:10.xxxx/troy-excavation"],
-  "source_type": ["archaeological"],
-  "certainty": 0.95,
-  "certainty_note": "Carbon-14 dated archaeological layers"
-}
+**v4 Pattern:**
 ```
+Attestation node (metadata only)
+  + Edge to Thing (subject_of)
+  + Edge to Name (attests_name)
+  + Edge to Timespan (attests_timespan)
+  + Edge to Authority (sourced_by)
+```
+
+This transformation enables true graph traversal and eliminates the need for complex JOIN operations.
