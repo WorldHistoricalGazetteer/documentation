@@ -78,29 +78,196 @@ WHG v4 is built around **Things** (entities such as locations, historical entiti
 
 ### WHG Attestation Layer
 
-Per Thing averages:
-- 5 name attestations (nodes) × 1KB = 5KB
-- 2 geometry attestations (nodes) × 2KB = 4KB
-- 3 timespan attestations (nodes) × 0.5KB = 1.5KB
-- 5 relation attestations (nodes) × 1KB = 5KB
-- 2 type attestations (nodes) × 0.5KB = 1KB
-- Edges connecting nodes × 0.3KB × ~20 edges = 6KB
+**Per Thing Estimates** (average):
 
-**Attestation overhead**: 73M Things × 22.5KB = **~1.6TB**
+**Node Collections:**
+- 5 NAME references (shared nodes, not duplicated) ≈ negligible per Thing
+- 2 GEOMETRY nodes × 2KB (GeoJSON + derived fields) = 4KB
+- 3 TIMESPAN nodes × 0.5KB (4-field temporal model) = 1.5KB
+- 5 ATTESTATION nodes × 0.8KB (certainty, notes, metadata) = 4KB
+- 3 AUTHORITY references (shared across many Things) ≈ negligible per Thing
 
-### Total Storage Requirements
+**Edge Collection:**
+- ~25 edges per Thing × 0.2KB = 5KB
+  - Thing → Attestation (subject_of): 5 edges
+  - Attestation → Name/Geometry/Timespan (attests_*): 10 edges
+  - Attestation → Authority (typed_by, sourced_by): 8 edges
+  - Attestation → Thing (relates_to for relations): 2 edges
 
-**Raw data**: 116-156GB + 1.6TB = **~1.7-1.8TB**
-**With compression** (2-3x typical): **600-900GB**
-**With indexes** (vector, spatial, full-text, edge): **+300GB**
+**Total per Thing:** ~14.5KB
 
-**Final estimate**: **900GB - 1.2TB** working set
+**For 73M Things:**
+- Node data (Geometries, Timespans, Attestations): 73M × 9.5KB = **~693GB**
+- Edge data: 73M × 5KB = **~365GB**
+- **Subtotal per-Thing data: ~1.06TB**
+
+**Shared Collections** (across all Things):
+- NAME nodes: ~55GB (30M unique names with embeddings)
+- AUTHORITY nodes: ~0.1GB (56K shared authorities)
+- **Subtotal shared data: ~55GB**
+
+**Total attestation layer: ~1.11TB**
+
+### Vector Embeddings
+
+**NAME nodes are shared** - the same name (e.g., "London", "Paris", "河内") appears for multiple Things:
+
+**Estimated unique names:**
+- Common place names reused extensively (e.g., "Saint Mary's Church" appears in thousands of places)
+- Historical name variants often shared (e.g., "Konstantinoupolis" for multiple Byzantine cities)
+- Modern names highly reused (e.g., "San José" for dozens of cities)
+
+**Conservative estimate:**
+- 73M Things with average 5 name attestations = 365M attestations
+- Assuming 30-40% name reuse across Things
+- **Unique NAME nodes: ~25-30M**
+
+**Embedding storage:**
+- 30M unique names × 384 dimensions × 4 bytes = **~46GB** raw embedding data
+- Plus name metadata (language, script, IPA, romanized): 30M × 0.3KB = **~9GB**
+- **Total NAME collection: ~55GB**
+
+**Note:** Name reuse is a major storage optimization. Common names like "Church of Saint Mary," "Main Street," "الجامع الكبير" (Great Mosque) appear thousands of times but are stored once. This is a key advantage of the graph model over embedded document approaches.
+
+### AUTHORITY Collection (Shared)
+
+**Estimate:**
+- 50K datasets and sources
+- 500 relation types
+- 5K period definitions (PeriodO)
+- **Total: ~56K AUTHORITY records × 2KB = ~112MB**
+
+(Negligible compared to attestation layer - authorities are heavily reused)
+
+### Total Raw Data
+
+| Component | Size |
+|-----------|------|
+| Source data (Things + basic attributes) | 116-156GB |
+| Attestation layer (per-Thing nodes + edges) | 1.06TB |
+| Shared NAME nodes (with embeddings) | 55GB |
+| Shared AUTHORITY nodes | 0.1GB |
+| **Total uncompressed** | **~1.25-1.3TB** |
+
+### Database-Specific Storage Characteristics
+
+#### ArangoDB
+
+**Compression:**
+- Document compression: 2-3x typical ratio
+- Edge compression: Similar 2-3x ratio
+- Vector indexes: Quantization can reduce by 4-8x
+- **Estimated working set: 500-650GB**
+
+**Index Overhead:**
+- Geo indexes (S2): ~20% of geometry data = ~60GB
+- Vector indexes (FAISS IVF): ~30% of NAME embeddings = ~17GB
+- Full-text indexes: ~15% of text data = ~25GB
+- Edge indexes (automatic): ~10% of edge data = ~35GB
+- **Total indexes: ~137GB**
+
+**Final ArangoDB estimate: 650-800GB**
+
+#### PostgreSQL + Extensions
+
+**Compression:**
+- PostgreSQL TOAST compression: 2-3x on large fields
+- Vector index overhead (HNSW): ~40-50% of embedding data = ~27GB
+- PostGIS indexes (GIST): ~25% of geometry data = ~75GB
+- AGE graph indexes: ~15% of graph data = ~160GB
+- Full-text indexes: ~20% of text data = ~30GB
+- **Total indexes: ~292GB**
+
+**Multiple extension overhead:**
+- PostGIS spatial functions loaded in memory
+- pgvector HNSW index structures
+- AGE graph metadata
+- Potentially higher memory requirements for query planning
+
+**Final PostgreSQL estimate: 800GB-1TB**
+
+**Note:** PostgreSQL may require more storage than ArangoDB due to:
+- Multiple extension indexes with some overlap
+- AGE graph metadata duplication (stores both relational and graph views)
+- Less efficient edge storage (normalized tables vs. native edge collections)
 
 ### Growth Projections
 
-**Year 1**: 900GB-1.2TB
-**Year 3**: 1.5-2TB (with new contributions)
-**Year 5**: 2.5-3TB (if major datasets added)
+| Timeline | Dataset Size | Storage (ArangoDB) | Storage (PostgreSQL) |
+|----------|--------------|-------------------|---------------------|
+| **Year 1** | 73M Things baseline | 650-800GB | 800GB-1TB |
+| **Year 2** | +2-3M contributed Things | 680-830GB | 830GB-1.05TB |
+| **Year 3** | +5M contributed Things | 720-880GB | 880GB-1.1TB |
+| **Year 5** | +10M contributed Things | 780-950GB | 950GB-1.2TB |
+
+**Growth characteristics:**
+
+**Dominated by initial bulk ingestion:**
+- GeoNames (12M), Wikidata (10M), OSM subset (50M) = 72M Things
+- This baseline represents ~98% of total dataset
+- Subsequent contributions are incremental (2-3% annually)
+
+**Modest incremental growth:**
+- User-contributed places and itineraries
+- Smaller specialized historical datasets (CHGIS, Pleiades expansions, etc.)
+- Student/classroom contributions
+
+**Attestation density increases over time:**
+- Existing Things gain additional attestations (new sources, refined geometries)
+- Meta-attestations accumulate (scholarly critique, reconciliation debates)
+- **Storage grows ~5-10% per year from attestation enrichment**
+
+**Name collection grows slowly:**
+- Most common place names captured in initial ingestion
+- New contributions increasingly reuse existing NAME nodes
+- Unique name growth rate: ~2-3% annually after Year 1
+
+**Why growth is limited:**
+- Historical place data is finite (unlike modern event streams)
+- Major gazetteers already ingested at baseline
+- Crowdsourced contributions typically enrich existing Things rather than add new ones
+- Most growth comes from attestation depth, not Thing breadth
+
+### Memory Requirements
+
+**For optimal performance, working set should fit in RAM:**
+
+**ArangoDB:**
+- Active data: 400-500GB
+- Vector indexes: 17GB (frequently accessed)
+- Geo indexes: 60GB
+- Hot edge indexes: 35GB
+- **Recommended RAM: 128-256GB** (allows OS cache + query working memory)
+- **Minimum acceptable: 64GB** with aggressive caching
+
+**PostgreSQL:**
+- Shared buffers: 25-40% of RAM (32-100GB)
+- Vector index cache: 27GB
+- PostGIS geometry cache: 75GB
+- AGE graph cache: 100GB
+- OS page cache: remainder
+- **Recommended RAM: 256GB** (for comfortable operation with all extensions)
+- **Minimum acceptable: 128GB** with careful tuning
+
+**Note:** ArangoDB's lower memory requirements reflect more efficient integrated indexing vs. PostgreSQL's multiple independent extension caches.
+
+### Storage I/O Requirements
+
+**Random reads** (most queries involve):
+- Graph traversals (edge lookups)
+- Vector similarity search (index navigation)
+- Spatial queries (geo index traversal)
+
+**NVMe SSD strongly recommended:**
+- ~100K IOPS for concurrent queries
+- <1ms latency for graph hops
+- Sustained throughput for bulk operations
+
+**Capacity:** 5-10TB to accommodate:
+- Database growth (5 years)
+- Backup snapshots
+- WAL/journal files
+- Temporary query space
 
 ## Option 1: ArangoDB
 
@@ -727,31 +894,308 @@ PostgreSQL provides a **viable alternative** with:
 
 ## Option 4: Vespa
 
-### Context
+### Why Vespa Was Initially Attractive
 
-**Note**: Previous WHG v4 documentation references Vespa as the intended backend. This assessment reflects re-evaluation following the data model redesign toward property graphs with Attestations as nodes.
+Vespa was selected for WHG v4 when the architectural priorities emphasized:
 
-### Limitations for WHG v4
+**1. Vector Search Excellence**
 
-**1. Not a Graph Database**
-- Fundamental mismatch with attestation-as-node model
-- Would require manual graph logic in application layer
-- No native graph traversal
+Vespa offers **industry-leading vector similarity search** capabilities:
+- Native approximate nearest neighbor (ANN) search with HNSW indexes
+- Optimized for billions of vectors with sub-10ms query latency
+- Multiple distance metrics (cosine, euclidean, angular, hamming)
+- Hybrid search combining BM25 text ranking with vector similarity
+- Real-time updates and indexing
 
-**2. No GeoJSON Support**
-- Cannot handle historical geometries without extensive encoding
-- Would require custom spatial logic
+**For WHG's phonetic name matching use case**, Vespa represented the gold standard:
+- Cross-linguistic toponym matching via phonetic embeddings
+- Matching across different scripts (Latin, Arabic, Chinese, Cyrillic, etc.)
+- Handling transliteration variations
+- Scale to 10M+ name variants with high recall
 
-**3. No GeometryCollection**
-- Would require extensive custom encoding
+**2. Unified Search Platform**
 
-**4. Excellent Vector Search**
-- Best-in-class vector capabilities
-- But insufficient alone given other limitations
+Vespa positioned itself as a single system for:
+- Full-text search (BM25, linguistic features)
+- Vector similarity search
+- Structured data queries
+- Real-time indexing and updates
+
+This "all-in-one" promise aligned with our goal of operational simplicity for a small team.
+
+**3. Scalability and Performance**
+
+- Battle-tested at massive scale (Yahoo, Spotify, OkCupid)
+- Content distribution capabilities for global access
+- Low-latency queries even with complex ranking
+- Horizontal scaling for growing datasets
+
+**4. Open Source with Strong Backing**
+
+- Apache 2.0 license (no licensing concerns)
+- Backed by Verizon Media/Yahoo
+- Active development and community
+- Professional support available
+
+### Why the Data Model Redesign Changed Everything
+
+The evolution toward an **attestation-based property graph model** fundamentally altered our requirements in ways that expose Vespa's limitations:
+
+### Critical Limitation 1: Not a Graph Database
+
+**The Problem:**
+
+Vespa is a **document search engine**, not a graph database. Our attestation model requires:
+
+- **Attestations as first-class nodes** with their own identifiers
+- **Multi-hop graph traversals**: Thing → Attestation → Name → Authority → Period
+- **Bidirectional relationships**: Finding all Things connected to a Source, or all Sources supporting an Attestation
+- **Meta-attestations**: Attestations about other Attestations (scholarly discourse)
+- **Provenance chains**: Tracing claims through multiple levels of citation
+
+**Vespa's Approach:**
+
+Vespa treats everything as documents with embedded relationships. To model our graph:
+
+```json
+// Vespa document - all relationships embedded
+{
+  "thing_id": "constantinople",
+  "names": [
+    {
+      "name": "Constantinople",
+      "attestation_id": "att-001",
+      "sources": ["source-123"],
+      "certainty": 0.9,
+      "timespan": {...}
+    },
+    {
+      "name": "İstanbul", 
+      "attestation_id": "att-002",
+      "sources": ["source-456"],
+      "certainty": 1.0,
+      "timespan": {...}
+    }
+  ],
+  "geometries": [...],
+  "relations": [...]
+}
+```
+
+**Problems with this approach:**
+
+1. **Attestations lose identity**: They become anonymous nested objects, not addressable entities
+2. **No meta-attestations**: Cannot create attestations about attestations when attestations aren't nodes
+3. **Duplication**: Same source/timespan data duplicated across many documents
+4. **Query complexity**: Finding "all Things citing source X" requires scanning all documents
+5. **Update complexity**: Changing a source citation requires updating potentially thousands of documents
+6. **No graph algorithms**: Cannot run centrality analysis, shortest path, community detection on embedded data
+
+**Graph Database Approach (ArangoDB/Neo4j):**
+
+```javascript
+// Attestation is a node
+{
+  "_id": "attestations/att-001",
+  "certainty": 0.9,
+  "notes": "..."
+}
+
+// Connected via edges
+Thing ──[subject_of]──> Attestation ──[attests_name]──> Name
+                            │
+                            └──[sourced_by]──> Authority
+                            │
+                            └──[attests_timespan]──> Timespan
+```
+
+**Benefits:**
+- Each entity addressable
+- Bidirectional traversal native
+- Meta-attestations natural (new edges to attestation nodes)
+- Updates affect only changed nodes
+- Graph algorithms work natively
+
+### Critical Limitation 2: No GeoJSON Support
+
+**The Problem:**
+
+Historical places have **complex geometries**:
+- Multiple disputed boundaries for the same period
+- Territorial changes over time
+- Points, polygons, and linestrings for the same entity
+- Imprecise historical regions
+
+**Required GeoJSON types:**
+- Point (settlements, monuments)
+- MultiPoint (scattered settlement patterns)
+- LineString (roads, rivers, walls)
+- MultiLineString (trade routes, river systems)
+- Polygon (territories, regions)
+- MultiPolygon (non-contiguous territories, islands)
+- GeometryCollection (mixed geometry types)
+
+**Vespa's Spatial Capabilities:**
+
+Vespa only supports **2D positions** (latitude/longitude pairs):
+- No polygon support
+- No linestring support
+- No multi-geometry support
+- No GeometryCollection
+
+**Workaround Required:**
+
+To store a historical territory boundary in Vespa:
+
+```json
+{
+  "location": [28.98, 41.01],  // Single representative point
+  "boundary_encoded": "base64_encoded_geojson_string",  // Custom encoding
+  "boundary_wkt": "POLYGON((...))"  // Alternative encoding
+}
+```
+
+**Problems:**
+1. **No spatial queries**: Cannot query "places within this polygon" or "territories intersecting this region"
+2. **Custom decoding**: Application must decode geometries for display
+3. **No spatial indexing**: Representative point only, not actual boundaries
+4. **Geometry comparison**: Cannot compute overlaps, containment, distance to polygons
+
+**Result**: Would need a **secondary spatial database** (PostGIS) anyway, defeating the "single system" goal.
+
+### Critical Limitation 3: Document Model vs. Attestation Model
+
+**WHG's Attestation Philosophy:**
+
+Every claim is:
+- **Explicitly sourced** (one or more sources)
+- **Temporally bounded** (valid during specific timespan)
+- **Uncertainty-qualified** (certainty level with explanation)
+- **Independently assessable** (can be challenged, supported, superseded)
+
+**Example**: "Constantinople was called İstanbul (1930-present)"
+
+This is **one attestation node** connecting:
+- Thing: Constantinople
+- Name: İstanbul
+- Authority (source): Turkish Geographic Board
+- Authority (relation type): has_name
+- Timespan: 1930-present
+- Certainty: 1.0
+
+**Vespa's Document Model:**
+
+Would require embedding this information structure within a Constantinople document:
+
+```json
+{
+  "thing_id": "constantinople",
+  "names": [{
+    "name": "İstanbul",
+    "language": "tr",
+    "sources": ["Turkish Geographic Board"],
+    "start_year": 1930,
+    "certainty": 1.0
+  }]
+}
+```
+
+**What's Lost:**
+
+1. **Source reification**: "Turkish Geographic Board" is just a string, not a linked entity with its own metadata (authority type, URI, dates)
+2. **Relation types as data**: "has_name" is implicit in the structure, not an entity with inverse relationships, domain/range constraints
+3. **Temporal precision**: Reduced to simple year fields instead of four-field PeriodO model with earliest/latest bounds
+4. **Provenance depth**: Cannot represent that "Source A cited Source B" or "Attestation X supersedes Attestation Y"
+5. **Scholarly discourse**: Cannot model debates, challenges, revisions to attestations
+
+### Critical Limitation 4: Query Pattern Mismatch
+
+**Query Examples Our Model Requires:**
+
+1. **"What sources support the claim that X was called Y in period Z?"**
+  - Graph: Traverse Thing → Attestations → Names (filter) → Sources + Timespans
+  - Vespa: Scan all documents, filter embedded names array, extract source strings
+
+2. **"Which places cite source S and have uncertain boundaries?"**
+  - Graph: Traverse Source → Attestations (filter certainty) → Things → Geometries (filter precision)
+  - Vespa: Full corpus scan checking embedded source strings and geometry metadata
+
+3. **"Show scholarly disagreement about location X's temporal bounds"**
+  - Graph: Find all Timespan attestations for X, compare, identify conflicts
+  - Vespa: Parse embedded temporal data from document, requires application logic
+
+4. **"Find attestations about attestation A"** (meta-attestations)
+  - Graph: Native - just query edges pointing to attestation node A
+  - Vespa: Impossible - attestations aren't addressable entities
+
+### What Vespa Does Exceptionally Well (But We Don't Need)
+
+**1. Content Ranking and Recommendation**
+
+Vespa excels at:
+- Hybrid BM25 + vector search with sophisticated ranking models
+- Learning-to-rank with ML models for relevance tuning
+- Personalized recommendations
+- A/B testing ranking strategies
+
+**WHG's needs are different**: While we do need to rank candidates within reconciliation clusters (by combined similarity scores: name + spatial + temporal), this is straightforward scoring logic that can be implemented in AQL queries. Vespa's advanced learning-to-rank and personalization features (designed for search engines and recommendation systems) exceed our simpler multi-dimensional similarity requirements.
+
+**2. Real-Time Streaming Updates**
+
+Vespa handles:
+- High-velocity data ingestion
+- Immediate index updates
+- Partial document updates
+
+**WHG doesn't need this**: Historical data changes slowly; batch updates are sufficient.
+
+**3. Content Distribution**
+
+Vespa provides:
+- Multi-region deployment
+- Content replication
+- Edge caching
+
+**WHG doesn't need this**: Single-region deployment at Pitt is adequate; we're not a CDN.
+
+### The Bottom Line
+
+**Vespa was the right choice for a vector-search-first architecture with embedded relationships.**
+
+**Vespa is the wrong choice for a property graph architecture with reified attestations.**
+
+The data model redesign privileged:
+- **Historiographical precision** over search ranking
+- **Provenance depth** over query speed
+- **Scholarly discourse modeling** over content distribution
+- **Graph semantics** over document embeddings
+
+These priorities make Vespa fundamentally unsuitable, despite its vector search excellence.
+
+### Why Not Use Vespa for Vectors + Another DB for Graph?
+
+**Considered Multi-System Architecture:**
+- Vespa: Vector search on names
+- Neo4j/ArangoDB: Graph relationships
+- Sync embeddings from graph to Vespa
+
+**Problems:**
+
+1. **Complexity explosion**: Two databases to maintain, monitor, backup
+2. **Synchronization overhead**: Keeping vector index aligned with graph
+3. **Query splitting**: Every search requires querying both systems and merging results
+4. **Operational burden**: Unacceptable for solo developer
+5. **Data integrity**: Risk of desynchronization between systems
+
+**ArangoDB's Answer:**
+
+FAISS-backed vector indexes provide 80% of Vespa's vector performance with native graph support, eliminating the need for multiple systems. The 20% performance gap is acceptable given operational simplicity.
 
 ### Assessment
 
-Vespa is **unsuitable for the redesigned data model** where Attestations are nodes and graph traversal is core functionality.
+Vespa is **unsuitable for the attestation-based property graph model** that defines WHG v4. While its vector search capabilities are best-in-class, the fundamental mismatch between document-oriented search and graph-oriented historical knowledge representation makes it an architectural dead-end for our requirements.
+
+The shift from Vespa to ArangoDB reflects the evolution from "gazetteer as search engine" to "gazetteer as historical knowledge graph."
 
 ---
 
