@@ -280,50 +280,50 @@ ArangoDB's native multi-model architecture (graph + document + geospatial) maps 
 ```javascript
 // Things as documents
 {
-    "_key": "constantinople",
-    "_id": "things/constantinople",
-    "thing_type": "location",
-    "description": "Major Byzantine/Ottoman city on the Bosphorus",
-    "primary_name": "Constantinople",  // denormalized
-    "representative_point": [28.98, 41.01]  // denormalized
+  "_key": "constantinople",
+        "_id": "things/constantinople",
+        "thing_type": "location",
+        "description": "Major Byzantine/Ottoman city on the Bosphorus",
+        "primary_name": "Constantinople",  // denormalized
+        "representative_point": [28.98, 41.01]  // denormalized
 }
 
 // Names as documents with embeddings
 {
-    "_key": "name-istanbul-tr",
-    "_id": "names/name-istanbul-tr",
-    "name": "İstanbul",
-    "language": "tr",
-    "script": "Latn",
-    "embedding": [0.234, -0.567, ...]  // 384-dimensional
+  "_key": "name-istanbul-tr",
+        "_id": "names/name-istanbul-tr",
+        "name": "İstanbul",
+        "language": "tr",
+        "script": "Latn",
+        "embedding": [0.234, -0.567, ...]  // 384-dimensional
 }
 
 // Attestations as nodes (not edges)
 {
-    "_key": "att-001",
-    "_id": "attestations/att-001",
-    "certainty": 1.0,
-    "certainty_note": "Official administrative name change",
-    "notes": "Adopted after establishment of Turkish Republic"
+  "_key": "att-001",
+        "_id": "attestations/att-001",
+        "certainty": 1.0,
+        "certainty_note": "Official administrative name change",
+        "notes": "Adopted after establishment of Turkish Republic"
 }
 
 // Edges connect the graph
 {
-    "_from": "things/constantinople",
-    "_to": "attestations/att-001",
-    "edge_type": "subject_of"
+  "_from": "things/constantinople",
+        "_to": "attestations/att-001",
+        "edge_type": "subject_of"
 }
 
 {
-    "_from": "attestations/att-001",
-    "_to": "names/name-istanbul-tr",
-    "edge_type": "attests_name"
+  "_from": "attestations/att-001",
+        "_to": "names/name-istanbul-tr",
+        "edge_type": "attests_name"
 }
 
 {
-    "_from": "attestations/att-001",
-    "_to": "authorities/source-turkish-gov",
-    "edge_type": "sourced_by"
+  "_from": "attestations/att-001",
+        "_to": "authorities/source-turkish-gov",
+        "edge_type": "sourced_by"
 }
 ```
 
@@ -561,42 +561,103 @@ FOR name IN names
 
 **Preferred Approach: Self-Hosted at University of Pittsburgh**
 
-WHG intends to host ArangoDB on University of Pittsburgh infrastructure:
+WHG intends to host ArangoDB on University of Pittsburgh infrastructure (Pitt CRC).
 
-**Hardware Requirements** (estimated for 1TB working set):
-- **CPU**: 16-32 cores for query parallelization and indexing
-- **RAM**: 128-256GB
-  - Minimum: 128GB (for reasonable in-memory operations)
-  - Recommended: 256GB (for optimal performance with vector indexes and graph traversals)
-  - Working set should fit in memory for best performance
-- **Storage**:
-  - Primary: 5-10TB NVMe SSD (for database, indexes, growth)
-  - Backup: Additional storage for snapshots
-- **Network**: High-bandwidth internal network for cluster coordination (if clustered)
+**Hardware Requirements** (based on 650-800GB working set):
 
-**Software Requirements**:
-- Linux (Ubuntu 20.04+ or RHEL 8+)
-- ArangoDB Enterprise Edition
-- Monitoring tools (Prometheus, Grafana)
+**CPU:**
+- **Minimum**: 16 cores
+- **Recommended**: 24-32 cores
+- **Purpose**: Query parallelization, vector index operations, graph traversals, concurrent user requests
+- **Note**: Multi-core critical for AQL query optimization and FAISS vector search
 
-**Operational Requirements**:
-- System administration support from Pitt IT
-- Backup infrastructure (automated snapshots, offsite replication)
-- Monitoring and alerting
-- Security updates and maintenance
+**RAM:**
+- **Minimum**: 128GB
+- **Recommended**: 192-256GB
+- **Breakdown**:
+  - Active data in memory: ~500GB working set target
+  - Vector indexes (hot): ~17GB
+  - Geo indexes: ~60GB
+  - Edge indexes: ~35GB
+  - ArangoDB processes: ~10-15GB
+  - OS and cache: ~20-30GB
+- **Rationale**: Keeping frequently-accessed data in RAM is critical for sub-100ms query response
+- **Acceptable minimum**: 128GB with careful tuning and acceptance of some disk I/O for queries
 
-**Alternative: ArangoDB-Managed Hosting**
+**Storage:**
+- **Primary Database**: 2TB NVMe SSD
+  - Current data: 650-800GB
+  - Indexes: ~137GB
+  - Growth headroom (5 years): ~300GB
+  - WAL and temporary files: ~100GB
+  - Total needed: ~1.2-1.4TB → **2TB allocation recommended**
+- **Backup Storage**: 3-4TB (separate volume)
+  - 3x full database snapshots
+  - Incremental backups
+  - Export archives
+- **Performance Requirements**:
+  - NVMe SSD strongly recommended (not SATA SSD)
+  - ~50K+ random IOPS for graph traversals
+  - <1ms latency for edge lookups
+  - Sustained read: 2-3GB/s
+  - Sustained write: 1-2GB/s
 
-Given practical considerations, we are **open to ArangoDB-managed hosting** (ArangoGraph or similar) as an alternative to self-hosting.
+**Network:**
+- **Internal**: 10Gbps minimum for single-server deployment
+- **If clustered** (3+ nodes): 25Gbps low-latency interconnect
+- **External**: Standard university network connection sufficient for web application traffic
 
-**Benefits of managed hosting**:
+**Software Requirements:**
+- **OS**: Linux (Ubuntu 22.04 LTS or RHEL 9 recommended)
+- **Database**: ArangoDB Enterprise Edition 3.12+
+- **Monitoring**: Prometheus + Grafana (for metrics dashboards)
+- **Backup**: ArangoDB's built-in tools + custom scripts
+- **Optional**: Docker/Kubernetes for containerized deployment
+
+**Operational Requirements:**
+- **System administration**: Pitt CRC support for:
+  - Initial server provisioning
+  - OS-level maintenance and security patches
+  - Network configuration
+  - Storage management
+- **Database administration** (can be handled by WHG developer with training):
+  - Query optimization
+  - Index tuning
+  - Backup management
+  - Monitoring and alerting configuration
+- **Backup strategy**:
+  - Automated nightly snapshots
+  - Weekly full backups
+  - Offsite replication (Pitt backup infrastructure)
+  - 30-day retention policy
+- **Monitoring and alerting**:
+  - Query performance metrics
+  - Resource utilization (CPU, RAM, disk I/O)
+  - Error rates and warnings
+  - Backup success/failure notifications
+
+**Alternative: ArangoDB-Managed Hosting (ArangoGraph)**
+
+Given practical considerations, we are **open to ArangoDB-managed hosting** as an alternative to self-hosting.
+
+**Benefits of managed hosting:**
 - Reduces operational burden on solo developer
-- Professional database administration
+- Professional 24/7 database administration
 - Automated backups and updates
-- Better resource scaling
+- Better resource scaling and elasticity
 - Faster time to production
+- No hardware procurement lead time
+- Included monitoring and alerting
 
-**Consideration**: Managed hosting pricing should be part of licensing discussion, as it may provide better total cost of ownership than self-hosted given staffing constraints.
+**Tradeoffs:**
+- Potentially higher ongoing costs vs. self-hosted
+- Less control over infrastructure
+- Dependency on vendor availability
+- Data egress costs if migrating away
+
+**Consideration**: Managed hosting pricing should be part of licensing discussion, as it may provide better total cost of ownership than self-hosted given staffing constraints and solo developer operational burden.
+
+**Recommendation**: Start with pricing quote for managed hosting (ArangoGraph) to compare against self-hosted TCO before making final deployment decision.
 
 ### Limitations
 
@@ -605,7 +666,7 @@ Given practical considerations, we are **open to ArangoDB-managed hosting** (Ara
 **Community Edition** (v3.12+):
 - 100 GiB dataset limit per cluster
 - Restricted to non-commercial use under BSL 1.1
-- **Insufficient for WHG** (requires 900GB-1.2TB)
+- **Insufficient for WHG** (requires 650-800GB)
 
 **Enterprise Edition**:
 - Required for WHG's dataset size
@@ -783,13 +844,81 @@ $$) AS (thing agtype, attestation agtype, name agtype);
 
 ### Deployment Considerations
 
-**Self-Hosted at University of Pittsburgh**
+**Self-Hosted at University of Pittsburgh (Pitt CRC)**
 
-**Hardware Requirements** (for 1TB working set):
-- **CPU**: 16-32 cores
-- **RAM**: 128-256GB
-  - Recommended: 256GB for multiple large indexes (PostGIS, pgvector, AGE)
-- **Storage**: 5-10TB NVMe SSD
+**Hardware Requirements** (based on 800GB-1TB working set):
+
+**CPU:**
+- **Minimum**: 16 cores
+- **Recommended**: 32 cores
+- **Purpose**: Parallel query execution, multiple extension operations (PostGIS + pgvector + AGE), indexing
+- **Note**: PostgreSQL benefits significantly from higher core counts when running multiple extensions simultaneously
+
+**RAM:**
+- **Minimum**: 128GB (with careful tuning)
+- **Recommended**: 256GB
+- **Breakdown**:
+  - Shared buffers (PostgreSQL): 64-96GB (25-40% of RAM)
+  - pgvector index cache: ~27GB
+  - PostGIS geometry cache: ~75GB
+  - AGE graph metadata: ~100GB
+  - Work_mem for queries: ~20-30GB
+  - OS page cache: remainder
+- **Rationale**: Multiple extensions each maintain separate caches; higher RAM reduces extension coordination overhead
+- **Note**: PostgreSQL + extensions typically requires more RAM than ArangoDB for equivalent dataset due to less integrated architecture
+
+**Storage:**
+- **Primary Database**: 3TB NVMe SSD
+  - Current data: 800GB-1TB
+  - Indexes (multiple extensions): ~292GB
+  - Growth headroom (5 years): ~400GB
+  - WAL files: ~100GB
+  - Temporary query space: ~200GB
+  - Total needed: ~1.8-2TB → **3TB allocation recommended**
+- **Backup Storage**: 4-5TB (separate volume)
+  - 3x full database dumps
+  - Incremental WAL archives
+  - Extension-specific backups
+- **Performance Requirements**:
+  - NVMe SSD required (SATA SSD insufficient for graph + spatial queries)
+  - ~60K+ random IOPS for combined extension operations
+  - <1ms latency for index operations
+  - Sustained read: 3-4GB/s
+  - Sustained write: 2-3GB/s
+
+**Network:**
+- **Internal**: 10Gbps minimum
+- **If replicated** (primary + standby): 10Gbps+ low-latency
+- **External**: Standard university network connection
+
+**Software Requirements:**
+- **OS**: Linux (Ubuntu 22.04 LTS or RHEL 9)
+- **Database**: PostgreSQL 16+
+- **Extensions**:
+  - PostGIS 3.4+
+  - pgvector 0.5+
+  - Apache AGE 1.5+
+  - pg_trgm (included)
+- **Connection Pooler**: PgBouncer (required for AGE)
+- **Monitoring**: Prometheus + Grafana + PostgreSQL-specific exporters
+- **Backup**: pg_dump, WAL archiving, Barman (recommended)
+
+**Operational Requirements:**
+- **Initial setup complexity**: Higher than ArangoDB due to multiple extensions
+- **Configuration tuning**: Each extension requires separate parameter tuning
+- **Backup strategy**:
+  - Full database dumps (pg_dump): weekly
+  - WAL archiving: continuous
+  - Extension metadata backups: daily
+  - Point-in-time recovery: 30-day window
+- **Monitoring**: Must track metrics for each extension separately
+- **Maintenance**: VACUUM, ANALYZE, REINDEX schedules must account for extension overhead
+
+**Note on Extension Coordination:**
+- PostGIS, pgvector, and AGE are developed independently
+- Updates to one extension may impact others
+- Compatibility testing required before upgrading any component
+- More complex troubleshooting when issues span multiple extensions
 - **Note**: May require more resources than ArangoDB due to extension overhead
 
 **Software Requirements**:
