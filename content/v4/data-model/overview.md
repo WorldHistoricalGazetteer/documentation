@@ -299,7 +299,7 @@ The four-date model captures uncertainty:
 - `+infinity`: Into indefinite future
 - `present`: Current day (dynamic)
 
-See [Implementation in Vespa](implementation.md#handling-temporal-nulls-and-geological-time) for details on null
+See [Implementation in Database](implementation.md#handling-temporal-nulls-and-geological-time) for details on null
 handling.
 
 ## Attestation Entity
@@ -470,5 +470,5 @@ This model draws from:
 - **Attestations**: See [Attestations & Relations](attestations.md)
 - **Vocabularies**: See [Controlled Vocabularies](vocabularies.md)
 - **Use Cases**: See [Platform Use Cases](usecases.md)
-- **Implementation**: See [Implementation in Vespa](implementation.md)
+- **Implementation**: See [Implementation in Database](implementation.md)
 - **RDF Representation**: See [RDF Representation](rdf-representation.md)
