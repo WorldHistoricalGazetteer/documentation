@@ -69,7 +69,7 @@ A sequentially-ordered set of places, typically without specific temporal traver
 **Mapping to model:**
 ```
 Route contribution → Thing (typed_by AUTHORITY[classification: "route"])
-  ├─ Route name → Name (via Attestation)
+  ├─ Route name → Name (via Attestation + edges)
   ├─ Waypoint 1 → Thing with Attestation(sequence: 1) + typed_by(member_of) + relates_to(Route)
   ├─ Waypoint 2 → Thing with Attestation(sequence: 2) + typed_by(member_of) + relates_to(Route)
   ├─ Path geometry (optional) → Geometry (LineString via Attestation)
@@ -104,14 +104,15 @@ A route with temporal dimensions indicating when segments were traversed.
 **Mapping to model:**
 ```
 Itinerary contribution → Thing (typed_by AUTHORITY[classification: "itinerary"])
-  ├─ Itinerary name → Name (via Attestation)
-  ├─ Segment 1 → Thing
-  │   ├─ Attestation(sequence: 1) + typed_by(member_of) + relates_to(Itinerary)
-  │   └─ Timespan via attests_timespan edge (traversal dates)
-  ├─ Segment 2 → Thing
-  │   ├─ Attestation(sequence: 2) + typed_by(member_of) + relates_to(Itinerary)
-  │   └─ Timespan via attests_timespan edge (traversal dates)
-  └─ Overall timespan (computed or explicit via Attestation)
+├─ Itinerary name → Name (via Attestation + edges)
+├─ Segment 1 → Thing
+│   ├─ Attestation document (sequence: 1, certainty: ...) in attestations collection
+│   ├─ Edge: things/segment-1 → attestations/att-seg-1 (subject_of)
+│   ├─ Edge: attestations/att-seg-1 → authorities/member-of (typed_by)
+│   ├─ Edge: attestations/att-seg-1 → things/itinerary (relates_to)
+│   └─ Edge: attestations/att-seg-1 → timespans/seg-1-dates (attests_timespan)
+├─ Segment 2 → Thing (similar structure with sequence: 2)
+└─ Overall timespan (computed or explicit via Attestation + edges)
 ```
 
 ---
@@ -338,8 +339,8 @@ WHG may in future accept contributions in Turtle (`.ttl`) format. See the comple
 ### Bidirectional Transformation
 
 **Ingestion (LPF/CSV → Internal Model):**
-- LPF `properties.title` → Name entities + Attestations with attests_name edges
-- LPF `names[]` array → Multiple Name entities + Attestations
+- LPF `properties.title` → Name entity + Attestation document + edges (subject_of from Thing to Attestation, attests_name from Attestation to Name)
+- LPF `names[]` array → Multiple Name entities + Attestation documents + edges for each name
 - LPF `geometry` or `geometries[]` → Geometry entities + Attestations with attests_geometry edges
 - LPF `types[]` → Attestations with typed_by edges to AUTHORITY documents
 - LPF `when` → Timespan entities + Attestations with attests_timespan edges
@@ -379,6 +380,57 @@ The WHG application includes a **transformation layer** that:
 
 This layer is distinct from the core data model and handles the complexity of mapping between interchange formats and the internal optimized graph structure.
 
+**Transformation Architecture:**
+
+The transformation from contribution formats to internal graph structure creates three types of documents:
+
+1. **Entity documents** (in entity collections):
+   - Things, Names, Geometries, Timespans, Authorities
+
+2. **Attestation documents** (in attestations collection):
+   - Contain only metadata: certainty, notes, sequence, connection_metadata, timestamps
+   - No embedded relationships or references to other entities
+
+3. **Edge documents** (in edges collection):
+   - Connect attestations to entities with `edge_type` field
+   - Enable graph traversal and relationship queries
+
+**Example transformation:**
+```javascript
+// LPF input
+{
+  "type": "Feature",
+  "properties": {
+    "title": "Constantinople"
+  },
+  "geometry": {...},
+  "when": {...}
+}
+
+// Creates in graph database:
+
+// 1. Thing document
+{ "_id": "things/constantinople", "thing_type": "location" }
+
+// 2. Name document
+{ "_id": "names/constantinople-en", "name": "Constantinople" }
+
+// 3. Geometry document
+{ "_id": "geometries/const-geom", "geom": {...} }
+
+// 4. Timespan document
+{ "_id": "timespans/byzantine", "start_earliest": ..., "end_latest": ... }
+
+// 5. Attestation document (junction node)
+{ "_id": "attestations/att-001", "certainty": 0.95 }
+
+// 6. Edge documents (relationships)
+{ "_from": "things/constantinople", "_to": "attestations/att-001", "edge_type": "subject_of" }
+{ "_from": "attestations/att-001", "_to": "names/constantinople-en", "edge_type": "attests_name" }
+{ "_from": "attestations/att-001", "_to": "geometries/const-geom", "edge_type": "attests_geometry" }
+{ "_from": "attestations/att-001", "_to": "timespans/byzantine", "edge_type": "attests_timespan" }
+```
+
 ---
 
 ## Editing Contributions
@@ -401,15 +453,52 @@ Contributors and staff can manually create individual Attestation nodes and thei
 2. Click "Add Attestation" button
 3. Select relation type from AUTHORITY(relation_type) vocabulary
 4. Select or create target entity (Name, Geometry, Timespan, or Thing)
-5. Fill in source (creates sourced_by edge to AUTHORITY[source]), certainty, notes
-6. Save - creates Attestation node + required edges, immediately indexed
+5. Fill in source, certainty, notes
+6. Save - creates:
+   - Attestation document in attestations collection
+   - Edge document from Thing to Attestation (subject_of)
+   - Edge document from Attestation to target entity (attests_name/geometry/timespan or relates_to)
+   - Edge document from Attestation to relation type Authority (typed_by, if Thing-to-Thing relationship)
+   - Edge document from Attestation to Source Authority (sourced_by)
+7. All documents immediately indexed for querying
 
 **Graph operations created:**
-```
-Thing ←[subject_of]← New Attestation ─[typed_by]→ AUTHORITY(relation_type)
-                                     ├─[relates_to]→ Target entity
-                                     └─[sourced_by]→ AUTHORITY(source)
-```
+```javascript
+// Documents created:
+
+// 1. Attestation document (in attestations collection)
+{
+  "_id": "attestations/att-new-001",
+  "certainty": 0.9,
+  "notes": "User-added attestation",
+  "created": "2025-01-15T10:30:00Z",
+  "contributor": "user@example.com"
+}
+
+// 2. Edge documents (in edges collection)
+{
+  "_from": "things/some-thing",
+  "_to": "attestations/att-new-001",
+  "edge_type": "subject_of"
+}
+
+{
+  "_from": "attestations/att-new-001",
+  "_to": "authorities/relation-member-of",
+  "edge_type": "typed_by"
+}
+
+{
+  "_from": "attestations/att-new-001",
+  "_to": "things/target-thing",
+  "edge_type": "relates_to"
+}
+
+{
+  "_from": "attestations/att-new-001",
+  "_to": "authorities/source-xyz",
+  "edge_type": "sourced_by"
+}
 
 **Access control:**
 - Contributors can add attestations to their own contributed data
@@ -611,7 +700,8 @@ When drawing manually, contributor prompted to specify:
 - Timestamp of change
 - User ID (contributor or staff)
 - Operation type (create, update, delete)
-- Entity affected (Thing, Name, Geometry, Timespan, Attestation, Edge, AUTHORITY)
+- Entity affected (Thing, Name, Geometry, Timespan, Attestation, Edge, Authority)
+- Collection affected (things, names, geometries, timespans, attestations, edges, authorities)
 - Old values (for updates/deletes)
 - New values (for creates/updates)
 - Rationale (optional free-text note)

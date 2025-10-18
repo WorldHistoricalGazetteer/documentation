@@ -68,7 +68,7 @@ A temporal extent with support for uncertainty bounds. Based on the W3C Time Ont
 **Properties:**
 - `whg:startEarliest` - Earliest possible start date
 - `whg:startLatest` - Latest possible start date
-- `whg:endEarliest` - Earliest possible end date (note: internal uses "stop", RDF uses "end")
+- `whg:endEarliest` - Earliest possible end date
 - `whg:endLatest` - Latest possible end date
 - `whg:label` - Human-readable period name
 - `whg:precision` - Temporal precision (year, decade, century, era, geological_period)
@@ -76,9 +76,13 @@ A temporal extent with support for uncertainty bounds. Based on the W3C Time Ont
 
 ### whg:Attestation
 
+### whg:Attestation
+
 A node that bundles together claims about a Thing, linking it to Names, Geometries, Timespans, and other Things, all grounded in primary sources. This is the foundational unit of the WHG model, capturing not just facts but provenance, certainty, and temporal context.
 
 **Extends:** `prov:Entity`
+
+**Critical Clarification:** In the RDF representation, attestations are nodes (resources) that connect to other entities through predicates. This mirrors the internal graph database structure where attestations are documents in a document collection, with edges in a separate edge collection connecting them to other entities.
 
 **Properties:**
 - `whg:sequence` - Ordering for routes and itineraries
@@ -124,34 +128,38 @@ Reference data for sources, datasets, relation types, periods, and certainty lev
 
 The key innovation in WHG's RDF model is representing **Attestations as nodes** rather than as reified statements. This aligns with the internal graph database structure where Attestations are vertices connected via edges.
 
+**Architecture Note:** In the internal ArangoDB implementation, attestations are stored as documents in a standard document collection (not an edge collection), and all relationships are stored as edges in a separate edge collection. The RDF representation preserves this architecture by representing attestations as first-class resources (nodes) connected via RDF predicates (equivalent to edges).
+
 ### Graph-Based RDF Structure
 
 In the WHG model, an Attestation is not just metadata about a triple—it's a first-class entity that acts as a hub connecting multiple resources:
 
 ```turtle
-# The Attestation as a node
+# The Attestation as a node (document in attestations collection)
 ex:attestation_001 a whg:Attestation ;
     whg:certainty 0.95 ;
     whg:certaintyNote "Well-documented in multiple sources" ;
     dcterms:created "2024-01-15T10:30:00Z"^^xsd:dateTime ;
     dcterms:contributor "researcher@example.edu" .
 
+# Edges connecting attestation to other entities
+# (In RDF, these are predicates; in ArangoDB, these are edge documents)
+
 # Thing to Attestation
 ex:baghdad whg:attestedBy ex:attestation_001 .
-
 # Or reverse direction:
 ex:attestation_001 whg:attests ex:baghdad .
 
-# Attestation to Name
+# Attestation to Name (via predicate/edge)
 ex:attestation_001 whg:attestsName ex:name_baghdad .
 
-# Attestation to Geometry  
+# Attestation to Geometry (via predicate/edge)
 ex:attestation_001 whg:attestsGeometry ex:geometry_762ce .
 
-# Attestation to Timespan
+# Attestation to Timespan (via predicate/edge)
 ex:attestation_001 whg:attestsTimespan ex:timespan_abbasid .
 
-# Attestation to Source
+# Attestation to Source (via predicate/edge)
 ex:attestation_001 prov:hadPrimarySource ex:source_al_tabari .
 ```
 
@@ -366,10 +374,17 @@ exa:att_meta_001 a whg:Attestation ;
     whg:notes "Sources disagree on which name was used officially in 762 CE" ;
     prov:hadPrimarySource exauth:modern_scholarship .
 
+# Meta-attestation connecting two attestations
 exauth:contradicts a whg:Authority ;
     whg:authorityType "relation_type" ;
-    rdfs:label "contradicts" ;
-    dcterms:description "One attestation contradicts another" .
+    rdfs:label "contradicts" .
+
+exa:att_meta_001 a whg:Attestation ;
+    whg:attests exa:att_001 ;
+    whg:typedBy exauth:contradicts ;
+    whg:relatesTo exa:att_002 ;
+    whg:notes "Sources disagree on which name was used officially in 762 CE" ;
+    prov:hadPrimarySource exauth:modern_scholarship .  
 
 exauth:modern_scholarship a whg:Authority ;
     whg:authorityType "source" ;
@@ -380,6 +395,8 @@ ex:baghdad owl:sameAs <http://www.wikidata.org/entity/Q1530> ,
                       <http://vocab.getty.edu/tgn/7001896> ,
                       <http://sws.geonames.org/98182/> .
 ```
+
+**Note:** Meta-attestations in RDF use the same pattern as other attestations. The `whg:typedBy` predicate links to an authority that defines the meta-relationship type (contradicts, supports, supersedes, etc.). In the internal graph database, this is represented as an edge with `edge_type: "meta_attestation"` and a `properties.meta_type` field.
 
 **Key features demonstrated:**
 
@@ -475,6 +492,8 @@ This ensures interoperability with existing linked data systems.
 ## Geometry Representation
 
 WHG supports both WKT (Well-Known Text) and GeoJSON for geometry representation to ensure maximum interoperability with different tools and systems.
+
+**GeometryCollection Limitation:** ArangoDB (the internal storage system) does not support the GeoJSON `GeometryCollection` type. For entities with heterogeneous geometries, create multiple geometry attestations—one per geometry type. This limitation does not affect RDF exports, which can represent GeometryCollections if needed, but contributors should structure their data using separate geometry attestations to ensure compatibility with the internal graph database.
 
 ### Standard Prefixes and Context
 

@@ -174,6 +174,15 @@ Low-barrier entry for diverse contribution formats with professional-grade outpu
 **What it is:**
 Every claim is sourced; every source is transparent and traceable.
 
+**How it works:**
+Every claim in WHG is represented as an attestation node (document) in the attestations collection, connected via edges to:
+- The Thing being described (via `subject_of` edge)
+- The attribute being claimed (Name, Geometry, Timespan via `attests_*` edges)
+- Or another Thing for relationships (via `typed_by` and `relates_to` edges)
+- Sources supporting the claim (via `sourced_by` edges to Authority documents)
+
+This graph structure enables complete provenance chains: follow edges from any claim back to its sources, and from sources forward to all claims they support.
+
 **How the model supports it:**
 - **Required source links**: No Attestation without edge to AUTHORITY(source) document
 - **Source edges**: Multiple supporting AUTHORITY documents via multiple `sourced_by` edges
@@ -193,13 +202,13 @@ Every claim is sourced; every source is transparent and traceable.
 **Example workflow:**
 1. Researcher finds claim "Angkor Wat built 1113-1150 CE"
 2. Clicks on Attestation to traverse graph and view:
-   - `sourced_by` edges to AUTHORITY documents:
+   - Following `sourced_by` edges to Authority documents:
       - "Khmer inscriptions at site" (source_type: "inscription")
       - "Barth 1885" (source_type: "published")
       - "doi:10.xxxx/angkor-survey" (source_type: "archaeological")
-   - Certainty: 0.98
+   - Certainty: 0.98 (stored in attestation document)
    - Certainty note: "Multiple corroborating inscriptions with regnal dates"
-3. Can follow DOI to original dataset AUTHORITY, view inscriptions, assess reliability
+3. Can follow DOI to original dataset Authority, view inscriptions, assess reliability
 4. Cites WHG attestation with full provenance chain in publication
 
 ---
@@ -422,9 +431,21 @@ Places change: borders shift, cities move, territories fragment and coalesce.
 The ArangoDB graph structure provides unique capabilities:
 
 **Graph Traversal:**
-- Multi-hop queries (e.g., "find all places connected within 3 steps")
-- Path finding (e.g., "shortest route between two historical cities")
-- Community detection (e.g., "identify trade clusters")
+- Multi-hop queries through attestation nodes and edges (e.g., "find all places connected within 3 steps")
+- Path finding following edge chains (e.g., "shortest route between two historical cities")
+- Community detection using edge relationships (e.g., "identify trade clusters")
+
+**Example of multi-hop traversal:**
+```
+Thing → [subject_of edge] → Attestation → [attests_name edge] → Name
+↓ [sourced_by edge]
+Authority
+```
+
+This enables queries like "find all names for things sourced by X" by traversing:
+1. Authority → [sourced_by edges, reversed] → Attestations
+2. Attestations → [attests_name edges] → Names
+3. Attestations → [subject_of edges, reversed] → Things
 
 **Flexible Relationships:**
 - New relation types added via AUTHORITY documents without schema changes

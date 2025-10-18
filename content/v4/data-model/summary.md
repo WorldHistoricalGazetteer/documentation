@@ -4,16 +4,18 @@
 
 The WHG v4 data model achieves historical place representation through a graph-based attestation architecture:
 
-**Entity nodes**:
+**Entity nodes** (documents in document collections):
 - **Things** - unified entities (places, periods, routes, networks)
 - **Names** - multilingual labels with semantic embeddings
 - **Geometries** - spatial representations with derived fields
 - **Timespans** - temporal bounds with PeriodO integration
+- **Attestations** - evidentiary nodes containing metadata about claims
 - **Authorities** - sources, datasets, relation types, periods
 
-**Relationship nodes**:
-- **Attestations** - evidentiary bundles connecting Things to attributes and other Things
-- **Edges** - typed connections between all nodes
+**Relationship edges** (documents in edges collection):
+- **Edges** - typed connections between all nodes (subject_of, attests_name, attests_geometry, attests_timespan, sourced_by, typed_by, relates_to, meta_attestation, part_of)
+
+**Critical distinction:** Attestations are NOT edges; they are nodes in a document collection that serve as junction points. All relationships are expressed through edges in a separate edge collection.
 
 This separation of **entities** from **evidence** enables:
 - Multiple conflicting claims to coexist with source attribution
@@ -25,7 +27,7 @@ This separation of **entities** from **evidence** enables:
 
 ## Key Design Principles
 
-**Graph-first architecture**: Attestations are nodes (not embedded records), making relationships first-class citizens traversable in both directions.
+**Graph-first architecture**: Attestations are nodes in a document collection (not edges, not embedded records), making relationships first-class citizens traversable in both directions. Edges are stored separately in an edge collection, enabling efficient graph traversal while maintaining clean separation between entities and their relationships.
 
 **Single table inheritance in AUTHORITY**: One collection with `authority_type` discriminator replaces separate tables for sources, datasets, relation types, and periods—simplifying queries and reducing joins.
 
@@ -37,6 +39,8 @@ This separation of **entities** from **evidence** enables:
 
 **Namespaced identifiers**: Compact external references (`pleiades:579885`) preserve authority IDs while Django resolves to full URIs.
 
+**Consistent field naming**: Timespan boundaries use `end_earliest` and `end_latest` (not `stop_earliest`/`stop_latest`) for consistency with W3C Time Ontology across all representations.
+
 ---
 
 ## What This Enables
@@ -45,7 +49,7 @@ Beyond traditional gazetteers:
 
 **Temporal gazetteering** - "What was this place called in 800 CE?" not just "Where is X?"
 
-**Historiographical depth** - Multiple sources with varying certainty, not synthesized "facts"
+**Historiographical depth** - Multiple sources with varying certainty, not synthesized "facts". Each attestation node preserves the evidentiary basis through `sourced_by` edges to Authority documents, enabling scholars to evaluate claims rather than accept aggregated results.
 
 **Network/route modeling** - Connections and movements, not just point locations
 
@@ -63,7 +67,7 @@ Beyond traditional gazetteers:
 
 The graph model maps naturally to ArangoDB's multi-model architecture:
 
-- **Property graph** natively represents Attestations as nodes with edges
+- **Property graph** natively represents Attestations as nodes in a document collection with edges in a separate edge collection, perfectly matching the conceptual model
 - **GeoJSON support** handles complex historical geometries (6 types)
 - **Vector indexes** (FAISS-backed) enable semantic similarity search
 - **Unified AQL** integrates graph traversal + spatial + temporal + vector queries
@@ -72,7 +76,7 @@ The graph model maps naturally to ArangoDB's multi-model architecture:
 Key tradeoffs:
 - ⚠️ Enterprise Edition required for production scale (Community Edition limited to 100 GiB)
 - ⚠️ Vector search maturity requires early validation at 10M+ scale
-- ⚠️ No `GeometryCollection` support (workaround: multiple Attestations)
+- ⚠️ No `GeometryCollection` support (workaround: multiple geometry attestations, which aligns with attestation model)
 - ✅ Operational simplicity for small team
 - ✅ Real-time consistency (no eventual consistency)
 
@@ -86,7 +90,7 @@ Key tradeoffs:
 
 **Causation**: `caused_by`, `influenced` for historical causation patterns
 
-**Meta-attestations**: Attestations about Attestations for scholarly discourse modeling
+**Meta-attestations**: Attestations about other attestations for scholarly discourse modeling. Implemented through edges with `edge_type: "meta_attestation"` connecting attestation nodes, with `properties.meta_type` specifying the relationship (contradicts, supports, supersedes).
 
 ### Advanced Analytics
 
@@ -125,6 +129,11 @@ Key tradeoffs:
 - Network visualization at scale with filtering
 - Source comparison views for conflicting claims
 
+**Graph traversal optimization**:
+- Efficient multi-hop queries through attestation-edge chains
+- Caching strategies for frequently-accessed provenance paths
+- Index optimization for complex edge type filtering
+
 ---
 
 ## Sustainability Model
@@ -136,6 +145,33 @@ Key tradeoffs:
 **Technical**: Open-source codebase, Pitt CRC hosting, regular updates, standards compliance
 
 **Governance**: Conflict resolution processes, scholarly debate documentation, multiple perspectives preserved
+
+---
+
+## Architectural Clarity
+
+The WHG v4 model's success depends on maintaining clear architectural boundaries:
+
+**Attestations** (document collection):
+- Store only metadata: certainty, notes, sequence, connection_metadata, timestamps
+- Serve as junction points in the graph
+- Enable bundling multiple claims with shared provenance
+
+**Edges** (edge collection):
+- Express all relationships: subject_of, attests_name, attests_geometry, attests_timespan, sourced_by, typed_by, relates_to, meta_attestation
+- Enable efficient graph traversal
+- Support complex multi-hop queries
+
+**Authorities** (document collection):
+- Provide controlled vocabularies and reference data
+- Unified collection with `authority_type` discriminator
+- Eliminate redundancy through reference rather than duplication
+
+This separation enables:
+- Flexible relationship vocabulary without schema changes
+- Efficient querying of provenance chains
+- Multiple perspectives on the same entities
+- Scholarly rigor through explicit source attribution
 
 ---
 

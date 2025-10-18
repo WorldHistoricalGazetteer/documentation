@@ -1,5 +1,17 @@
 # Vocabularies
 
+## Architecture Note
+
+This vocabulary document describes controlled vocabularies used throughout WHG v4. Understanding the data architecture helps interpret where these vocabularies are applied:
+
+- **Attestations** are nodes (documents) in the attestations collection containing metadata
+- **Edges** are separate documents in the edges collection connecting attestations to other entities
+- **Authorities** are documents in the authorities collection providing reference data
+- **Edge types** (subject_of, attests_name, etc.) are values in the `edge_type` field of edge documents
+- **Relation types** (member_of, connected_to, etc.) are labels in Authority documents with `authority_type: "relation_type"`
+
+This separation enables flexible vocabulary expansion without schema changes.
+
 ## Thing Classification Vocabulary
 
 Things are classified via attestations that connect to AUTHORITY documents with `authority_type: "classification"`. In the graph model, this is expressed through edges:
@@ -88,6 +100,27 @@ The `source_type` array in AUTHORITY documents (where `authority_type: "source"`
 - Align with Dublin Core terms where possible for interoperability
 - Vocabulary is extensible for domain-specific source types
 
+**Usage in Data Model:**
+Source types are stored in Authority documents with `authority_type: "source"`. Attestations link to sources via edges with `edge_type: "sourced_by"`:
+```javascript
+// Authority (source)
+{
+  "_id": "authorities/source-chronicle",
+  "authority_type": "source",
+  "citation": "Byzantine Chronicle, 10th century",
+  "source_type": ["manuscript", "historical"]
+}
+
+// Edge connecting attestation to source
+{
+  "_from": "attestations/att-001",
+  "_to": "authorities/source-chronicle",
+  "edge_type": "sourced_by"
+}
+```
+
+Multiple sources can be cited for a single attestation by creating multiple `sourced_by` edges.
+
 ---
 
 ## Temporal Precision Vocabulary
@@ -108,6 +141,8 @@ The `precision` field in Timespan entities uses controlled vocabulary:
 - Use `precision_value` field for numeric uncertainty (e.g., `precision: "circa"`, `precision_value: 50` = ±50 years)
 - For geological time, use `era` with appropriate `precision_value` in years
 
+**Field Name Note:** The `precision` field in Timespan entities uses string values from this vocabulary. This is contextually distinct from the `precision` field in Geometry entities (which uses array values from the spatial precision vocabulary). Future versions may rename these to `temporal_precision` and `spatial_precision` for clarity.
+
 ---
 
 ## Spatial Precision Vocabulary
@@ -125,7 +160,9 @@ The `precision` field in Geometry entities uses controlled vocabulary for qualit
 
 **Notes:**
 - Use `precision_km` field for quantitative uncertainty radius in kilometers
-- Spatial precision distinct from temporal precision
+- Spatial precision is distinct from temporal precision
+- The `precision` field name is used in both Geometry and Timespan entities but serves different purposes based on context
+- **Future consideration:** Renaming to `spatial_precision` and `temporal_precision` would eliminate potential confusion
 
 ---
 
@@ -150,7 +187,8 @@ The `connection_type` field in Attestation `connection_metadata` (for network co
 **Notes:**
 - Connection types are extensible for specific research domains
 - Multiple connection types can characterize a single link (e.g., both trade and diplomatic)
-- Use `connection_metadata` JSON object for additional domain-specific attributes
+- Use `connection_metadata` JSON object in attestation documents for additional domain-specific attributes
+- Connection metadata is stored in the attestation node itself, not in the edge, because it describes the nature of the attestation (the claim about the connection) rather than being a separate entity
 
 ---
 
@@ -189,7 +227,31 @@ The `certainty` field (0.0–1.0 float) in Attestation nodes and optional `certa
 
 ## Meta-Attestation Types
 
-The `meta_type` field in edges where `edge_type: "meta_attestation"` indicates the relationship between attestations:
+The `meta_type` value in meta-attestation edges indicates the relationship between attestations. In the internal graph database (ArangoDB), this is stored in the edge's `properties.meta_type` field. In RDF, this is expressed through the `whg:typedBy` predicate linking to an Authority resource that defines the meta-relationship type.
+
+**Internal representation:**
+```javascript
+{
+  "_from": "attestations/att-meta",
+  "_to": "attestations/att-001",
+  "edge_type": "meta_attestation",
+  "properties": {
+    "meta_type": "contradicts"
+  }
+}
+```
+
+**RDF representation:**
+```turtle
+exauth:contradicts a whg:Authority ;
+    whg:authorityType "relation_type" ;
+    rdfs:label "contradicts" .
+
+exa:att_meta whg:typedBy exauth:contradicts ;
+             whg:relatesTo exa:att_001 .
+```
+
+**Vocabulary values:**
 
 | Meta Type | Definition | Use Case |
 |-----------|------------|----------|

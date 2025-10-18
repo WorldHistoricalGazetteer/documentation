@@ -255,6 +255,8 @@ A single Thing may have multiple Geometries because:
 
 Each Geometry is connected via an Attestation with temporal bounds and source citation.
 
+**Important Note on GeometryCollection:** ArangoDB does not support the GeoJSON `GeometryCollection` type. For places with heterogeneous geometry sets (e.g., both point and polygon), store multiple geometry attestations—one per geometry type. This aligns naturally with the attestation model where each geometry claim is a separate evidential statement.
+
 ## Timespan Entity
 
 A **Timespan** represents a temporal interval with explicit uncertainty modeling.
@@ -266,8 +268,8 @@ A **Timespan** represents a temporal interval with explicit uncertainty modeling
   "id": "time:33445",
   "start_earliest": "0802-01-01",
   "start_latest": "0802-12-31",
-  "stop_earliest": "1431-01-01",
-  "stop_latest": "1432-12-31",
+  "end_earliest": "1431-01-01",
+  "end_latest": "1432-12-31",
   "label": "Angkor period",
   "precision": "year",
   "precision_value": 1
@@ -277,11 +279,12 @@ A **Timespan** represents a temporal interval with explicit uncertainty modeling
 **Key Properties**:
 
 - `start_earliest`, `start_latest`: Range of possible start dates
-- `stop_earliest`, `stop_latest`: Range of possible end dates (note: internal schema uses "stop", RDF export uses "end"
-  for W3C Time compatibility)
+- `end_earliest`, `end_latest`: Range of possible end dates
 - `label`: Human-readable period name
 - `precision`: Temporal granularity (year, decade, century, era, geological_period)
 - `precision_value`: Numeric precision indicator
+
+**Field Naming Convention:** Internally, WHG uses `end_earliest` and `end_latest` for consistency with W3C Time Ontology and RDF representations. Some legacy documentation may reference `stop_earliest` and `stop_latest`, which are equivalent fields. Going forward, all documentation and implementations should use the "end" terminology for consistency.
 
 ### Modeling Temporal Uncertainty
 
@@ -289,7 +292,7 @@ The four-date model captures uncertainty:
 
 - **Certain dates**: All four values identical
 - **Uncertain start**: `start_earliest` ≠ `start_latest`
-- **Uncertain end**: `stop_earliest` ≠ `stop_latest`
+- **Uncertain end**: `end_earliest` ≠ `end_latest`
 - **Fuzzy boundaries**: Wide ranges (e.g., "sometime in 7th century")
 
 **Special values**:
@@ -307,20 +310,22 @@ handling.
 An **Attestation** is a source-backed claim connecting a Thing to an attribute (Name, Geometry, Timespan) or to another
 Thing (relationship).
 
+### Critical Clarification: Attestations as Document Collection
+
+**Attestations are NODES (documents in a document collection), NOT edges.** This is a crucial architectural distinction:
+
+- **Attestations collection**: A standard document collection containing attestation metadata
+- **Edges collection**: A separate edge collection containing all graph relationships
+
+The attestation model works through edges that connect attestation nodes to other entities. An attestation does not contain relationship fields—instead, it is connected to other entities through edges in the EDGE collection.
+
 ### Structure
 
 ```json
 {
   "id": "att:55667",
-  "thing_id": "whg:12345",
-  "relation_type": "has_name",
-  "object_type": "name",
-  "object_id": "name:67890",
   "sequence": null,
   "connection_metadata": null,
-  "sources": [
-    "source:abc123"
-  ],
   "certainty": 0.95,
   "certainty_note": "Well-documented in primary chronicles",
   "notes": "Name used during Byzantine period",
@@ -332,28 +337,58 @@ Thing (relationship).
 
 **Key Properties**:
 
-- `thing_id`: References the Thing being described
-- `relation_type`: Type of relationship (has_name, has_geometry, connected_to, etc.)
-- `object_type`: Type of object (name, geometry, timespan, thing, classification)
-- `object_id`: References the related entity
 - `sequence`: Ordering for routes and itineraries
 - `connection_metadata`: JSON object for network relationships (e.g., trade goods, flow direction)
-- `sources`: Array of source Authority IDs
 - `certainty`: Confidence value (0.0-1.0)
 - `certainty_note`: Explanation of uncertainty assessment
 - `notes`: Additional context
 - `created`, `modified`: Temporal metadata
 - `contributor`: User or system that created the attestation
 
-### Attestation Types
+**What's NOT in the Attestation document:**
+- No `thing_id` field
+- No `relation_type` field  
+- No `object_type` or `object_id` fields
+- No `sources` array
 
-Attestations connect Things to:
+These relationships are all expressed through **edges** in the EDGE collection:
 
-1. **Names**: `has_name` relation
-2. **Geometries**: `has_geometry` relation
-3. **Timespans**: `has_timespan` relation
-4. **Classifications**: `has_type` relation (linking to controlled vocabularies)
-5. **Other Things**: Various relationship types (member_of, connected_to, same_as, etc.)
+```javascript
+// Example edges connecting an attestation
+{
+  "_from": "things/constantinople",
+  "_to": "attestations/att-001",
+  "edge_type": "subject_of"
+}
+
+{
+  "_from": "attestations/att-001",
+  "_to": "names/konstantinoupolis",
+  "edge_type": "attests_name"
+}
+
+{
+  "_from": "attestations/att-001",
+  "_to": "timespans/byzantine-period",
+  "edge_type": "attests_timespan"
+}
+
+{
+  "_from": "attestations/att-001",
+  "_to": "authorities/source-chronicle",
+  "edge_type": "sourced_by"
+}
+```
+
+### Attestation Types via Edge Patterns
+
+Attestations connect Things to different entity types through different edge patterns:
+
+1. **Names**: Thing → Attestation (subject_of), Attestation → Name (attests_name)
+2. **Geometries**: Thing → Attestation (subject_of), Attestation → Geometry (attests_geometry)
+3. **Timespans**: Thing → Attestation (subject_of), Attestation → Timespan (attests_timespan)
+4. **Classifications**: Thing → Attestation (subject_of), Attestation → Authority (typed_by with classification)
+5. **Other Things**: Thing → Attestation (subject_of), Attestation → Authority (typed_by with relation_type), Attestation → Thing (relates_to)
 
 ### Special Attestation Features
 
@@ -367,27 +402,28 @@ Attestations connect Things to:
 
 **For All Attestations**:
 
-- Can reference a Timespan to indicate temporal scope
-- Support meta-attestations (attestations about other attestations)
+- Can reference a Timespan via edges to indicate temporal scope
+- Support meta-attestations (attestations about other attestations) through edges
 
 ## Entity Relationships
 
-Entities relate through **Attestations** (see [Attestations & Relations](attestations.md)):
+Entities relate through **Attestations** and **Edges** (see [Attestations & Relations](attestations.md)):
 
 ```
-Thing --[attestation]--> Name
-Thing --[attestation]--> Geometry
-Thing --[attestation]--> Timespan
-Thing --[attestation]--> Thing (relationships)
-Attestation --[attestation]--> Attestation (meta-attestations)
+Thing --[edge: subject_of]--> Attestation
+Attestation --[edge: attests_name]--> Name
+Attestation --[edge: attests_geometry]--> Geometry
+Attestation --[edge: attests_timespan]--> Timespan
+Attestation --[edge: relates_to]--> Thing (relationships)
+Attestation --[edge: meta_attestation]--> Attestation (meta-attestations)
+Attestation --[edge: sourced_by]--> Authority
 ```
 
 Every connection includes:
 
-- Source citation(s)
-- Certainty assessment
-- Optional temporal bounds
-- Relation type
+- Edge type classification
+- Optional edge properties
+- Timestamp metadata
 
 This creates a rich, provenance-tracked knowledge graph.
 
@@ -455,11 +491,11 @@ This model draws from:
 
 - **Mitigation**: Hide complexity in interfaces, provide simple views
 
-**Query complexity**: Joining across attestations
+**Query complexity**: Joining across attestations and edges
 
 - **Mitigation**: Use graph database, provide query helpers
 
-**Data entry burden**: More fields to complete
+**Data entry burden**: More structures to create
 
 - **Mitigation**: Make many fields optional, provide good defaults
 

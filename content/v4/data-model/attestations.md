@@ -48,8 +48,10 @@ All relationships are expressed through the unified **EDGE** collection. Each ed
 
 ```javascript
 {
-  "_from": "attestations/att-001",     // Source node
-  "_to": "things/constantinople",      // Target node
+  "_key": "edge-001",
+  "_id": "edges/edge-001",
+  "_from": "things/constantinople",     // Source node
+  "_to": "attestations/att-001",        // Target node
   "edge_type": "subject_of",           // Type of relationship
   "role": "subject",                   // Optional disambiguation
   "properties": {},                    // Optional edge-specific data
@@ -166,8 +168,8 @@ Timespan:
   "_id": "timespans/aztec-tenochtitlan",
   "start_earliest": "1325-01-01",
   "start_latest": "1325-12-31",
-  "stop_earliest": "1521-08-13",
-  "stop_latest": "1521-08-13",
+  "end_earliest": "1521-08-13",
+  "end_latest": "1521-08-13",
   "precision": "year"
 }
 ```
@@ -212,6 +214,8 @@ Authority (Source):
   "edge_type": "sourced_by"
 }
 ```
+
+**Note on Timespan Fields:** Internally, WHG uses `stop_earliest` and `stop_latest` for temporal bounds. When exporting to RDF/W3C Time format, these are mapped to `end_earliest` and `end_latest` for standards compliance. This example shows internal field names.
 
 ---
 
@@ -448,9 +452,13 @@ Attestation(att-001) ←[meta_attestation]← Attestation(att-meta)
   "_from": "attestations/att-meta",
   "_to": "attestations/att-001",
   "edge_type": "meta_attestation",
-  "meta_type": "contradicts"  // Could also be "supports", "supersedes", "bundles"
+  "properties": {
+    "meta_type": "contradicts"  // Could also be "supports", "supersedes", "bundles"
+  }
 }
 ```
+
+**Note on Meta-Attestation Edge Type:** The edge connecting meta-attestations uses `edge_type: "meta_attestation"` with an optional `meta_type` property in the edge's properties field to specify the nature of the relationship (contradicts, supports, supersedes, etc.). This is distinct from the `typed_by` edge pattern used for Thing-to-Thing relationships.
 
 ---
 
@@ -521,7 +529,7 @@ FOR thing IN things
           
           // Check if 800 CE falls within the timespan
           FILTER timespan.start_earliest <= "0800-01-01"
-          FILTER timespan.stop_latest >= "0800-12-31"
+          FILTER timespan.end_latest >= "0800-12-31"
           
           RETURN {
             name: name.name,
@@ -530,6 +538,8 @@ FOR thing IN things
             certainty: att.certainty
           }
 ```
+
+**Note:** This query uses `end_latest` in the filter. Remember that internally WHG stores this as `stop_latest`, so adjust field names based on your implementation context.
 
 ### Find all Things connected via a specific relation type
 

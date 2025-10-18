@@ -10,6 +10,22 @@
 @prefix ex: <http://whgazetteer.org/places/> .
 
 # ============================================
+# ARCHITECTURE NOTE
+# ============================================
+# This RDF representation mirrors the internal graph database structure:
+# - Attestations are resources (nodes), not reified statements
+# - All relationships are expressed via predicates (equivalent to edges)
+# - Attestations bundle claims about Things with their provenance
+#
+# Internal structure:
+# - Attestations: documents in attestations collection (metadata only)
+# - Edges: documents in edges collection (relationships)
+#
+# RDF structure:
+# - Attestations: resources with properties
+# - Predicates: relationships between resources
+
+# ============================================
 # CORE ONTOLOGY DEFINITIONS
 # ============================================
 
@@ -111,6 +127,13 @@ ex:time_abbasid_golden_age a whg:Timespan ;
 # ============================================
 # ATTESTATIONS - The Core of WHG's Model
 # ============================================
+# Each attestation is a node (resource) that connects entities via predicates.
+# In the internal graph database:
+# - Attestation is a document in the attestations collection
+# - Relationships are edge documents in the edges collection
+# In RDF:
+# - Attestation is a resource
+# - Relationships are predicates
 
 # Attestation 1: Baghdad has the Arabic name
 ex:att_001 a whg:Attestation ;
@@ -264,6 +287,11 @@ ex:att_008 a whg:Attestation ;
            dcterms:created "2023-05-10T10:00:00Z"^^xsd:dateTime ;
            dcterms:modified "2023-05-10T10:00:00Z"^^xsd:dateTime ;
            dcterms:contributor "historiographer@academy.edu" .
+
+# Note: In the internal graph database, this would be:
+# - Attestation document with metadata
+# - Edge with edge_type: "meta_attestation" and properties.meta_type: "contradicts"
+# - Edge to source Authority via sourced_by
 
 # ============================================
 # SOURCE DEFINITIONS

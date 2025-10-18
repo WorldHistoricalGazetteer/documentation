@@ -234,6 +234,8 @@ Gazetteer Group Thing (e.g., "Ancient World Gazetteers")
 
 Similar to Geometry inheritance, **Timespan inheritance** can be computed for Things lacking explicit Timespan attestations.
 
+**Field Naming Note:** All examples use `end_earliest` and `end_latest` (not `stop_earliest`/`stop_latest`) for consistency with W3C Time Ontology. This applies to all timespan operations including inheritance and computation.
+
 **Computation Rules:**
 
 **For compositional Things (with members):**
@@ -242,8 +244,8 @@ Similar to Geometry inheritance, **Timespan inheritance** can be computed for Th
 3. Compute outer bounds:
     - `start_earliest` = minimum of all member `start_earliest` values
     - `start_latest` = minimum of all member `start_latest` values
-    - `stop_earliest` = maximum of all member `stop_earliest` values
-    - `stop_latest` = maximum of all member `stop_latest` values
+    - `end_earliest` = maximum of all member `end_earliest` values
+    - `end_latest` = maximum of all member `end_latest` values
 
 **For periods:**
 - By default, compute from members
@@ -300,8 +302,8 @@ LET members = (
 RETURN {
   start_earliest: MIN(members[*].start_earliest),
   start_latest: MIN(members[*].start_latest),
-  stop_earliest: MAX(members[*].stop_earliest),
-  stop_latest: MAX(members[*].stop_latest)
+  end_earliest: MAX(members[*].end_earliest),
+  end_latest: MAX(members[*].end_latest)
 }
 ```
 
@@ -317,8 +319,8 @@ RETURN {
 {
   "start_earliest": 618,
   "start_latest": 650,
-  "stop_earliest": 900,
-  "stop_latest": 907
+  "end_earliest": 900,
+  "end_latest": 907
 }
 ```
 
@@ -333,6 +335,8 @@ Thing(Tang Dynasty) ←[subject_of]← Attestation ─[attests_timespan]→ Time
 ---
 
 ## Geometry Inheritance
+
+**Note on GeometryCollection:** ArangoDB does not support the GeoJSON `GeometryCollection` type. For Things with heterogeneous geometries (e.g., both point and polygon), create multiple geometry attestations—one per geometry type. This naturally aligns with the attestation model where each geometry claim is a separate evidential statement.
 
 Things can inherit Geometry from their members when no explicit Geometry attestation exists:
 
