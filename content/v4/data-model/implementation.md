@@ -322,7 +322,7 @@ db.names.ensureIndex({
   minLength: 2
 });
 
-// Vector index for semantic similarity (FAISS-backed)
+// Vector index for phonetic similarity (FAISS-backed)
 db.names.ensureIndex({
   type: "vector",
   fields: ["embedding"],
@@ -723,7 +723,7 @@ FOR ts IN timespans
 - ✅ Efficient spatial filtering with geo indexes
 - ❌ No `GeometryCollection` support (workaround: multiple geometry attestations)
 
-**Vector/Semantic Search:**
+**Vector/Phonetic Search:**
 - ✅ Vector indexes powered by FAISS
 - ✅ `APPROX_NEAR_COSINE()` for index-accelerated similarity
 - ✅ Cosine, Euclidean, and other distance metrics

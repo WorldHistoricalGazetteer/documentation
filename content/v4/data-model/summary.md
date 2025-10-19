@@ -6,7 +6,7 @@ The WHG v4 data model achieves historical place representation through a graph-b
 
 **Entity nodes** (documents in document collections):
 - **Things** - unified entities (places, periods, routes, networks)
-- **Names** - multilingual labels with semantic embeddings
+- **Names** - multilingual labels with phonetic embeddings
 - **Geometries** - spatial representations with derived fields
 - **Timespans** - temporal bounds with PeriodO integration
 - **Attestations** - evidentiary nodes containing metadata about claims
@@ -53,7 +53,7 @@ Beyond traditional gazetteers:
 
 **Network/route modeling** - Connections and movements, not just point locations
 
-**Cross-cultural representation** - Semantic similarity across scripts via embeddings
+**Cross-cultural representation** - Phonetic similarity across scripts via embeddings
 
 **Dynamic clustering** - Multi-dimensional similarity (name + space + time + type) for reconciliation
 
@@ -69,7 +69,7 @@ The graph model maps naturally to ArangoDB's multi-model architecture:
 
 - **Property graph** natively represents Attestations as nodes in a document collection with edges in a separate edge collection, perfectly matching the conceptual model
 - **GeoJSON support** handles complex historical geometries (6 types)
-- **Vector indexes** (FAISS-backed) enable semantic similarity search
+- **Vector indexes** (FAISS-backed) enable phonetic similarity search
 - **Unified AQL** integrates graph traversal + spatial + temporal + vector queries
 - **Single system** eliminates synchronization complexity
 

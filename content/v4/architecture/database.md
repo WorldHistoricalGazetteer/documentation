@@ -46,8 +46,6 @@ WHG v4 is built around **Things** (entities such as locations, historical entiti
 - **Provenance**: Every claim cites sources via AUTHORITY nodes, has certainty assessment, and temporal bounds
 - **Graph structure**: Attestations are nodes (not just edges) in a property graph where edges connect Things → Attestations → Names/Geometries/Timespans/Things
 
-**Current Status**: Previous documentation references Vespa as the intended backend. However, the shift to an attestation-based graph model requires reassessment of technology choices.
-
 **Key Requirements**:
 - Property graph with Attestations as first-class nodes (not just edge metadata)
 - Native GeoJSON support for complex historical geometries
@@ -67,14 +65,14 @@ WHG v4 is built around **Things** (entities such as locations, historical entiti
 
 ### Source Data Estimates
 
-| Source | Records | Avg Size | Total |
-|--------|---------|----------|-------|
-| GeoNames | 12M | 2KB | 24GB |
-| OpenStreetMap (subset) | 50M | 1KB | 50GB |
-| Wikidata Places | 10M | 3KB | 30GB |
-| Pleiades | 38K | 50KB | 2GB |
-| Contributed Data | 1-5M | 10KB | 10-50GB |
-| **Subtotal** | **~73M** | - | **116-156GB** |
+| Source | Records  | Avg Size | Total        |
+|--------|----------|----------|--------------|
+| GeoNames | 12M      | 2KB | 24GB         |
+| OpenStreetMap (subset) | 6M       | 1KB | 6GB          |
+| Wikidata Places | 10M      | 3KB | 30GB         |
+| Pleiades | 38K      | 50KB | 2GB          |
+| Contributed Data | 1-5M     | 10KB | 10-50GB      |
+| **Subtotal** | **~28M** | - | **72-112GB** |
 
 ### WHG Attestation Layer
 
@@ -96,38 +94,24 @@ WHG v4 is built around **Things** (entities such as locations, historical entiti
 
 **Total per Thing:** ~14.5KB
 
-**For 73M Things:**
-- Node data (Geometries, Timespans, Attestations): 73M × 9.5KB = **~693GB**
-- Edge data: 73M × 5KB = **~365GB**
-- **Subtotal per-Thing data: ~1.06TB**
+**For 28M Things:**
+- Node data (Geometries, Timespans, Attestations): 73M × 9.5KB = **~266GB**
+- Edge data: 73M × 5KB = **~140GB**
+- **Subtotal per-Thing data: ~406GB**
 
 **Shared Collections** (across all Things):
-- NAME nodes: ~55GB (30M unique names with embeddings)
+- NAME nodes: ~20GB (15M unique names with embeddings)
 - AUTHORITY nodes: ~0.1GB (56K shared authorities)
-- **Subtotal shared data: ~55GB**
+- **Subtotal shared data: ~426GB**
 
-**Total attestation layer: ~1.11TB**
+**Vector Embeddings**:
 
-### Vector Embeddings
+Estimated unique NAME nodes: ~15M
 
-**NAME nodes are shared** - the same name (e.g., "London", "Paris", "河内") appears for multiple Things:
-
-**Estimated unique names:**
-- Common place names reused extensively (e.g., "Saint Mary's Church" appears in thousands of places)
-- Historical name variants often shared (e.g., "Konstantinoupolis" for multiple Byzantine cities)
-- Modern names highly reused (e.g., "San José" for dozens of cities)
-
-**Conservative estimate:**
-- 73M Things with average 5 name attestations = 365M attestations
-- Assuming 30-40% name reuse across Things
-- **Unique NAME nodes: ~25-30M**
-
-**Embedding storage:**
-- 30M unique names × 384 dimensions × 4 bytes = **~46GB** raw embedding data
-- Plus name metadata (language, script, IPA, romanized): 30M × 0.3KB = **~9GB**
-- **Total NAME collection: ~55GB**
-
-**Note:** Name reuse is a major storage optimization. Common names like "Church of Saint Mary," "Main Street," "الجامع الكبير" (Great Mosque) appear thousands of times but are stored once. This is a key advantage of the graph model over embedded document approaches.
+Embedding storage:
+- 15M unique names × 256 dimensions × 4 bytes = ~15GB raw embedding data
+- Plus name metadata: ~4.5GB
+- Total NAME collection: ~20GB
 
 ### AUTHORITY Collection (Shared)
 
@@ -141,13 +125,13 @@ WHG v4 is built around **Things** (entities such as locations, historical entiti
 
 ### Total Raw Data
 
-| Component | Size |
-|-----------|------|
-| Source data (Things + basic attributes) | 116-156GB |
-| Attestation layer (per-Thing nodes + edges) | 1.06TB |
-| Shared NAME nodes (with embeddings) | 55GB |
-| Shared AUTHORITY nodes | 0.1GB |
-| **Total uncompressed** | **~1.25-1.3TB** |
+| Component | Size           |
+|-----------|----------------|
+| Source data (Things + basic attributes) | 72-112GB       |
+| Attestation layer (per-Thing nodes + edges) | 406GB          |
+| Shared NAME nodes (with embeddings) | 20GB           |
+| Shared AUTHORITY nodes | 0.1GB          |
+| **Total uncompressed** | **~500-540GB** |
 
 ### Database-Specific Storage Characteristics
 
@@ -157,34 +141,27 @@ WHG v4 is built around **Things** (entities such as locations, historical entiti
 - Document compression: 2-3x typical ratio
 - Edge compression: Similar 2-3x ratio
 - Vector indexes: Quantization can reduce by 4-8x
-- **Estimated working set: 500-650GB**
+- **Estimated working set: 200-300GB**
 
 **Index Overhead:**
-- Geo indexes (S2): ~20% of geometry data = ~60GB
-- Vector indexes (FAISS IVF): ~30% of NAME embeddings = ~17GB
-- Full-text indexes: ~15% of text data = ~25GB
-- Edge indexes (automatic): ~10% of edge data = ~35GB
-- **Total indexes: ~137GB**
+- Geo indexes (S2): ~20% of geometry data = ~25GB
+- Vector indexes (FAISS IVF): ~30% of NAME embeddings = ~5GB
+- Full-text indexes: ~15% of text data = ~15GB
+- Edge indexes (automatic): ~10% of edge data = ~14GB
+- **Total indexes: ~60GB**
 
-**Final ArangoDB estimate: 650-800GB**
+**Final ArangoDB estimate: 260-360GB**
 
 #### PostgreSQL + Extensions
 
-**Compression:**
-- PostgreSQL TOAST compression: 2-3x on large fields
-- Vector index overhead (HNSW): ~40-50% of embedding data = ~27GB
-- PostGIS indexes (GIST): ~25% of geometry data = ~75GB
-- AGE graph indexes: ~15% of graph data = ~160GB
-- Full-text indexes: ~20% of text data = ~30GB
-- **Total indexes: ~292GB**
+**Index Overhead:**
+- Vector index overhead (HNSW): ~40-50% of embedding data = ~8GB
+- PostGIS indexes (GIST): ~25% of geometry data = ~31GB
+- AGE graph indexes: ~15% of graph data = ~60GB
+- Full-text indexes: ~20% of text data = ~20GB
+- **Total indexes: ~120GB**
 
-**Multiple extension overhead:**
-- PostGIS spatial functions loaded in memory
-- pgvector HNSW index structures
-- AGE graph metadata
-- Potentially higher memory requirements for query planning
-
-**Final PostgreSQL estimate: 800GB-1TB**
+**Final PostgreSQL estimate: 400-500GB**
 
 **Note:** PostgreSQL may require more storage than ArangoDB due to:
 - Multiple extension indexes with some overlap
@@ -193,60 +170,32 @@ WHG v4 is built around **Things** (entities such as locations, historical entiti
 
 ### Growth Projections
 
-| Timeline | Dataset Size | Storage (ArangoDB) | Storage (PostgreSQL) |
-|----------|--------------|-------------------|---------------------|
-| **Year 1** | 73M Things baseline | 650-800GB | 800GB-1TB |
-| **Year 2** | +2-3M contributed Things | 680-830GB | 830GB-1.05TB |
-| **Year 3** | +5M contributed Things | 720-880GB | 880GB-1.1TB |
-| **Year 5** | +10M contributed Things | 780-950GB | 950GB-1.2TB |
+| Timeline | Dataset Size           | Storage (ArangoDB) | Storage (PostgreSQL) |
+|----------|------------------------|--------------------|----------------------|
+| **Year 1** | 28M Things baseline    | 260-360GB          | 400-500GB            |
+| **Year 5** | +5M contributed Things | 400-500GB          | 550-650GB            |
 
-**Growth characteristics:**
-
-**Dominated by initial bulk ingestion:**
-- GeoNames (12M), Wikidata (10M), OSM subset (50M) = 72M Things
-- This baseline represents ~98% of total dataset
-- Subsequent contributions are incremental (2-3% annually)
-
-**Modest incremental growth:**
-- User-contributed places and itineraries
-- Smaller specialized historical datasets (CHGIS, Pleiades expansions, etc.)
-- Student/classroom contributions
-
-**Attestation density increases over time:**
-- Existing Things gain additional attestations (new sources, refined geometries)
-- Meta-attestations accumulate (scholarly critique, reconciliation debates)
-- **Storage grows ~5-10% per year from attestation enrichment**
-
-**Name collection grows slowly:**
-- Most common place names captured in initial ingestion
-- New contributions increasingly reuse existing NAME nodes
-- Unique name growth rate: ~2-3% annually after Year 1
-
-**Why growth is limited:**
-- Historical place data is finite (unlike modern event streams)
-- Major gazetteers already ingested at baseline
-- Crowdsourced contributions typically enrich existing Things rather than add new ones
-- Most growth comes from attestation depth, not Thing breadth
+**Growth characteristics:** Modest incremental growth after initial bulk ingestion (~3-5% new Things annually) combined with attestation enrichment (~5-10% per year).
 
 ### Memory Requirements
 
 **For optimal performance, working set should fit in RAM:**
 
 **ArangoDB:**
-- Active data: 400-500GB
-- Vector indexes: 17GB (frequently accessed)
-- Geo indexes: 60GB
-- Hot edge indexes: 35GB
-- **Recommended RAM: 128-256GB** (allows OS cache + query working memory)
+- Active data: 200-300GB
+- Vector indexes: 5GB (frequently accessed)
+- Geo indexes: 25GB
+- Hot edge indexes: 14GB
+- **Recommended RAM: 128GB** (allows OS cache + query working memory)
 - **Minimum acceptable: 64GB** with aggressive caching
 
 **PostgreSQL:**
-- Shared buffers: 25-40% of RAM (32-100GB)
-- Vector index cache: 27GB
-- PostGIS geometry cache: 75GB
-- AGE graph cache: 100GB
+- Shared buffers: 25-40% of RAM (50-75GB)
+- Vector index cache: 8GB
+- PostGIS geometry cache: 31GB
+- AGE graph cache: 60GB
 - OS page cache: remainder
-- **Recommended RAM: 256GB** (for comfortable operation with all extensions)
+- **Recommended RAM: 192GB** (for comfortable operation with all extensions)
 - **Minimum acceptable: 128GB** with careful tuning
 
 **Note:** ArangoDB's lower memory requirements reflect more efficient integrated indexing vs. PostgreSQL's multiple independent extension caches.
@@ -295,7 +244,7 @@ ArangoDB's native multi-model architecture (graph + document + geospatial) maps 
         "name": "İstanbul",
         "language": "tr",
         "script": "Latn",
-        "embedding": [0.234, -0.567, ...]  // 384-dimensional
+        "embedding": [0.234, -0.567, ...]  // 256-dimensional
 }
 
 // Attestations as nodes (not edges)
@@ -548,7 +497,7 @@ FOR name IN names
   RETURN {name: name.name, similarity: similarity}
 ```
 
-**WHG Use Case**: Our embeddings are derived from **phonetic representations of toponyms** combined with **orthographical metadata** (script, language, transliteration). This enables matching of:
+**WHG Use Case**: Our embeddings are derived from **phonetic representations of toponyms** using a **Siamese BiLSTM model trained on GeoNames data** with **PanPhon feature sequences of IPA transcriptions**. These phonetic embeddings encode pronunciation similarity rather than semantic meaning.
 - Names across different scripts (e.g., "Constantinople" ↔ "Κωνσταντινούπολις" ↔ "القسطنطينية")
 - Transliteration variations (e.g., "Samarkand" ↔ "Samarqand" ↔ "Самарканд")
 - Historical name forms that sound similar but are spelled differently
@@ -563,7 +512,7 @@ FOR name IN names
 
 WHG intends to host ArangoDB on University of Pittsburgh infrastructure (Pitt CRC).
 
-**Hardware Requirements** (based on 650-800GB working set):
+**Hardware Requirements** (based on 260-360GB working set):
 
 **CPU:**
 - **Minimum**: 16 cores
@@ -572,25 +521,19 @@ WHG intends to host ArangoDB on University of Pittsburgh infrastructure (Pitt CR
 - **Note**: Multi-core critical for AQL query optimization and FAISS vector search
 
 **RAM:**
-- **Minimum**: 128GB
-- **Recommended**: 192-256GB
+- **Minimum**: 64GB
+- **Recommended**: 128GB
 - **Breakdown**:
-  - Active data in memory: ~500GB working set target
-  - Vector indexes (hot): ~17GB
-  - Geo indexes: ~60GB
-  - Edge indexes: ~35GB
+  - Active data in memory: ~200-300GB working set target
+  - Vector indexes (hot): ~5GB
+  - Geo indexes: ~25GB
+  - Edge indexes: ~14GB
   - ArangoDB processes: ~10-15GB
   - OS and cache: ~20-30GB
 - **Rationale**: Keeping frequently-accessed data in RAM is critical for sub-100ms query response
-- **Acceptable minimum**: 128GB with careful tuning and acceptance of some disk I/O for queries
 
 **Storage:**
-- **Primary Database**: 2TB NVMe SSD
-  - Current data: 650-800GB
-  - Indexes: ~137GB
-  - Growth headroom (5 years): ~300GB
-  - WAL and temporary files: ~100GB
-  - Total needed: ~1.2-1.4TB → **2TB allocation recommended**
+- **Primary Database**: 1.5TB NVMe SSD
 - **Backup Storage**: 3-4TB (separate volume)
   - 3x full database snapshots
   - Incremental backups
@@ -666,7 +609,7 @@ Given practical considerations, we are **open to ArangoDB-managed hosting** as a
 **Community Edition** (v3.12+):
 - 100 GiB dataset limit per cluster
 - Restricted to non-commercial use under BSL 1.1
-- **Insufficient for WHG** (requires 650-800GB)
+- **Insufficient for WHG** (requires 600-750GB)
 
 **Enterprise Edition**:
 - Required for WHG's dataset size
@@ -846,7 +789,7 @@ $$) AS (thing agtype, attestation agtype, name agtype);
 
 **Self-Hosted at University of Pittsburgh (Pitt CRC)**
 
-**Hardware Requirements** (based on 800GB-1TB working set):
+**Hardware Requirements** (based on 400-500GB working set):
 
 **CPU:**
 - **Minimum**: 16 cores
@@ -856,25 +799,12 @@ $$) AS (thing agtype, attestation agtype, name agtype);
 
 **RAM:**
 - **Minimum**: 128GB (with careful tuning)
-- **Recommended**: 256GB
-- **Breakdown**:
-  - Shared buffers (PostgreSQL): 64-96GB (25-40% of RAM)
-  - pgvector index cache: ~27GB
-  - PostGIS geometry cache: ~75GB
-  - AGE graph metadata: ~100GB
-  - Work_mem for queries: ~20-30GB
-  - OS page cache: remainder
+- **Recommended**: 192GB
 - **Rationale**: Multiple extensions each maintain separate caches; higher RAM reduces extension coordination overhead
 - **Note**: PostgreSQL + extensions typically requires more RAM than ArangoDB for equivalent dataset due to less integrated architecture
 
 **Storage:**
-- **Primary Database**: 3TB NVMe SSD
-  - Current data: 800GB-1TB
-  - Indexes (multiple extensions): ~292GB
-  - Growth headroom (5 years): ~400GB
-  - WAL files: ~100GB
-  - Temporary query space: ~200GB
-  - Total needed: ~1.8-2TB → **3TB allocation recommended**
+- **Primary Database**: 2TB NVMe SSD
 - **Backup Storage**: 4-5TB (separate volume)
   - 3x full database dumps
   - Incremental WAL archives
@@ -1358,7 +1288,7 @@ The shift from Vespa to ArangoDB reflects the evolution from "gazetteer as searc
 3. **GeoJSON Support**: Native support for 6 GeoJSON types sufficient for our needs; GeometryCollection limitation naturally addressed by our multi-attestation model where each geometry is a separate claim
 4. **Query Integration**: Unified AQL for graph traversal + spatial + vector + temporal operations reduces complexity
 5. **Operational Simplicity**: Single system manageable by small team
-6. **Adequate Scale**: Handles anticipated 1.2TB dataset
+6. **Adequate Scale**: Handles anticipated ~500GB dataset
 7. **Vector Capabilities**: Suitable for phonetic name embedding search
 
 **Critical dependency**: Securing sustainable licensing terms for academic/research use.
@@ -1403,7 +1333,7 @@ The shift to an attestation-based property graph model with **Attestations as no
 - Document collections for Things, Names, Geometries, Timespans, and Authorities
 - Unified AUTHORITY collection pattern via discriminator
 - GeoJSON geometries for complex historical boundaries
-- Vector similarity search for phonetic name matching
+- Vector similarity search for phonetic name matching (via Siamese BiLSTM embeddings)
 - All capabilities integrated in a single system with unified AQL query language
 
 The lack of GeometryCollection support is adequately addressed by our attestation model, which naturally accommodates multiple geometry attestations per Thing—each with its own provenance, temporal bounds, and certainty assessment.

@@ -146,7 +146,7 @@ A **Name** represents a linguistic form by which a Thing is known.
 - `transliteration`: Romanization for searchability
 - `ipa`: International Phonetic Alphabet representation
 - `name_type`: Array of classifications (toponym, chrononym, ethnonym, etc.)
-- `embedding`: Vector representation for semantic similarity search
+- `embedding`: Vector representation for phonetic similarity search
 
 ### Name Types
 

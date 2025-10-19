@@ -66,7 +66,7 @@ This Thing has multiple name attestations:
 - Transliteration (e.g., "al-Qusṭanṭīnīyah")
 - IPA pronunciation
 - Variant type
-- Semantic embedding (for similarity search)
+- Phonetic embedding (for similarity search)
 
 **Why This Matters**:
 Names are linguistic artifacts, not just labels. WHG preserves:

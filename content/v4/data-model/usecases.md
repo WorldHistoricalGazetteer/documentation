@@ -224,7 +224,7 @@ Not Eurocentric; truly global with multilingual, multi-script support.
 - **Script codes**: ISO 15924 script identification
 - **Transliteration**: Romanized forms alongside original in Name documents
 - **IPA phonetics**: Pronunciation guidance for cross-linguistic matching
-- **Vector embeddings**: Semantic similarity across languages in Name documents
+- **Vector embeddings**: Phonetic similarity across languages in Name documents
 - **Name type arrays**: ethnonyms, chrononyms, hagionyms capture cultural naming practices
 - **Multiple name types**: Same name can be toponym + ethnonym (e.g., "Hellas")
 - **Attestation model**: Different communities' claims about same place coexist via separate Attestations

@@ -76,7 +76,7 @@ WHG searches for:
 - Exact name matches
 - Name variants (historical forms, translations)
 - Transliterations
-- Similar names (using semantic embeddings)
+- Similar names (using phonetic embeddings)
 
 ### Step 4: Explore Results
 

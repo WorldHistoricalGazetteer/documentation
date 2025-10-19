@@ -98,7 +98,7 @@ See: [Citation & Attribution](../export/citation.md)
 ## E
 
 ### Embedding
-A numerical vector representation of a name or text that captures semantic meaning, enabling similarity search across languages and scripts. WHG uses embeddings to find similar place names.
+A numerical vector representation of a name or text that captures phonetics, enabling similarity search across languages and scripts. WHG uses embeddings to find similar place names.
 
 See: [Embedding & Name Similarity](../advanced/embeddings.md)
 

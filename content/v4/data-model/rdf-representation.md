@@ -41,7 +41,7 @@ A name variant for a thing (toponym, chrononym, personal name, etc.). Names can 
 - `whg:transliteration` - Romanization or transliteration
 - `whg:ipa` - International Phonetic Alphabet representation
 - `whg:nameType` - Array of classifications (toponym, chrononym, ethnonym, etc.)
-- `whg:embedding` - Vector representation for semantic similarity search
+- `whg:embedding` - Vector representation for phonetic similarity search
 
 ### whg:Geometry
 
