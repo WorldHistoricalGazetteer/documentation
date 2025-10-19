@@ -51,7 +51,7 @@ We use seven primary collections:
   "script": "Latn",
   "ipa": "isˈtanbuɫ",
   "name_type": ["preferred", "toponym"],
-  "embedding": [0.234, -0.567, 0.123, ...], // 384-dimensional vector
+  "embedding": [0.234, -0.567, 0.123, ...], // 256-dimensional vector
   "transliteration_system": null,
   "romanized": "Istanbul"
 }
@@ -328,7 +328,7 @@ db.names.ensureIndex({
   fields: ["embedding"],
   params: {
     metric: "cosine",
-    dimension: 384,
+    dimension: 256,
     lists: 1000 // IVF parameter for clustering
   }
 });
