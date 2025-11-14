@@ -26,10 +26,10 @@ contexts.
 When a dataset has successfully completed initial reconciliation to the Wikidata+GeoNames index and is **published**,
 its records are automatically added to the **Publication Index**.
 
-* The Pub index ensures that the records are immediately discoverable via search and through the WHG Application
+* The Publication Index ensures that the records are immediately discoverable via search and through the WHG Application
   Programming Interface (API), even before they are fully integrated.
-* The Pub index serves as the staging ground for published datasets awaiting or bypassing the final accessioning step.
-* Once a dataset is reconciled and clustered into the WHG Union Index (see below), its individual records are **removed** from the Publication Index.
+* The Publication Index serves as the staging ground for published datasets awaiting or bypassing the final accessioning step.
+* _Once a dataset is reconciled and clustered into the WHG Union Index (see below), its individual records are **removed** from the Publication Index._
 
 ---
 
