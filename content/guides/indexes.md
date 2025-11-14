@@ -42,4 +42,4 @@ places, coming from different published datasets, are linked and formed into **c
   initial Wikidata+GeoNames match.
 * This final step is called **accessioning**, and once complete, the dataset is considered fully accessioned.
 * Search results privilege these linked sets or **"clusters"** of records and present them in unified Place Portal
-  pages, such as the one for [Glasgow](https://whgazetteer.org/places/12346428/portal/). Records that have been accessioned permanently reside here, not in the Publication index.
+  pages, such as the one for [Glasgow](https://whgazetteer.org/places/12346428/portal/). Records that have been accessioned permanently reside here, not in the Publication Index.
