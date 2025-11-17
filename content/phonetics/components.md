@@ -14,7 +14,7 @@
 
 ## Offline Components (Pitt CRC)
 - Access to full Wikidata and Geonames datasets.
-- Unlimited compute for:
+- Virtually unlimited compute for:
   - Bulk G2P → IPA transcription using Epitran.
   - PanPhon feature extraction and normalisation.
   - Training and retraining of Siamese BiLSTM models.

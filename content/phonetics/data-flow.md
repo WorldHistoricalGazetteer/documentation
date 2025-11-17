@@ -8,7 +8,7 @@
 2. **Generate IPA** using Epitran for each `(toponym, language)` pair:
    - Apply language-specific G2P models.
    - Handle unsupported languages via multi-language fallback or transliteration.
-3. **Normalise IPA** (see Section 3.6 for rules).
+3. **Normalise IPA** (see [IPA Normalisation Rules](#ipa-normalisation-rules)).
 4. **Deduplicate** by `(normalised_ipa, language)`.
 5. **Assign `ipa_id`**: SHA-256 hash of `(normalised_ipa, language)`.
 6. **Generate embeddings**: Initially rule-based (PanPhon feature vectors); later replaced by Siamese BiLSTM.
@@ -18,17 +18,11 @@
 8. **Bulk push** to Elasticsearch:
    - Populate `ipa_index` with all unique IPA forms.
    - Update `toponym_index` with `ipa_id` foreign keys.
-9. **Verify** with checksum validation (see Section 7.4).
+9. **Verify** with checksum validation (see [Resilience Strategy](push-based-synchronisation-strategy.html#resilience-strategy)).
 
 ## Ongoing Ingestion (New Datasets)
 
-**Option A: Pre-process at Pitt (preferred)**
-1. New dataset arrives (e.g., Pleiades, local gazetteer).
-2. Pitt generates IPA + embeddings before ingestion.
-3. Bulk push to Elasticsearch.
-4. Django imports dataset with `ipa_id` already populated.
-
-**Option B: Lightweight real-time enrichment**
+**Lightweight real-time enrichment**
 1. Django ingests dataset with toponyms only.
 2. Async background task generates IPA using lightweight Epitran on DigitalOcean.
 3. Updates `toponym_index` incrementally.
