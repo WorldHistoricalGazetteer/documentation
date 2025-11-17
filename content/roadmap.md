@@ -4,6 +4,6 @@
 :maxdepth: 2
 :numbered:
 
-    v3.5: Toponym Phonetics <content/phonetics.md>
-    V4: Graph Datamodel <content/v4.md>
+    v3.5: Toponym Phonetics <./phonetics.md>
+    V4: Graph Datamodel <./v4.md>
 ```
