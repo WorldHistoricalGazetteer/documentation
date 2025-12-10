@@ -4,7 +4,8 @@
 
 The first step for working with your own data in WHG is to prepare an upload file in one of two formats: Linked Places
 format (LPF) if your data is relatively complex, or LP-TSV, a simpler delimited file format (e.g. a spreadsheet, CSV, or
-TSV).
+TSV). A template is available for LP-TSV [here](https://docs.google.com/spreadsheets/d/1DM4MmagkYkeUEMtB00QZdYGkrCfth3_FsUp6JGGPwa0/copy).
+
 See [Choosing an upload data format: LPF or LP-TSV?](publishing.md) for
 more information.
 
