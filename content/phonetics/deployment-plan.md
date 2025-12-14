@@ -1,45 +1,64 @@
-# Deployment Checklist
+# Deployment Plan
 
-## Phase 1: Development (Week 1-4)
-- [ ] Set up Epitran + PanPhon in Pitt environment.
-- [ ] Implement IPA normalisation library with tests.
-- [ ] Design and create `toponym_index` schema in Elasticsearch.
-- [ ] Create `ipa_index` template.
-- [ ] Build proof-of-concept with 10k toponyms (single language).
-- [ ] Benchmark query latency and accuracy.
-- [ ] Test ONNX model export and Django integration.
+## Phase 1: Infrastructure Setup (Week 1-2)
 
-## Phase 2: Initial Migration (Week 5-8)
-- [ ] Extract all WHG toponyms from `place_index` to Pitt.
-- [ ] Create `toponym_index` and populate from existing place data.
-- [ ] Generate IPA for all toponyms (batch processing).
-- [ ] Create initial rule-based embeddings (PanPhon).
-- [ ] Bulk push to Elasticsearch staging environment.
-- [ ] Validate data integrity (checksums, counts).
-- [ ] Test query pipeline with production-scale data.
+- [ ] Provision /ix3 flash storage (750GB - 1TB)
+- [ ] Provision /ix1 bulk storage (1TB)
+- [ ] Install Elasticsearch 9.x on /ix3
+- [ ] Configure snapshot repository on /ix1
+- [ ] Set up monitoring (cluster health, index sizes)
+- [ ] Verify network connectivity and firewall rules
 
-## Phase 3: Model Training (Week 9-12)
-- [ ] Construct training dataset (positive/negative pairs).
-- [ ] Train Siamese BiLSTM (baseline 64-dim).
-- [ ] Evaluate on held-out test set.
-- [ ] Select optimal embedding dimension.
-- [ ] Export model to ONNX format.
-- [ ] Test inference model performance in Django.
-- [ ] Re-embed all IPA entries with trained model.
-- [ ] Deploy to staging with version v1.
+## Phase 2: Core Index Population (Week 3-6)
 
-## Phase 4: Production Rollout (Week 13-16)
-- [ ] Deploy inference model to production Django servers.
-- [ ] Deploy updated indices to production Elasticsearch.
-- [ ] Enable query pipeline with feature flag (10% traffic).
-- [ ] Monitor for errors and performance issues.
-- [ ] Gradually increase traffic (50%, 100%).
-- [ ] Document operational runbooks.
-- [ ] Train support team on new search capabilities.
+- [ ] Create index schemas with pipelines
+- [ ] Download authority source files to /ix1
+- [ ] Ingest GeoNames places and toponyms
+- [ ] Ingest Wikidata places and toponyms
+- [ ] Ingest TGN places and toponyms
+- [ ] Ingest remaining authority sources
+- [ ] Validate document counts against expectations
+- [ ] Create baseline snapshot
 
-## Phase 5: Continuous Improvement (Ongoing)
-- [ ] Monthly embedding refresh cycle.
-- [ ] Quarterly model retraining with new data.
-- [ ] User feedback analysis and training data enrichment.
-- [ ] Performance optimisation (cache tuning, index settings).
-- [ ] Model distillation for faster inference if needed.
+## Phase 3: Phonetic Enrichment (Week 7-10)
+
+- [ ] Set up Epitran environment with language models
+- [ ] Generate IPA transcriptions for all toponyms
+- [ ] Validate IPA coverage by language
+- [ ] Log unsupported language cases for review
+- [ ] Create IPA-enriched snapshot
+
+## Phase 4: Embedding Generation (Week 11-14)
+
+- [ ] Prepare BiLSTM training data (positive/negative pairs)
+- [ ] Train initial model on Pitt CRC GPU nodes
+- [ ] Evaluate recall@10 on held-out test set
+- [ ] Generate embeddings for all toponyms
+- [ ] Index embeddings to toponyms index
+- [ ] Benchmark kNN search performance
+- [ ] Tune HNSW parameters if needed
+
+## Phase 5: Query Integration (Week 15-18)
+
+- [ ] Implement query embedding generation
+- [ ] Build hybrid search (vector + text) endpoint
+- [ ] Implement completion suggester integration
+- [ ] Add fallback logic for failed embeddings
+- [ ] Performance test under load
+- [ ] Document API endpoints
+
+## Phase 6: Production Rollout (Week 19-20)
+
+- [ ] Final validation of search quality
+- [ ] Switch aliases to production indices
+- [ ] Create production snapshot
+- [ ] Enable monitoring dashboards
+- [ ] Document operational runbooks
+- [ ] Train team on new capabilities
+
+## Ongoing Operations
+
+- [ ] Weekly: Review search quality metrics
+- [ ] Monthly: Evaluate embedding refresh need
+- [ ] Quarterly: Retrain model with expanded data
+- [ ] As needed: Add new authority sources

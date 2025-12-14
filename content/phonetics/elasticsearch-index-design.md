@@ -1,50 +1,132 @@
 # Elasticsearch Index Design
 
-## IPA Index
+## Index Schemas
+
+The phonetic search system uses the standard WHG index schemas with phonetic-specific fields in the `toponyms` index.
+
+### Places Index
+
+See `schemas/places.json` for full schema.
+
+Key fields for phonetic search:
+
 ```json
 {
-  "ipa_id": "sha256_hash",           // keyword (primary key)
-  "ipa": "spɹɪŋfild",                // text + ngram analyzer
-  "ipa_stressed": "ˈspɹɪŋˌfild",     // text (optional, for disambiguation)
-  "language": "en",                  // keyword
-  "embedding": [0.23, -0.15, ...],   // dense_vector (64-256 dim)
-  "embedding_version": "v3_20251117", // keyword (critical for model updates)
-  "canonical_toponyms": [             // text[] (sample representations)
-    "Springfield",
-    "Springfeild"  // historical variant
-  ],
-  "panphon_features": [...],         // dense_vector (24-dim, optional)
-  "last_updated": "2025-11-17T10:30:00Z" // date
+  "place_id": "keyword",
+  "label": "text",
+  "toponyms": "keyword[]",
+  "locations": [{
+    "geometry": "geo_shape",
+    "rep_point": "geo_point"
+  }]
 }
 ```
 
-**Analyzers**:
-- `ipa` field: Custom ngram analyzer (2-4 grams) for fuzzy phonetic matching.
-- `canonical_toponyms`: Standard multilingual text analyzer.
+### Toponyms Index
 
-## Toponym Index
+See `schemas/toponyms.json` for full schema.
+
+Phonetic-specific fields:
+
 ```json
 {
-  "toponym_id": "uuid",              // keyword
-  "toponym": "Springfield",          // text (multilingual analyzers)
-  "language": "en",                  // keyword
-  "ipa_id": "sha256_hash",           // keyword (foreign key to ipa_index)
-  "place_ids": ["place_123", ...],   // keyword[] (many-to-many)
-  "variants": ["Springfeild"],       // text[] (historical spellings)
-  "last_updated": "2025-11-17T10:30:00Z"
+  "name": "text",
+  "name_lower": "keyword",
+  "lang": "keyword",
+  "ipa": "keyword",
+  "embedding_bilstm": {
+    "type": "dense_vector",
+    "dims": 128,
+    "index": true,
+    "similarity": "cosine"
+  },
+  "suggest": {
+    "type": "completion",
+    "contexts": [{ "name": "lang", "type": "category" }]
+  }
 }
 ```
 
-## Place Index
+## Ingest Pipelines
+
+### Toponym Pipeline
+
+The `extract_language` pipeline parses `name@lang` format:
+
 ```json
 {
-  "place_id": "place_123",           // keyword
-  "title": "Springfield, MA",        // text
-  "geometry": {...},                 // geo_shape
-  // ... existing WHG fields ...
-  "toponym_ids": ["uuid1", ...],     // keyword[] (foreign keys)
-  "primary_ipa_id": "sha256_hash"    // keyword (optional denormalisation)
+  "description": "Extract language from toponym@lang format",
+  "processors": [
+    {
+      "script": {
+        "lang": "painless",
+        "source": "if (ctx.name != null && ctx.name.contains('@')) { String[] parts = ctx.name.splitOnToken('@'); if (parts.length == 2) { ctx.name = parts[0]; ctx.name_lower = parts[0].toLowerCase(); ctx.lang = parts[1]; } }"
+      }
+    }
+  ]
 }
 ```
 
-**Optional optimisation**: Denormalise `primary_ipa_id` in `place_index` for direct vector search on places (bypasses toponym join for common cases).
+This enables ingestion of toponyms in the format `"London@en"`, automatically populating:
+
+- `name`: "London"
+- `name_lower`: "london"  
+- `lang`: "en"
+
+## HNSW Configuration
+
+The BiLSTM embedding field uses Elasticsearch's HNSW (Hierarchical Navigable Small World) algorithm for approximate nearest neighbour search.
+
+Default settings (can be tuned):
+
+```json
+{
+  "embedding_bilstm": {
+    "type": "dense_vector",
+    "dims": 128,
+    "index": true,
+    "similarity": "cosine",
+    "index_options": {
+      "type": "hnsw",
+      "m": 16,
+      "ef_construction": 100
+    }
+  }
+}
+```
+
+**Parameter guidance**:
+
+- `m`: Graph connectivity (higher = better recall, more memory)
+- `ef_construction`: Build-time quality (higher = better index, slower build)
+- For 80M vectors at 128 dims: expect ~50GB storage for HNSW structure
+
+## Analysers
+
+### Name Field
+
+Standard multilingual text analysis with edge n-grams for prefix matching:
+
+```json
+{
+  "analysis": {
+    "analyzer": {
+      "edge_ngram_analyzer": {
+        "tokenizer": "edge_ngram_tokenizer",
+        "filter": ["lowercase"]
+      }
+    },
+    "tokenizer": {
+      "edge_ngram_tokenizer": {
+        "type": "edge_ngram",
+        "min_gram": 2,
+        "max_gram": 20
+      }
+    }
+  }
+}
+```
+
+### IPA Field
+
+Stored as keyword for exact matching. N-gram analysis could be added for fuzzy IPA search if needed.

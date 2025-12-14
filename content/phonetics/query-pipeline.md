@@ -1,63 +1,126 @@
-# Query Pipeline (Online)
+# Query Pipeline
 
-## Full Pipeline with Fallbacks
+## Search Strategy
+
+Phonetic search uses a multi-stage approach with graceful fallback:
 
 ```
-1. User input: "Springfeld" (typo)
+1. User input: "Springfeld" (typo or variant spelling)
    ↓
-2. Language detection:
-   - Attempt automatic detection (langdetect library)
-   - Fallback: Use UI hint or default to multi-language Epitran
+2. Language detection (optional):
+   - Use UI locale hint
+   - Or attempt automatic detection
+   - Default: treat as multilingual
    ↓
-3. Generate IPA: "spɹɪŋfɛld" (Epitran)
-   - On failure: log error, proceed to fallback (step 6b)
-   ↓
-4. Generate query embedding using deployed inference model
-   - Load ONNX model in Django process
+3. Generate query embedding:
+   - BiLSTM model encodes query string directly
+   - No IPA conversion required at query time
    - Inference latency target: <10ms
-   - Use cached embeddings for common queries (Redis)
    ↓
-5. Elasticsearch multi-stage search:
+4. Elasticsearch multi-stage search:
+
+   Stage A: Vector kNN search (primary)
+   - Index: toponyms
+   - Field: embedding_bilstm
+   - k: 100 candidates
+   - Similarity: cosine
    
-   5a. PRIMARY: Vector kNN search
-       - Query: ipa_index with embedding
-       - Filter: embedding_version = "v4_20251201"
-       - k = 100 candidates
-       
-   5b. FALLBACK 1: IPA n-gram text search
-       - Query: ipa_index with "spɹɪŋfɛld" (ngram analyzer)
-       - Useful when embedding fails or for rare forms
-       
-   5c. FALLBACK 2: Original toponym search
-       - Query: toponym_index with "Springfeld" (fuzzy match)
-       - Existing WHG logic (Levenshtein, phonetic codes)
-       
+   Stage B: Text search (fallback/boost)
+   - Fuzzy match on name field
+   - Edge n-gram on name for prefix matching
+   - Exact match on name_lower for precise queries
+   
+   Stage C: Completion suggest (autocomplete)
+   - Type-ahead suggestions with language context
    ↓
-6. Merge results:
-   - Deduplicate by ipa_id
-   - Score combination: 0.6×vector_score + 0.3×ngram_score + 0.1×fuzzy_score
-   - Filter by embedding_version to ensure consistency
+5. Score combination:
+   - Weighted blend: 0.7 × vector_score + 0.3 × text_score
+   - Deduplicate by place_id
    ↓
-7. Join to places:
-   - ipa_id → toponym_index (get toponym_ids)
-   - toponym_id → place_index
+6. Join to places:
+   - Retrieve full place documents for top results
+   - Apply geographic/temporal filters if specified
    ↓
-8. Apply WHG-PLACE ranking logic:
-   - Boost by dataset authority
-   - Geographic relevance (if user location available)
-   - Historical period match
-   ↓
-9. Return results with confidence scores
+7. Return ranked results with confidence scores
 ```
 
-## Query-Time Optimisations
+## Elasticsearch Query Structure
 
-- **IPA cache**: Redis cache for frequent queries (TTL 1 hour).
-- **Embedding cache**: Pre-compute embeddings for top 10k toponyms.
-- **Async enrichment**: If query IPA generation fails, log for batch processing at Pitt.
+### Vector Search
+
+```json
+{
+  "knn": {
+    "field": "embedding_bilstm",
+    "query_vector": [0.12, -0.34, "..."],
+    "k": 100,
+    "num_candidates": 500
+  },
+  "_source": ["place_id", "name", "lang", "ipa"]
+}
+```
+
+### Hybrid Search (Vector + Text)
+
+```json
+{
+  "query": {
+    "bool": {
+      "should": [
+        {
+          "knn": {
+            "field": "embedding_bilstm",
+            "query_vector": [0.12, -0.34, "..."],
+            "k": 50,
+            "boost": 0.7
+          }
+        },
+        {
+          "match": {
+            "name": {
+              "query": "Springfeld",
+              "fuzziness": "AUTO",
+              "boost": 0.3
+            }
+          }
+        }
+      ]
+    }
+  }
+}
+```
+
+### Completion Suggest
+
+```json
+{
+  "suggest": {
+    "toponym-suggest": {
+      "prefix": "Lond",
+      "completion": {
+        "field": "suggest",
+        "size": 10,
+        "contexts": {
+          "lang": ["en"]
+        }
+      }
+    }
+  }
+}
+```
 
 ## Error Handling
 
-- **Epitran failure**: Fall back to original toponym search, log language/input for improvement.
-- **Elasticsearch timeout**: Return partial results with warning.
-- **Empty results**: Progressively relax constraints (language filter, geographic bounds).
+| Condition | Response |
+|-----------|----------|
+| Embedding generation fails | Fall back to text-only search |
+| No vector results | Expand to fuzzy text search |
+| Elasticsearch timeout | Return partial results with warning |
+| Empty results | Progressively relax filters (language, geography, time) |
+
+## Performance Optimisation
+
+- **Query embedding cache**: Cache embeddings for frequent queries (LRU, 10k entries)
+- **Pre-computed embeddings**: Top 10k toponyms cached in memory
+- **Index optimisation**: HNSW parameters tuned for recall/latency tradeoff
+- **Connection pooling**: Persistent Elasticsearch connections

@@ -1,27 +1,78 @@
 # Components
 
-## Online Components (DigitalOcean)
-- **Django**: Provides application logic and API.
-- **PostgreSQL/PostGIS**: Stores Places, geometry, and relational structure.
-- **Elasticsearch**:  
-  - `place_index` (existing)
-  - `toponym_index` (new, handles many-to-many Place↔Toponym)
-  - `ipa_index` (new, deduplicated IPA forms)
-- **Real-time phonetic query system**:
-  - Epitran-based G2P converter for query IPA generation.
-  - Lightweight inference model (quantized/distilled version of trained Siamese BiLSTM) for generating query embeddings on-the-fly.
-  - PanPhon for phonetic feature extraction.
+## Infrastructure
 
-## Offline Components (Pitt CRC)
-- Access to full Wikidata and Geonames datasets.
-- Virtually unlimited compute for:
-  - Bulk G2P → IPA transcription using Epitran.
-  - PanPhon feature extraction and normalisation.
-  - Training and retraining of Siamese BiLSTM models.
-  - Generating phonetic embeddings.
-- Outbound-only HTTP access for pushing bulk updates to Elasticsearch.
+All components run on Pitt CRC infrastructure:
 
-## Rationale for Separate Indices
-- **`toponym_index`**: New index to handle many-to-many relationships (one toponym → many places; one place → many toponyms). This is critical because "Springfield" maps to 50+ distinct places.
-- **`ipa_index`**: Global deduplication layer. Stores each unique IPA form once, dramatically reducing embedding storage and computation costs.
-- **`place_index`**: Core gazetteer records with geometry and metadata (existing).
+| Component | Storage | Purpose |
+|-----------|---------|---------|
+| Elasticsearch 9.x | /ix3 (flash) | Live indices, query serving |
+| Authority files | /ix1 (bulk) | Source datasets, snapshots |
+| Processing scripts | /ix1 (bulk) | Ingestion, embedding generation |
+
+## Elasticsearch Indices
+
+### Places Index
+
+Core gazetteer records with geometry and metadata. Each place aggregates toponyms from multiple authority sources.
+
+```json
+{
+  "place_id": "gn:2643743",
+  "namespace": "gn",
+  "label": "London",
+  "toponyms": ["London@en", "Londra@it", "Londres@fr", "Лондон@ru"],
+  "ccodes": ["GB"],
+  "locations": [{
+    "geometry": { "type": "Point", "coordinates": [-0.1276, 51.5074] },
+    "rep_point": { "lon": -0.1276, "lat": 51.5074 }
+  }],
+  "types": [{ "identifier": "P", "label": "geonames", "sourceLabel": "PPL" }],
+  "relations": [{ "relationType": "sameAs", "relationTo": "wd:Q84", "certainty": 1.0 }]
+}
+```
+
+### Toponyms Index
+
+Individual name attestations with phonetic data. Each toponym links to its parent place and carries:
+
+- Language-tagged name (`name@lang` format, parsed by ingest pipeline)
+- IPA transcription (where available)
+- BiLSTM phonetic embedding (128 dimensions)
+- Temporal attestation spans
+
+```json
+{
+  "place_id": "gn:2643743",
+  "name": "London",
+  "name_lower": "london",
+  "lang": "en",
+  "ipa": "ˈlʌndən",
+  "embedding_bilstm": [0.23, -0.15, ...],
+  "timespans": [{ "start": 1800, "end": 2025 }],
+  "suggest": { "input": ["London"], "contexts": { "lang": ["en"] } }
+}
+```
+
+## Processing Components
+
+### IPA Generation (Epitran)
+
+[Epitran](https://github.com/dmort27/epitran) provides grapheme-to-phoneme conversion for 90+ languages. IPA transcriptions are generated during toponym ingestion.
+
+Supported language mappings are defined in the processing scripts, covering major European, Asian, and Middle Eastern languages. Unsupported languages fall back to transliteration or remain without IPA.
+
+### Phonetic Embeddings (BiLSTM)
+
+A character-level bidirectional LSTM generates 128-dimensional dense vectors from toponym text. The model:
+
+- Processes character sequences directly (no IPA required)
+- Learns phonetic patterns from training data
+- Generalises across scripts and languages
+- Enables approximate nearest neighbour search via Elasticsearch kNN
+
+The BiLSTM approach was chosen over rule-based alternatives (e.g., PanPhon feature vectors) because it handles scripts and languages without explicit phonological rules.
+
+### Completion Suggester
+
+The `suggest` field provides type-ahead autocomplete functionality, with language context for filtering suggestions by user locale.
