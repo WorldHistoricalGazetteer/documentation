@@ -4,12 +4,20 @@ This architecture provides a scalable, multilingual, phonetic-aware search syste
 
 ## Key Design Decisions
 
-### Unified Infrastructure
+### Two-Instance Architecture
 
-All components run on Pitt CRC infrastructure, with storage allocated by I/O requirements:
+Staging and production Elasticsearch instances are separated to protect query performance:
 
-- **Flash storage (/ix3)**: 750GB - 1TB for live Elasticsearch indices
+- **Production (VM, /ix3)**: Serves live queries; receives completed indices via snapshot restore
+- **Staging (Slurm worker)**: Handles bulk indexing and embedding generation
+
+### Storage Allocation
+
+Storage is allocated by I/O requirements:
+
+- **Flash storage (/ix3)**: 750GB - 1TB for production Elasticsearch indices
 - **Bulk storage (/ix1)**: 1TB for authority files and snapshots
+- **Staging storage**: ~250GB on /ix1 or Slurm local scratch
 
 ### Two-Index Architecture
 
@@ -29,21 +37,22 @@ Character-level bidirectional LSTM trained with Siamese architecture generates 1
 
 The system indexes both authority files and WHG-contributed datasets:
 
-| Source | Places | Toponyms | Embedding Generation |
+| Source | Places | Toponyms | Processing Location |
 |--------|--------|----------|---------------------|
-| Authority files | ~39M | ~82M | Batch on compute nodes |
-| WHG contributions | ~200K | ~500K | On-the-fly on VM |
+| Authority files | ~39M | ~82M | Staging (Slurm worker) |
+| WHG contributions | ~200K | ~500K | Staging or production |
 
 Both sources share the same indices and are searchable together.
 
-### Alias-Based Deployment
+### Snapshot-Based Deployment
 
-Zero-downtime updates through versioned indices:
+Zero-downtime updates through staged indexing:
 
-1. Create new versioned indices
-2. Populate and validate
-3. Switch aliases atomically
-4. Rollback capability via snapshots
+1. Build and validate indices on staging
+2. Create snapshot to shared repository (/ix1)
+3. Restore snapshot to production
+4. Switch aliases atomically
+5. Rollback capability via previous snapshots
 
 ### Graceful Degradation
 
@@ -68,8 +77,9 @@ Multi-stage search with fallbacks:
 
 | System | Allocation | Purpose |
 |--------|------------|---------|
-| /ix3 (flash) | 750GB - 1TB | Live Elasticsearch data |
+| /ix3 (flash) | 750GB - 1TB | Production Elasticsearch data |
 | /ix1 (bulk) | 1TB | Authority files, snapshots |
+| Staging | ~250GB | Slurm worker ES (local scratch or /ix1) |
 
 ## Timeline
 

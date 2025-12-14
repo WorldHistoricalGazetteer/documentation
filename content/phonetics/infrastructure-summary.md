@@ -8,21 +8,39 @@ This document summarises the infrastructure architecture, storage requirements, 
 
 ## Architecture
 
-### Single-Node Deployment
+### Two-Instance Deployment
 
-The system runs as a single Elasticsearch node with two primary indices:
+The system uses two Elasticsearch instances to separate indexing from query serving:
+
+| Instance | Location | Purpose |
+|----------|----------|---------|
+| **Production** | VM on /ix3 (flash) | Live query serving, alias management |
+| **Staging** | Slurm worker | Bulk indexing, embedding enrichment |
+
+Both instances serve the same two primary indices:
 
 - **`places`**: Core place records with geometry, type classifications, and cross-references
 - **`toponyms`**: Name variants with language tagging, temporal attestations, and phonetic embeddings
 
+### Rationale for Separation
+
+Bulk indexing of tens of millions of records consumes significant CPU, memory, and I/O. Running this workload on the production VM would:
+
+- Degrade query latency during indexing
+- Risk VM unresponsiveness under heavy load
+- Prevent pre-production validation
+
+The staging instance on a Slurm worker handles the heavy lifting, with snapshots providing a clean transfer mechanism to production.
+
 ### Storage Tiers
 
-Storage is distributed across two systems optimised for different I/O patterns:
+Storage is distributed across systems optimised for different I/O patterns:
 
 | System | Purpose | Characteristics |
 |--------|---------|-----------------|
-| `/ix3` (flash) | Live Elasticsearch data | High IOPS, low latency random access |
-| `/ix1` (bulk) | Authority files, snapshots | Sequential I/O, high capacity |
+| `/ix3` (flash) | Production Elasticsearch data | High IOPS, low latency random access |
+| `/ix1` (bulk) | Authority files, snapshots, staging indices | Sequential I/O, high capacity |
+| Slurm local scratch | Staging Elasticsearch (optional) | Faster indexing than /ix1 if available |
 
 ## Authority Data Sources
 
@@ -71,10 +89,12 @@ The Siamese BiLSTM model learns phonetic similarity directly from pairs of equiv
 
 ### Embedding Generation
 
-Embeddings are generated via two pathways:
+Embeddings are generated on the staging instance during indexing:
 
-- **Authority files**: Batch processing on Pitt CRC compute nodes (GPU-accelerated)
-- **WHG contributions**: On-the-fly generation on the VM during ingestion
+- **Authority files**: Batch processing on Slurm worker (GPU-accelerated if available)
+- **WHG contributions**: Processed on staging or production depending on volume
+
+The trained Siamese BiLSTM encoder is deployed to both instances.
 
 ### IPA Transcriptions
 
@@ -126,18 +146,37 @@ Where available, IPA transcriptions are stored for reference and display. These 
 
 ## Deployment Strategy
 
-### Alias-Based Zero-Downtime Reindexing
+### Snapshot-Based Transfer
 
-Index updates use versioned indices with alias switching to enable zero-downtime deployments:
+New indices are built on staging and transferred to production via snapshots:
+
+```
+1. Staging (Slurm worker):
+   - Create versioned indices (places_v2, toponyms_v2)
+   - Ingest and enrich data
+   - Validate document counts and sample queries
+   - Create snapshot to /ix1
+
+2. Production (VM):
+   - Restore snapshot from /ix1
+   - Validate restored indices
+   - Switch aliases atomically
+   - Delete old indices after confirmation
+```
+
+### Alias-Based Zero-Downtime Switching
+
+Production uses versioned indices with alias switching:
 
 ```
 Steady state:
   places (alias) → places_v1 (index)
   toponyms (alias) → toponyms_v1 (index)
 
-During reindex:
-  places (alias) → places_v1 (serving queries)
-  places_v2 (new index, being populated)
+After restore and switch:
+  places (alias) → places_v2 (restored from snapshot)
+  toponyms (alias) → toponyms_v2 (restored from snapshot)
+  places_v1, toponyms_v1 retained for rollback (7 days)
   
 Switchover:
   places (alias) → places_v2 (atomic)
@@ -146,33 +185,22 @@ Switchover:
 
 This approach:
 
-- Eliminates downtime during reindexing
+- Protects production from indexing workload
 - Allows validation queries against new indices before promotion
-- Provides instant rollback by re-pointing aliases
-- Requires temporary 2× index storage during transition
-
-### Workflow
-
-1. Create new versioned indices (`places_v2`, `toponyms_v2`)
-2. Run authority ingestion scripts targeting new indices
-3. Generate phonetic embeddings
-4. Run validation queries
-5. Switch aliases atomically
-6. Verify production health
-7. Delete old indices
-8. Create snapshot
+- Provides rollback via previous snapshots
+- Requires temporary 2× index storage only on production during alias transition
 
 ## Storage Requirements
 
-### /ix3 (Flash Storage) — Elasticsearch Data
+### /ix3 (Flash Storage) — Production Elasticsearch Data
 
 | Component | Size |
 |-----------|------|
 | Places index | 55 GB |
 | Toponyms index (with BiLSTM embeddings) | 160 GB |
-| Transition overhead (during reindex) | 215 GB |
+| Transition overhead (old + new indices) | 215 GB |
 | Logs, Kibana data | 7 GB |
-| **Peak (during reindex)** | **437 GB** |
+| **Peak (during alias transition)** | **437 GB** |
 | **Steady state** | **222 GB** |
 
 **Recommended allocation: 750 GB – 1 TB**
@@ -183,6 +211,20 @@ The additional headroom accommodates:
 - Embedding strategy expansion
 - Index optimisation overhead
 - Operational flexibility
+
+### Staging Storage — Slurm Worker
+
+| Component | Size |
+|-----------|------|
+| Places index (building) | 55 GB |
+| Toponyms index (building) | 160 GB |
+| Working space | 30 GB |
+| **Total** | **~250 GB** |
+
+Staging storage can be provisioned on:
+
+- Slurm local scratch (faster, if available)
+- /ix1 (bulk storage, shared with snapshots)
 
 ### /ix1 (Bulk Storage) — Authority Files & Snapshots
 
@@ -229,9 +271,10 @@ PUT _snapshot/whg_backup
 
 | Resource | Allocation | System |
 |----------|------------|--------|
-| Elasticsearch indices | 750 GB – 1 TB | /ix3 (flash) |
+| Production Elasticsearch | 750 GB – 1 TB | /ix3 (flash) |
+| Staging Elasticsearch | ~250 GB | /ix1 or local scratch |
 | Authority files + snapshots | 1 TB | /ix1 (bulk) |
-| **Total** | **1.75 – 2 TB** | |
+| **Total** | **2 – 2.25 TB** | |
 
 ## Operational Commands
 

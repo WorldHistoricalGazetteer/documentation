@@ -1,5 +1,14 @@
 # Advantages of This Architecture
 
+## Two-Instance Isolation
+
+Separating staging (Slurm worker) from production (VM) provides:
+
+- **Production stability**: Query-serving VM is protected from indexing workload spikes
+- **Safe validation**: New indices can be validated before production exposure
+- **Resource optimisation**: Staging can use compute node resources (GPU, high memory) without impacting live queries
+- **Clean rollback**: Production snapshots provide instant recovery
+
 ## Unified Infrastructure
 
 All components run on Pitt CRC infrastructure, eliminating synchronisation complexity:
@@ -7,32 +16,34 @@ All components run on Pitt CRC infrastructure, eliminating synchronisation compl
 - No network latency between processing and indexing
 - Direct filesystem access for authority files and snapshots
 - Simplified security model (no cross-site authentication)
-- Single point of administration
+- Single administrative domain
 
 ## Scalable Storage Tiers
 
 Storage is allocated based on I/O requirements:
 
-- **Flash storage (/ix3)**: High IOPS for Elasticsearch queries and indexing
-- **Bulk storage (/ix1)**: Cost-effective capacity for source files and snapshots
+- **Flash storage (/ix3)**: High IOPS for production Elasticsearch queries
+- **Bulk storage (/ix1)**: Cost-effective capacity for source files, snapshots, and staging indices
+- **Local scratch**: Optional for Slurm worker staging (faster than /ix1 for indexing)
 
 ## Zero-Downtime Deployments
 
-Alias-based index switching enables:
+Snapshot-based transfer from staging to production enables:
 
 - Validation of new data before production exposure
-- Instant rollback by re-pointing aliases
-- No query interruption during reindexing
+- Instant rollback by restoring previous snapshot
+- No query interruption during reindexing (happens on staging)
 - Clear versioning of index generations
+- Atomic alias switching on production after restore
 
-## Dual-Path Embedding Generation
+## Flexible Embedding Generation
 
 The architecture supports both bulk and incremental ingestion:
 
-- **Authority files**: Batch processing on compute nodes with GPU acceleration
-- **WHG contributions**: On-the-fly embedding on the VM
+- **Authority files**: Batch processing on staging with GPU acceleration
+- **WHG contributions**: Flexible routing to staging or production depending on volume
 
-This ensures authority files (tens of millions of toponyms) are processed efficiently, while contributed datasets get fast turnaround without compute node scheduling delays.
+This ensures authority files (tens of millions of toponyms) are processed on dedicated resources, while smaller contributed datasets can be handled with minimal overhead.
 
 ## Efficient Phonetic Search
 

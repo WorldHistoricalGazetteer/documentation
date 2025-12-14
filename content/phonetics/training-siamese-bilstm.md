@@ -125,33 +125,35 @@ When retraining produces an improved model:
 
 1. **Train new Siamese BiLSTM** → `v{N+1}_{date}`
 2. **Evaluate** on held-out test set (require recall@10 improvement)
-3. **Re-embed authority toponyms** on compute nodes using new encoder
-4. **Index to new versioned indices** (`toponyms_v{N+1}`)
-5. **Deploy encoder to VM** for on-the-fly inference
-6. **Validate** sample queries against expected results
-7. **Switch aliases** to new indices
-8. **Create snapshot** of previous version (rollback capability)
-9. **Delete old indices** after confirmation period (7 days)
+3. **Deploy encoder to staging** (Slurm worker)
+4. **Re-embed authority toponyms** on staging using new encoder
+5. **Validate** sample queries against expected results
+6. **Create snapshot** of new indices
+7. **Restore to production VM**
+8. **Deploy encoder to production** for query embedding
+9. **Switch aliases** on production
+10. **Snapshot previous version** (rollback capability)
+11. **Delete old indices** after confirmation period (7 days)
 
 **Frequency**: Quarterly, or when training data significantly expands
 
 ## Deployment Architecture
 
-The trained Siamese BiLSTM encoder is deployed in two contexts:
+The trained Siamese BiLSTM encoder is deployed to both instances:
 
-### Compute Nodes (Batch Processing)
+### Staging (Slurm Worker)
 
-- GPU-accelerated inference
+- GPU-accelerated inference where available
 - Large batch sizes (10,000+ toponyms)
 - Used for authority file embedding generation
 - PyTorch model with CUDA support
 
-### VM (On-the-Fly Processing)
+### Production (VM)
 
 - CPU inference (model is lightweight)
 - Small batch sizes or individual toponyms
 - Used for:
-  - WHG-contributed dataset ingestion
+  - WHG-contributed dataset ingestion (small batches)
   - Query embedding generation
 - ONNX runtime for optimised CPU inference
 

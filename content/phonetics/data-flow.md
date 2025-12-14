@@ -2,7 +2,7 @@
 
 ## Authority File Ingestion
 
-Large-scale authority datasets are processed in batch on Pitt CRC compute nodes.
+Large-scale authority datasets are processed on Slurm workers with a dedicated staging Elasticsearch instance. This isolates indexing workload from the production VM.
 
 ### Pipeline
 
@@ -24,28 +24,32 @@ Large-scale authority datasets are processed in batch on Pitt CRC compute nodes.
    - Process all toponyms through Siamese BiLSTM
    - Generate 128-dimensional vectors
    ↓
-6. Index to versioned indices (places_v2, toponyms_v2)
+6. Index to staging Elasticsearch (Slurm worker)
    ↓
-7. Validate counts and sample data
+7. Validate counts and sample data on staging
    ↓
-8. Switch aliases atomically
+8. Create snapshot to /ix1/whcdh/elastic/snapshots/
    ↓
-9. Create snapshot
+9. Restore snapshot to production VM
+   ↓
+10. Switch aliases atomically on production
+   ↓
+11. Validate production indices
 ```
 
-### Rationale for Batch Processing
+### Rationale for Staging Instance
 
-Authority files contain tens of millions of toponyms. Generating embeddings on-the-fly would be impractical:
+Authority files contain tens of millions of records. Indexing directly on the production VM would:
 
-- GeoNames: ~20 million toponyms
-- Wikidata: ~50 million toponyms
-- Full corpus: ~82 million toponyms
+- Consume CPU and memory needed for query serving
+- Risk making the VM unresponsive during bulk operations
+- Prevent validation before production exposure
 
-Batch processing on compute nodes with GPU acceleration completes in hours rather than weeks.
+The staging instance on a Slurm worker handles the heavy lifting, with snapshots providing a clean transfer mechanism.
 
 ## WHG-Contributed Dataset Ingestion
 
-Scholarly datasets contributed by WHG users follow a lighter-weight pipeline with on-the-fly embedding generation.
+Scholarly datasets contributed by WHG users follow a similar staged workflow, but with on-the-fly embedding generation due to smaller volumes.
 
 ### Pipeline
 
@@ -56,29 +60,28 @@ Scholarly datasets contributed by WHG users follow a lighter-weight pipeline wit
    - Same schema as authority ingestion
    - Preserve dataset provenance and attribution
    ↓
-3. Index to staging Elasticsearch
+3. Index to staging Elasticsearch (Slurm worker or VM)
    ↓
-4. For each toponym (on VM):
+4. For each toponym:
    - Generate IPA transcription (Epitran)
    - Generate embedding via Siamese BiLSTM model
    - Update toponym document
    ↓
-5. Validate dataset integrity
+5. Validate dataset integrity on staging
    ↓
-6. Switch aliases to production
+6. Create snapshot (if staging on Slurm worker)
    ↓
-7. Create snapshot
+7. Restore to production / switch aliases
 ```
 
-### Rationale for On-the-Fly Processing
+### Rationale for Flexible Staging
 
-WHG-contributed datasets are much smaller (~200k places, ~500k toponyms) and arrive incrementally. On-the-fly embedding generation on the VM:
+WHG-contributed datasets are much smaller (~200k places, ~500k toponyms) and arrive incrementally. Depending on volume:
 
-- Avoids compute node scheduling delays
-- Enables faster turnaround for new contributions
-- Keeps the Siamese BiLSTM model loaded and warm for query-time inference
+- **Small batches**: Can be indexed directly on the VM during low-usage periods
+- **Larger contributions**: Use Slurm staging to avoid production impact
 
-The VM maintains a loaded instance of the trained Siamese BiLSTM encoder for both ingestion and query embedding generation.
+The Siamese BiLSTM model is kept loaded on both staging and production for embedding generation.
 
 ## IPA Generation
 
@@ -127,45 +130,45 @@ Consistent normalisation prevents duplicate representations of the same pronunci
 
 ## Embedding Generation
 
-Siamese BiLSTM embeddings are generated differently depending on data source:
+Siamese BiLSTM embeddings are generated as part of the indexing pipeline, prior to snapshot transfer.
 
 ### Batch Generation (Authority Files)
 
-Run on Pitt CRC compute nodes with GPU acceleration:
+Run on Pitt CRC compute nodes with GPU acceleration, indexed to staging Elasticsearch:
 
 ```python
 # Process authority toponyms in large batches
-for batch in scroll_toponyms_without_embeddings(batch_size=10000):
+for batch in scroll_toponyms_without_embeddings(staging_es, batch_size=10000):
     # Extract names
     names = [doc['name'] for doc in batch]
     
     # Generate embeddings (GPU-accelerated batch inference)
     embeddings = siamese_bilstm_model.embed_batch(names)
     
-    # Bulk update
+    # Bulk update to staging
     updates = [
         {'_id': doc['_id'], 'doc': {'embedding_bilstm': emb}}
         for doc, emb in zip(batch, embeddings)
     ]
-    bulk_update(updates)
+    bulk_update(staging_es, updates)
 ```
 
-### On-the-Fly Generation (WHG Contributions)
+### Incremental Generation (WHG Contributions)
 
-Run on the VM during ingestion:
+Run during ingestion, either on staging or production depending on volume:
 
 ```python
-# Process contributed toponyms individually or in small batches
+# Process contributed toponyms in smaller batches
 for toponym in dataset_toponyms:
-    # Generate embedding (CPU inference, model kept in memory)
+    # Generate embedding (CPU inference)
     embedding = siamese_bilstm_model.embed(toponym['name'])
     
     # Index with embedding included
     toponym['embedding_bilstm'] = embedding
-    index_toponym(toponym)
+    index_toponym(es_client, toponym)
 ```
 
-The same trained Siamese BiLSTM model is used for both pathways, ensuring consistent embeddings across the corpus.
+The same trained Siamese BiLSTM model is deployed to both staging (Slurm worker) and production (VM), ensuring consistent embeddings across the corpus.
 
 ## Incremental Updates
 
