@@ -42,20 +42,39 @@ The following authority datasets are indexed:
 | Index Villaris | `iv` | 24,000 | 24,000 | 5 MB |
 | ISO Countries | `un` | 250 | 500 | 15 MB |
 
-**Totals**: ~39 million places, ~82 million toponyms
+**Authority totals**: ~39 million places, ~82 million toponyms
+
+## WHG-Contributed Datasets
+
+In addition to authority files, the system indexes scholarly datasets contributed by WHG users and partner projects:
+
+| Source | Est. Places | Est. Toponyms |
+|--------|-------------|---------------|
+| WHG contributions | ~200,000 | ~500,000 |
+
+These represent the core research content of WHG and are indexed alongside authority data, enabling contributed places to be matched against the full authority corpus.
+
+**Combined totals**: ~39.2 million places, ~82.5 million toponyms
 
 ## Phonetic Search
 
 Toponyms are enriched with phonetic embeddings to support fuzzy name matching across languages and historical spelling variants.
 
-### BiLSTM Embeddings
+### Siamese BiLSTM Embeddings
 
 - **Dimensions**: 128
-- **Method**: Character-level bidirectional LSTM
+- **Method**: Character-level bidirectional LSTM with Siamese training
 - **Index type**: HNSW (Hierarchical Navigable Small World)
 - **Similarity**: Cosine
 
-The BiLSTM model learns phonetic patterns directly from character sequences, enabling matching without explicit grapheme-to-phoneme conversion. This approach generalises across scripts and languages where IPA transcription models are unavailable.
+The Siamese BiLSTM model learns phonetic similarity directly from pairs of equivalent toponyms (e.g., cross-lingual equivalents from Wikidata). This approach generalises across scripts and languages where IPA transcription models are unavailable.
+
+### Embedding Generation
+
+Embeddings are generated via two pathways:
+
+- **Authority files**: Batch processing on Pitt CRC compute nodes (GPU-accelerated)
+- **WHG contributions**: On-the-fly generation on the VM during ingestion
 
 ### IPA Transcriptions
 

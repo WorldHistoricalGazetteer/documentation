@@ -75,7 +75,7 @@ This enables ingestion of toponyms in the format `"London@en"`, automatically po
 
 ## HNSW Configuration
 
-The BiLSTM embedding field uses Elasticsearch's HNSW (Hierarchical Navigable Small World) algorithm for approximate nearest neighbour search.
+The Siamese BiLSTM embedding field uses Elasticsearch's HNSW (Hierarchical Navigable Small World) algorithm for approximate nearest neighbour search.
 
 Default settings (can be tuned):
 

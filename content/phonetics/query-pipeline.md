@@ -13,7 +13,8 @@ Phonetic search uses a multi-stage approach with graceful fallback:
    - Default: treat as multilingual
    ↓
 3. Generate query embedding:
-   - BiLSTM model encodes query string directly
+   - Siamese BiLSTM model encodes query string directly
+   - Same model used for indexing (consistency)
    - No IPA conversion required at query time
    - Inference latency target: <10ms
    ↓

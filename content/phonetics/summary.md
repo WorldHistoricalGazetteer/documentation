@@ -16,13 +16,25 @@ All components run on Pitt CRC infrastructure, with storage allocated by I/O req
 - **`places` index**: Core gazetteer records with geometry and metadata
 - **`toponyms` index**: Name variants with IPA transcriptions and phonetic embeddings
 
-### BiLSTM Embeddings
+### Siamese BiLSTM Embeddings
 
-Character-level bidirectional LSTM generates 128-dimensional vectors:
+Character-level bidirectional LSTM trained with Siamese architecture generates 128-dimensional vectors:
 
+- Learns phonetic similarity from positive/negative toponym pairs
 - Processes text directly (no IPA required at query time)
 - Generalises across scripts and languages
 - Enables efficient kNN search via Elasticsearch HNSW
+
+### Dual Data Sources
+
+The system indexes both authority files and WHG-contributed datasets:
+
+| Source | Places | Toponyms | Embedding Generation |
+|--------|--------|----------|---------------------|
+| Authority files | ~39M | ~82M | Batch on compute nodes |
+| WHG contributions | ~200K | ~500K | On-the-fly on VM |
+
+Both sources share the same indices and are searchable together.
 
 ### Alias-Based Deployment
 
@@ -48,7 +60,8 @@ Multi-stage search with fallbacks:
 | Search engine | Elasticsearch 9.x |
 | Vector search | HNSW via dense_vector |
 | IPA generation | Epitran |
-| Embedding model | PyTorch BiLSTM |
+| Embedding model | PyTorch Siamese BiLSTM |
+| Inference runtime | ONNX (VM), PyTorch+CUDA (compute) |
 | Storage | Pitt CRC /ix1, /ix3 |
 
 ## Storage Requirements
@@ -65,7 +78,7 @@ Multi-stage search with fallbacks:
 | Infrastructure | 2 weeks | Storage, Elasticsearch |
 | Core indexing | 4 weeks | All authority sources indexed |
 | Phonetic enrichment | 4 weeks | IPA transcriptions |
-| Embedding generation | 4 weeks | BiLSTM model, embeddings |
+| Embedding generation | 4 weeks | Siamese BiLSTM model, embeddings |
 | Query integration | 4 weeks | Search endpoints |
 | Production rollout | 2 weeks | Live system |
 
@@ -76,3 +89,4 @@ Multi-stage search with fallbacks:
 - [WHG Place Discussion #81](https://github.com/WorldHistoricalGazetteer/place/discussions/81) - Original phonetic search proposal
 - [Epitran](https://github.com/dmort27/epitran) - Grapheme-to-phoneme library
 - [Elasticsearch kNN Search](https://www.elastic.co/guide/en/elasticsearch/reference/current/knn-search.html) - Vector search documentation
+- [Siamese Networks for One-Shot Learning](https://www.cs.cmu.edu/~rsalakhu/papers/oneshot1.pdf) - Foundational paper

@@ -1,8 +1,12 @@
-# BiLSTM Model Training
+# Siamese BiLSTM Model Training
+
+## Overview
+
+The phonetic embedding model uses a Siamese architecture: two identical BiLSTM networks with shared weights, trained on pairs of toponyms to learn phonetic similarity. After training, the single encoder is deployed for both indexing and query embedding generation.
 
 ## Model Architecture
 
-The phonetic embedding model is a character-level bidirectional LSTM:
+The encoder is a character-level bidirectional LSTM:
 
 ```
 Input: Character sequence (variable length, max 50)
@@ -26,6 +30,7 @@ Output: 128-dimensional embedding vector
 - Bidirectional processing captures both prefix and suffix patterns
 - Mean pooling provides fixed-size output regardless of input length
 - L2 normalisation enables efficient cosine similarity via dot product
+- Siamese training learns similarity directly from toponym pairs
 
 ## Training Data Construction
 
@@ -59,18 +64,21 @@ After initial training, identify pairs with:
 
 Re-train with these hard negatives to improve discrimination.
 
-## Training Process
+## Siamese Training Process
+
+The Siamese architecture trains on triplets: (anchor, positive, negative).
 
 ```python
-# Siamese training loop (simplified)
+# Siamese training loop
 for epoch in range(num_epochs):
     for anchor, positive, negative in triplet_loader:
-        # Forward pass
-        emb_anchor = model(anchor)
-        emb_positive = model(positive)
-        emb_negative = model(negative)
+        # Forward pass through shared encoder
+        emb_anchor = encoder(anchor)
+        emb_positive = encoder(positive)
+        emb_negative = encoder(negative)
         
         # Triplet loss with margin
+        # Pulls anchor/positive together, pushes anchor/negative apart
         loss = triplet_loss(emb_anchor, emb_positive, emb_negative, margin=0.2)
         
         # Backward pass
@@ -79,9 +87,9 @@ for epoch in range(num_epochs):
         optimizer.step()
     
     # Validation
-    recall_at_10 = evaluate(model, val_set)
+    recall_at_10 = evaluate(encoder, val_set)
     if recall_at_10 > best_recall:
-        save_checkpoint(model, f'model_v{version}.pt')
+        save_checkpoint(encoder, f'model_v{version}.pt')
 ```
 
 **Infrastructure**: PyTorch on Pitt CRC GPU nodes (A100 or equivalent)
@@ -95,15 +103,16 @@ for epoch in range(num_epochs):
 
 ## Model Versioning
 
-Each model version is tracked with metadata:
+Each trained Siamese BiLSTM encoder is tracked with metadata:
 
 ```
 /ix1/whcdh/elastic/models/phonetic/
 ├── v1_20250601/
-│   ├── model.pt          # PyTorch weights
-│   ├── model.onnx        # ONNX export for inference
+│   ├── encoder.pt        # PyTorch encoder weights
+│   ├── encoder.onnx      # ONNX export for inference
 │   ├── config.json       # Architecture parameters
 │   ├── vocab.json        # Character vocabulary
+│   ├── training.json     # Training hyperparameters
 │   └── metrics.json      # Training/validation metrics
 ├── v2_20250901/
 │   └── ...
@@ -114,13 +123,36 @@ Each model version is tracked with metadata:
 
 When retraining produces an improved model:
 
-1. **Train new model** → `v{N+1}_{date}`
+1. **Train new Siamese BiLSTM** → `v{N+1}_{date}`
 2. **Evaluate** on held-out test set (require recall@10 improvement)
-3. **Re-embed all toponyms** using new model
+3. **Re-embed authority toponyms** on compute nodes using new encoder
 4. **Index to new versioned indices** (`toponyms_v{N+1}`)
-5. **Validate** sample queries against expected results
-6. **Switch aliases** to new indices
-7. **Create snapshot** of previous version (rollback capability)
-8. **Delete old indices** after confirmation period (7 days)
+5. **Deploy encoder to VM** for on-the-fly inference
+6. **Validate** sample queries against expected results
+7. **Switch aliases** to new indices
+8. **Create snapshot** of previous version (rollback capability)
+9. **Delete old indices** after confirmation period (7 days)
 
 **Frequency**: Quarterly, or when training data significantly expands
+
+## Deployment Architecture
+
+The trained Siamese BiLSTM encoder is deployed in two contexts:
+
+### Compute Nodes (Batch Processing)
+
+- GPU-accelerated inference
+- Large batch sizes (10,000+ toponyms)
+- Used for authority file embedding generation
+- PyTorch model with CUDA support
+
+### VM (On-the-Fly Processing)
+
+- CPU inference (model is lightweight)
+- Small batch sizes or individual toponyms
+- Used for:
+  - WHG-contributed dataset ingestion
+  - Query embedding generation
+- ONNX runtime for optimised CPU inference
+
+Both deployments use the same trained encoder weights, ensuring embedding consistency across the corpus.

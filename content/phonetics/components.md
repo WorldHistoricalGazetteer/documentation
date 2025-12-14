@@ -62,16 +62,18 @@ Individual name attestations with phonetic data. Each toponym links to its paren
 
 Supported language mappings are defined in the processing scripts, covering major European, Asian, and Middle Eastern languages. Unsupported languages fall back to transliteration or remain without IPA.
 
-### Phonetic Embeddings (BiLSTM)
+### Phonetic Embeddings (Siamese BiLSTM)
 
-A character-level bidirectional LSTM generates 128-dimensional dense vectors from toponym text. The model:
+A character-level bidirectional LSTM, trained using a Siamese architecture, generates 128-dimensional dense vectors from toponym text. The Siamese training approach uses pairs (or triplets) of toponyms with shared weights to learn phonetic similarity directly.
+
+The model:
 
 - Processes character sequences directly (no IPA required)
-- Learns phonetic patterns from training data
+- Learns phonetic similarity from positive/negative pairs
 - Generalises across scripts and languages
 - Enables approximate nearest neighbour search via Elasticsearch kNN
 
-The BiLSTM approach was chosen over rule-based alternatives (e.g., PanPhon feature vectors) because it handles scripts and languages without explicit phonological rules.
+The Siamese BiLSTM approach was chosen over rule-based alternatives (e.g., PanPhon feature vectors) because it handles scripts and languages without explicit phonological rules, and learns what "sounds similar" from real-world toponym equivalences.
 
 ### Completion Suggester
 
