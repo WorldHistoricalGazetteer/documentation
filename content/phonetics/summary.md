@@ -17,7 +17,7 @@ Storage is allocated by I/O requirements:
 
 - **Flash storage (/ix3)**: 750GB - 1TB for production Elasticsearch indices
 - **Bulk storage (/ix1)**: 1TB for authority files and snapshots
-- **Staging storage**: ~250GB on /ix1 or Slurm local scratch
+- **Local NVMe scratch**: ~870GB for staging ES (automatically provisioned per Slurm job)
 
 ### Two-Index Architecture
 
@@ -79,7 +79,7 @@ Multi-stage search with fallbacks:
 |--------|------------|---------|
 | /ix3 (flash) | 750GB - 1TB | Production Elasticsearch data |
 | /ix1 (bulk) | 1TB | Authority files, snapshots |
-| Staging | ~250GB | Slurm worker ES (local scratch or /ix1) |
+| Local NVMe scratch | ~870GB available | Staging ES (per Slurm job) |
 
 ## Timeline
 

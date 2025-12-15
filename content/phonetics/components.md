@@ -7,12 +7,12 @@ The system uses a two-instance Elasticsearch architecture on Pitt CRC infrastruc
 | Component | Location | Purpose |
 |-----------|----------|---------|
 | Production Elasticsearch | VM, /ix3 (flash) | Live indices, query serving |
-| Staging Elasticsearch | Slurm worker, local scratch or /ix1 | Index building, embedding enrichment |
+| Staging Elasticsearch | Slurm worker, local NVMe scratch | Index building, embedding enrichment |
 | Authority files | /ix1 (bulk) | Source datasets |
 | Snapshots | /ix1 (bulk) | Transfer mechanism, backup |
 | Processing scripts | /ix1 (bulk) | Ingestion, embedding generation |
 
-The staging instance handles compute-intensive indexing operations, protecting the production VM from workload spikes. Snapshots transfer completed indices from staging to production.
+The staging instance runs on local NVMe scratch storage (`$SLURM_SCRATCH`, ~870GB available), providing fast I/O for indexing operations while protecting the production VM from workload spikes. Snapshots transfer completed indices from staging to production via the shared /ix1 filesystem.
 
 ## Elasticsearch Indices
 

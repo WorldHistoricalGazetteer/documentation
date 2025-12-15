@@ -39,8 +39,10 @@ Storage is distributed across systems optimised for different I/O patterns:
 | System | Purpose | Characteristics |
 |--------|---------|-----------------|
 | `/ix3` (flash) | Production Elasticsearch data | High IOPS, low latency random access |
-| `/ix1` (bulk) | Authority files, snapshots, staging indices | Sequential I/O, high capacity |
-| Slurm local scratch | Staging Elasticsearch (optional) | Faster indexing than /ix1 if available |
+| Local NVMe scratch | Staging Elasticsearch data | ~870GB, NVMe speeds, per-job ephemeral |
+| `/ix1` (bulk) | Authority files, snapshots | Sequential I/O, high capacity, shared |
+
+Staging ES uses local NVMe scratch (`$SLURM_SCRATCH`) for fast indexing I/O, while snapshots are written to `/ix1` for transfer to production.
 
 ## Authority Data Sources
 
@@ -212,19 +214,24 @@ The additional headroom accommodates:
 - Index optimisation overhead
 - Operational flexibility
 
-### Staging Storage — Slurm Worker
+### Staging Storage — Slurm Worker (Local NVMe Scratch)
 
 | Component | Size |
 |-----------|------|
+| Available per job | ~870 GB |
 | Places index (building) | 55 GB |
 | Toponyms index (building) | 160 GB |
 | Working space | 30 GB |
-| **Total** | **~250 GB** |
+| **Required** | **~250 GB** |
 
-Staging storage can be provisioned on:
+Staging uses local NVMe scratch at `$SLURM_SCRATCH` (mapped to `/scratch/slurm-$SLURM_JOB_ID`):
 
-- Slurm local scratch (faster, if available)
-- /ix1 (bulk storage, shared with snapshots)
+- NVMe speeds for fast indexing I/O
+- Automatically provisioned per Slurm job
+- Automatically cleaned up when job ends
+- No contention with other NFS users
+
+Snapshots are written to the shared `/ix1` repository for transfer to production.
 
 ### /ix1 (Bulk Storage) — Authority Files & Snapshots
 
@@ -272,9 +279,11 @@ PUT _snapshot/whg_backup
 | Resource | Allocation | System |
 |----------|------------|--------|
 | Production Elasticsearch | 750 GB – 1 TB | /ix3 (flash) |
-| Staging Elasticsearch | ~250 GB | /ix1 or local scratch |
+| Staging Elasticsearch | ~250 GB (of ~870 GB available) | Local NVMe scratch |
 | Authority files + snapshots | 1 TB | /ix1 (bulk) |
-| **Total** | **2 – 2.25 TB** | |
+| **Total persistent storage** | **1.75 – 2 TB** | |
+
+Note: Staging storage is ephemeral (per Slurm job) and does not require permanent allocation.
 
 ## Operational Commands
 

@@ -7,7 +7,7 @@
 | Epitran fails for rare language | High | Medium | Fallback to text-only search; log for manual review |
 | Siamese BiLSTM produces poor embeddings | Low | High | Versioned deployment; A/B evaluation; rollback capability |
 | Production ES memory exhaustion | Low | Critical | Monitor heap usage; tune HNSW parameters; scale vertically |
-| Staging ES runs out of space | Medium | Medium | Monitor during indexing; use local scratch if available |
+| Staging ES runs out of space | Low | Medium | Monitor during indexing; NVMe scratch provides ~870GB |
 | Index corruption during reindex | Low | High | Staging isolation; snapshot before restore; validation checks |
 | Storage exhaustion on /ix3 | Medium | Critical | Monitor disk usage; alert at 80%; archive old snapshots |
 | Query latency exceeds targets | Medium | Medium | Cache frequent queries; tune HNSW; staging allows tuning without production impact |

@@ -23,8 +23,8 @@ All components run on Pitt CRC infrastructure, eliminating synchronisation compl
 Storage is allocated based on I/O requirements:
 
 - **Flash storage (/ix3)**: High IOPS for production Elasticsearch queries
-- **Bulk storage (/ix1)**: Cost-effective capacity for source files, snapshots, and staging indices
-- **Local scratch**: Optional for Slurm worker staging (faster than /ix1 for indexing)
+- **Local NVMe scratch**: ~870GB fast storage for staging ES indexing
+- **Bulk storage (/ix1)**: Cost-effective capacity for source files and snapshots
 
 ## Zero-Downtime Deployments
 

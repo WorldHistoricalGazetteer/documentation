@@ -8,8 +8,8 @@
 - [ ] Configure for query-serving workload (heap, thread pools)
 
 ### Staging (Slurm)
-- [ ] Provision staging storage (~250GB on /ix1 or local scratch)
-- [ ] Configure Elasticsearch on Slurm worker
+- [ ] Verify local NVMe scratch availability (~870GB at $SLURM_SCRATCH)
+- [ ] Configure Elasticsearch on Slurm worker using local scratch
 - [ ] Configure for bulk indexing workload
 
 ### Shared Infrastructure
