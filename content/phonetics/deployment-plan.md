@@ -1,29 +1,30 @@
 # Deployment Plan
 
-## Phase 1: Infrastructure Setup (Week 1-2)
-
-### Production VM
-- [ ] Provision /ix3 flash storage (750GB - 1TB)
-- [ ] Install Elasticsearch 9.x on VM
-- [ ] Configure for query-serving workload (heap, thread pools)
+## Phase 1: Infrastructure Setup
 
 ### Staging (Slurm)
-- [ ] Verify local NVMe scratch availability (~870GB at $SLURM_SCRATCH)
-- [ ] Configure Elasticsearch on Slurm worker using local scratch
+- [x] Verify local NVMe scratch availability (~870GB at $SLURM_SCRATCH)
+- [x] Configure ephemeral Elasticsearch on Slurm worker using local scratch
 - [ ] Configure for bulk indexing workload
+- [ ] Document Slurm job submission
+
+### Production VM
+- [x] Install Elasticsearch 9.x on VM
+- [ ] Provision /ix3 flash storage (750GB - 1TB)
+- [ ] Configure for query-serving workload (heap, thread pools)
 
 ### Shared Infrastructure
-- [ ] Provision /ix1 bulk storage (1TB)
+- [x] Provision /ix1 bulk storage (1TB)
 - [ ] Configure shared snapshot repository on /ix1
 - [ ] Set up monitoring (cluster health, index sizes)
-- [ ] Verify network connectivity between staging and production
-- [ ] Document Slurm job submission for staging ES
+- [ ] Configure ingress via index.whgazetteer.org and kibana.whgazetteer.org
 
-## Phase 2: Core Index Population (Week 3-6)
+## Phase 2: Core Index Population
 
 - [ ] Create index schemas with pipelines on staging
 - [ ] Download authority source files to /ix1
 - [ ] Ingest GeoNames places and toponyms to staging
+- [ ] Validate document structure and counts
 - [ ] Ingest Wikidata places and toponyms to staging
 - [ ] Ingest TGN places and toponyms to staging
 - [ ] Ingest remaining authority sources to staging
@@ -32,7 +33,7 @@
 - [ ] Restore snapshot to production VM
 - [ ] Validate production indices
 
-## Phase 3: Phonetic Enrichment (Week 7-10)
+## Phase 3: Phonetic Enrichment
 
 - [ ] Set up Epitran environment with language models
 - [ ] Generate IPA transcriptions for all toponyms (on staging)
@@ -41,7 +42,7 @@
 - [ ] Create IPA-enriched snapshot
 - [ ] Restore to production
 
-## Phase 4: Embedding Generation (Week 11-14)
+## Phase 4: Embedding Generation
 
 - [ ] Prepare Siamese BiLSTM training data (positive/negative pairs)
 - [ ] Train initial model on Pitt CRC GPU nodes
@@ -54,7 +55,7 @@
 - [ ] Deploy model to production VM (ONNX runtime)
 - [ ] Restore snapshot to production
 
-## Phase 5: Query Integration (Week 15-18)
+## Phase 5: Query Integration
 
 - [ ] Implement query embedding generation on production VM
 - [ ] Build hybrid search (vector + text) endpoint
@@ -63,7 +64,7 @@
 - [ ] Performance test under load
 - [ ] Document API endpoints
 
-## Phase 6: Production Rollout (Week 19-20)
+## Phase 6: Production Rollout
 
 - [ ] Final validation of search quality
 - [ ] Switch aliases to production indices
