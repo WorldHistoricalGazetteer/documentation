@@ -20,21 +20,25 @@ The staging instance is **ephemeral**, spun up only for the duration of indexing
 
 Core gazetteer records with geometry and metadata. Each place references toponyms by their `name@lang` identifiers.
 
+A place may have both phonetic variants of the same name and etymologically distinct endonyms/exonyms:
+
 ```json
 {
-  "place_id": "gn:2643743",
-  "namespace": "gn",
-  "label": "London",
-  "toponyms": ["London@en", "Londra@it", "Londres@fr", "Лондон@ru"],
-  "ccodes": ["GB"],
+  "place_id": "wd:Q183",
+  "namespace": "wd",
+  "label": "Germany",
+  "toponyms": ["Deutschland@de", "Germany@en", "Allemagne@fr", "Германия@ru", "ドイツ@ja"],
+  "ccodes": ["DE"],
   "locations": [{
-    "geometry": { "type": "Point", "coordinates": [-0.1276, 51.5074] },
-    "rep_point": { "lon": -0.1276, "lat": 51.5074 }
+    "geometry": { "type": "Point", "coordinates": [10.45, 51.17] },
+    "rep_point": { "lon": 10.45, "lat": 51.17 }
   }],
-  "types": [{ "identifier": "P", "label": "geonames", "sourceLabel": "PPL" }],
-  "relations": [{ "relationType": "sameAs", "relationTo": "wd:Q84", "certainty": 1.0 }]
+  "types": [{ "identifier": "Q6256", "label": "wikidata", "sourceLabel": "country" }],
+  "relations": [{ "relationType": "sameAs", "relationTo": "gn:2921044", "certainty": 1.0 }]
 }
 ```
+
+Here "Deutschland" (endonym), "Germany", "Allemagne", "Германия", and "ドイツ" are all exonyms with different etymological roots—they should not cluster together phonetically.
 
 ### Toponyms Index
 

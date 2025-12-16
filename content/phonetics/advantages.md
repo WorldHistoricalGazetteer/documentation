@@ -57,12 +57,29 @@ Storing unique name@language combinations in a separate index provides:
 
 ## Efficient Phonetic Search
 
+### Advantages over Elasticsearch Built-in Phonetic Analysis
+
+Elasticsearch's phonetic token filters (Soundex, Metaphone, Double Metaphone, Beider-Morse) are designed for English names and single-script text. They cannot handle WHG's multilingual, multi-script gazetteer data effectively.
+
 The Siamese BiLSTM embedding approach provides:
 
+- **Multilingual by construction**: Trained on actual cross-lingual equivalences, not English phonological rules
+- **Script-agnostic**: Learns patterns across Latin, Cyrillic, Greek, CJK, Arabic — any script present in training data
+- **Continuous similarity scores**: Ranked results rather than binary bucket matching
+- **Domain-tuned**: Trained specifically on place name equivalences from GeoNames/Wikidata
+- **Learnable**: Improves with more training data; can adapt to historical forms if present in sources
+
+The model learns to distinguish phonetic variants (e.g., "München" ↔ "Munich" ↔ "Мюнхен") from etymologically unrelated endonyms/exonyms (e.g., "Deutschland" vs "Germany" vs "Allemagne"), enabling more accurate matching and clustering.
+
+### Operational characteristics
+
 - Character-level processing without IPA dependency at query time
-- Cross-script matching (Latin ↔ Cyrillic ↔ Arabic ↔ etc.)
-- Learned similarity from real-world toponym equivalences
 - Sub-10ms embedding generation for queries
+- Approximate nearest neighbour search via Elasticsearch HNSW
+
+### Known limitations
+
+The model is not perfect. It learns from training data, so novel historical forms very different from anything in GeoNames/Wikidata may not match well. Scripts and languages poorly represented in training will have weaker coverage. The goal is significant improvement over rule-based phonetic algorithms, not perfection.
 
 ## Graceful Degradation
 

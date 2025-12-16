@@ -12,9 +12,50 @@ Authority source files and snapshots are maintained on bulk storage (/ix1), with
 ## Goals
 
 - Enable phonetic similarity search for historical place names
-- Support cross-lingual matching (e.g., "München" ↔ "Munich" ↔ "Мюнхен")
+- Support cross-lingual matching of phonetic variants (e.g., "München" ↔ "Munich" ↔ "Мюнхен")
+- Distinguish phonetic variants from unrelated endonyms/exonyms (e.g., "Deutschland" vs "Germany" vs "Allemagne")
 - Handle historical spelling variants and transcription differences
 - Provide robust fallback paths when phonetic matching fails
+
+## Why Not Elasticsearch's Built-in Phonetic Analysis?
+
+Elasticsearch provides phonetic token filters (Soundex, Metaphone, Double Metaphone, Beider-Morse, etc.) but these have significant limitations for multilingual gazetteer data:
+
+| Limitation | Impact on WHG |
+|------------|---------------|
+| **English-centric** | Algorithms designed for English phonology; poor results for German, Slavic, Arabic, etc. |
+| **Single script** | Cannot process Cyrillic, Greek, Arabic, CJK, or other non-Latin scripts |
+| **No learning** | Fixed rules cannot adapt to toponym-specific patterns or historical forms |
+| **Coarse matching** | Binary bucket assignment produces many false positives and negatives |
+| **No cross-lingual awareness** | Cannot learn that "München" and "Мюнхен" represent the same sounds |
+
+The Siamese BiLSTM approach addresses these limitations:
+
+| Advantage | How it helps |
+|-----------|--------------|
+| **Multilingual by construction** | Trained on cross-lingual equivalences from Wikidata/GeoNames |
+| **Script-agnostic** | Characters are tokens; learns patterns across Latin, Cyrillic, Greek, CJK |
+| **Domain-tuned** | Trained specifically on place name equivalences, not general vocabulary |
+| **Continuous similarity** | Returns distance scores enabling ranked results, not binary matches |
+| **Learnable** | Can improve with more training data; adapts to historical forms if present in sources |
+
+The goal is not a perfect phonetic model, but a significant improvement over rule-based algorithms for the specific domain of historical and multilingual place names.
+
+## Limitations
+
+This approach has known limitations that should be understood:
+
+**Training data dependency**: The model learns phonetic similarity from equivalences present in GeoNames and Wikidata. If a historical spelling variant is very different from anything in the training data, the model may not recognise it. Coverage depends on the richness of historical toponyms in the source authorities.
+
+**No explicit phonological knowledge**: The model learns character-level patterns implicitly, not from linguistic rules. It has no understanding of historical sound changes (e.g., the Great Vowel Shift) — it can only generalise from patterns it has seen.
+
+**Endonym/exonym clustering is imperfect**: The initial PanPhon-based clustering that bootstraps training is limited by Epitran's language coverage (~30 languages). Iterative refinement improves this, but errors in early clustering can propagate.
+
+**Novel scripts**: Scripts not well-represented in training data (e.g., rare historical scripts, minority languages) will have weaker coverage.
+
+**Not a replacement for expert knowledge**: For serious historical research, phonetic search is a discovery aid, not a definitive matching system. Results should be validated by domain experts.
+
+Despite these limitations, the system should significantly outperform Elasticsearch's built-in phonetic algorithms for multilingual and cross-script matching, which is the primary goal.
 
 ## Architecture Summary
 

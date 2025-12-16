@@ -36,6 +36,30 @@ Output: 128-dimensional embedding vector
 
 Training data is prepared offline, separate from Elasticsearch. The process uses iterative refinement: an initial phonetic clustering bootstraps the first model, which then improves subsequent clustering.
 
+### The Endonym/Exonym Challenge
+
+A place may have multiple names that are phonetically unrelated:
+
+- **Endonyms**: Names used by local inhabitants (e.g., "Deutschland", "日本", "Ελλάδα")
+- **Exonyms**: Names used by outsiders in other languages (e.g., "Germany", "Japan", "Greece")
+
+These often derive from completely different etymological roots. For example:
+
+| Place | Endonym | Exonyms |
+|-------|---------|---------|
+| Germany | Deutschland (de) | Allemagne (fr), Germany (en), Германия (ru), ドイツ (ja) |
+| Japan | 日本 / Nihon (ja) | Japan (en), Japon (fr), Япония (ru) |
+| Greece | Ελλάδα / Elláda (el) | Greece (en), Grèce (fr), Yunanistan (tr) |
+| Finland | Suomi (fi) | Finland (en), Финляндия (ru) |
+| China | 中国 / Zhōngguó (zh) | China (en), Китай (ru) |
+
+Training pairs must distinguish between:
+
+- **Phonetic variants**: "Deutschland" ↔ "Deutchland" ↔ "Doitschland" (similar sounds, same name)
+- **Distinct names**: "Deutschland" ↔ "Germany" ↔ "Allemagne" (different sounds, same place)
+
+The clustering phase groups a place's toponyms by phonetic similarity, so that positive training pairs are drawn from within clusters (variants of the same name) and negative pairs from across clusters (different names for the same place).
+
 ### Phase 1: Candidate Selection
 
 Select places with rich toponym sets for training:
@@ -44,7 +68,7 @@ Select places with rich toponym sets for training:
 2. Filter to places with 5+ toponyms across 2+ scripts/languages
 3. Extract toponyms with place IDs to `candidate_toponyms.tsv`
 
-These are the interesting cases likely to have both phonetic variants (London/Londres/Londra) and distinct names (New York/Big Apple).
+These are the interesting cases likely to have both phonetic variants and distinct endonym/exonym pairs.
 
 ### Phase 2: Initial Phonetic Clustering
 
@@ -56,13 +80,14 @@ Bootstrap clustering using rule-based phonetic features:
 
 ```
 # toponym_vectors.parquet
-place_id    | toponym_id      | panphon_vector
-------------|-----------------|------------------
-gn:2643743  | London@en       | [0.2, -0.1, ...]
-gn:2643743  | Londres@fr      | [0.2, -0.1, ...]
-gn:2643743  | Londra@it       | [0.2, -0.1, ...]
-wd:Q60      | New York@en     | [0.5, 0.2, ...]
-wd:Q60      | Big Apple@en    | [0.8, 0.3, ...]
+place_id    | toponym_id          | panphon_vector
+------------|---------------------|------------------
+wd:Q183     | Deutschland@de      | [0.2, -0.1, ...]
+wd:Q183     | Germany@en          | [0.7, 0.3, ...]
+wd:Q183     | Allemagne@fr        | [0.5, 0.1, ...]
+wd:Q183     | Германия@ru         | [0.7, 0.3, ...]
+wd:Q17      | 日本@ja              | [0.4, -0.2, ...]
+wd:Q17      | Japan@en            | [0.6, 0.2, ...]
 ```
 
 4. Cluster each place's toponyms by PanPhon feature distance
@@ -75,12 +100,14 @@ PanPhon provides phonological feature vectors for IPA segments, giving weighted 
 Generate triplets from clustered toponyms:
 
 - **Positive pairs**: Within-cluster (phonetic variants of same name)
-- **Negative pairs**: Cross-cluster within same place (distinct names for same place)
+- **Negative pairs**: Cross-cluster within same place (distinct endonyms/exonyms)
 
 ```
 # training_triplets.tsv (anchor, positive, negative)
-London@en    Londres@fr    Big Apple@en
-München@de   Munchen@de    Bavaria@en
+Deutschland@de    Doitschland@de    Germany@en
+Germany@en        Германия@ru       Deutschland@de
+日本@ja            Nihon@ja-Latn     Japan@en
+Ελλάδα@el         Ellada@el-Latn    Yunanistan@tr
 ```
 
 Additional negative sampling:
