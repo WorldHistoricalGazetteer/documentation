@@ -23,6 +23,8 @@ The phonetic search system extends the core WHG Elasticsearch deployment:
 - **`places` index**: Core place records with geometry, classifications, and cross-references
 - **`toponyms` index**: Unique name@language combinations with IPA transcriptions and phonetic embeddings
 
+The system uses a two-instance architecture: a persistent production Elasticsearch on the VM, and an **ephemeral staging Elasticsearch** spun up on Slurm workers only for the duration of indexing jobs. This protects production from indexing workload while leveraging compute node resources for batch processing.
+
 The `toponyms` index is designed for deduplication: each unique name@language string appears only once, regardless of how many places share that name. This optimises embedding generation (computed once per unique toponym) and storage (embeddings stored once, referenced by many places).
 
 Phonetic search is implemented via dense vector similarity on Siamese BiLSTM embeddings stored in the `toponyms` index. The system supports multiple query strategies with graceful degradation.

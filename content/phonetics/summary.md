@@ -8,8 +8,10 @@ This architecture provides a scalable, multilingual, phonetic-aware search syste
 
 Staging and production Elasticsearch instances are separated to protect query performance:
 
-- **Production (VM, /ix3)**: Serves live queries; receives completed indices via snapshot restore
-- **Staging (Slurm worker)**: Handles bulk indexing and embedding generation
+- **Production (VM, /ix3)**: Persistent; serves live queries; receives completed indices via snapshot restore
+- **Staging (Slurm worker)**: Ephemeral; spun up for indexing jobs; destroyed when job completes
+
+The staging instance exists only for the duration of indexing operations. Snapshots written to /ix1 before job completion are the sole mechanism for persisting indexed data.
 
 ### Storage Allocation
 

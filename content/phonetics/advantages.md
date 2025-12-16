@@ -8,6 +8,7 @@ Separating staging (Slurm worker) from production (VM) provides:
 - **Safe validation**: New indices can be validated before production exposure
 - **Resource optimisation**: Staging can use compute node resources (GPU, high memory) without impacting live queries
 - **Clean rollback**: Production snapshots provide instant recovery
+- **Cost efficiency**: Staging is ephemeral, consuming resources only during indexing jobs
 
 ## Unified Infrastructure
 
@@ -43,7 +44,16 @@ The architecture supports both bulk and incremental ingestion:
 - **Authority files**: Batch processing on staging with GPU acceleration
 - **WHG contributions**: Flexible routing to staging or production depending on volume
 
-This ensures authority files (tens of millions of toponyms) are processed on dedicated resources, while smaller contributed datasets can be handled with minimal overhead.
+This ensures authority files (tens of millions of unique toponyms) are processed on dedicated resources, while smaller contributed datasets can be handled with minimal overhead.
+
+## Toponym Deduplication
+
+Storing unique name@language combinations in a separate index provides:
+
+- **Embedding efficiency**: Each toponym embedded once, regardless of how many places share it
+- **Storage optimisation**: ~80M unique toponyms vs potentially hundreds of millions of place-toponym pairs
+- **Incremental updates**: New contributions only require embedding generation for genuinely new toponyms
+- **Query simplicity**: Search toponyms first, then join to places
 
 ## Efficient Phonetic Search
 

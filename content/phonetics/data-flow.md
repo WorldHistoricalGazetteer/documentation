@@ -42,7 +42,7 @@ Large-scale authority datasets are processed on Slurm workers with a dedicated s
 12. Validate production indices
 ```
 
-### Rationale for Staging Instance
+### Rationale for Ephemeral Staging Instance
 
 Authority files contain tens of millions of records. Indexing directly on the production VM would:
 
@@ -50,7 +50,7 @@ Authority files contain tens of millions of records. Indexing directly on the pr
 - Risk making the VM unresponsive during bulk operations
 - Prevent validation before production exposure
 
-The staging instance on a Slurm worker handles the heavy lifting, with snapshots providing a clean transfer mechanism.
+The staging instance on a Slurm worker handles the heavy lifting. It is **ephemeral**: spun up when the job starts, destroyed when the job completes. Snapshots written to /ix1 before job completion are the sole mechanism for persisting the indexed data.
 
 ## WHG-Contributed Dataset Ingestion
 

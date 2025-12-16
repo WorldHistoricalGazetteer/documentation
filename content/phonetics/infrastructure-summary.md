@@ -12,10 +12,12 @@ This document summarises the infrastructure architecture, storage requirements, 
 
 The system uses two Elasticsearch instances to separate indexing from query serving:
 
-| Instance | Location | Purpose |
-|----------|----------|---------|
-| **Production** | VM on /ix3 (flash) | Live query serving, alias management |
-| **Staging** | Slurm worker | Bulk indexing, embedding enrichment |
+| Instance | Location | Purpose | Lifecycle |
+|----------|----------|---------|-----------|
+| **Production** | VM on /ix3 (flash) | Live query serving, alias management | Persistent |
+| **Staging** | Slurm worker | Bulk indexing, embedding enrichment | Ephemeral (per-job) |
+
+The staging instance is **ephemeral**: it is spun up at the start of a Slurm job, runs for the duration of indexing operations, and is automatically cleaned up when the job completes. Only the snapshots written to /ix1 persist.
 
 Both instances serve the same two primary indices:
 
@@ -30,7 +32,7 @@ Bulk indexing of tens of millions of records consumes significant CPU, memory, a
 - Risk VM unresponsiveness under heavy load
 - Prevent pre-production validation
 
-The staging instance on a Slurm worker handles the heavy lifting, with snapshots providing a clean transfer mechanism to production.
+The ephemeral staging instance on a Slurm worker handles the heavy lifting. It exists only for the duration of the indexing job, with snapshots providing a clean transfer mechanism to production.
 
 ### Storage Tiers
 
@@ -221,7 +223,7 @@ The additional headroom accommodates:
 - Index optimisation overhead
 - Operational flexibility
 
-### Staging Storage — Slurm Worker (Local NVMe Scratch)
+### Staging Storage — Slurm Worker (Ephemeral)
 
 | Component | Size |
 |-----------|------|
@@ -234,11 +236,11 @@ The additional headroom accommodates:
 Staging uses local NVMe scratch at `$SLURM_SCRATCH` (mapped to `/scratch/slurm-$SLURM_JOB_ID`):
 
 - NVMe speeds for fast indexing I/O
-- Automatically provisioned per Slurm job
-- Automatically cleaned up when job ends
+- Automatically provisioned when Slurm job starts
+- **Automatically destroyed when job ends** (indices, logs, and all local data)
 - No contention with other NFS users
 
-Snapshots are written to the shared `/ix1` repository for transfer to production.
+The staging Elasticsearch instance is ephemeral by design. Snapshots must be written to the shared `/ix1` repository before the job completes to preserve the indexed data for transfer to production.
 
 ### /ix1 (Bulk Storage) — Authority Files & Snapshots
 
