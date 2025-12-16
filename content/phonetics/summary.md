@@ -1,6 +1,6 @@
 # Summary
 
-This architecture provides a scalable, multilingual, phonetic-aware search system for the World Historical Gazetteer. The system is designed to handle approximately 40 million places and 80 million toponyms with sub-100ms query latency.
+This architecture provides a scalable, multilingual, phonetic-aware search system for the World Historical Gazetteer. The system is designed to handle approximately 40 million places and 80 million unique toponyms with sub-100ms query latency.
 
 ## Key Design Decisions
 
@@ -21,8 +21,10 @@ Storage is allocated by I/O requirements:
 
 ### Two-Index Architecture
 
-- **`places` index**: Core gazetteer records with geometry and metadata
-- **`toponyms` index**: Name variants with IPA transcriptions and phonetic embeddings
+- **`places` index**: Core gazetteer records with geometry and metadata; references toponyms by `name@lang`
+- **`toponyms` index**: Unique name@language combinations with IPA transcriptions and phonetic embeddings
+
+The toponyms index stores each unique name@language combination once, regardless of how many places share it. This optimises embedding generation and storage.
 
 ### Siamese BiLSTM Embeddings
 
@@ -37,12 +39,14 @@ Character-level bidirectional LSTM trained with Siamese architecture generates 1
 
 The system indexes both authority files and WHG-contributed datasets:
 
-| Source | Places | Toponyms | Processing Location |
-|--------|--------|----------|---------------------|
-| Authority files | ~39M | ~82M | Staging (Slurm worker) |
-| WHG contributions | ~200K | ~500K | Staging or production |
+| Source | Places | Processing Location |
+|--------|--------|---------------------|
+| Authority files | ~39M | Staging (Slurm worker) |
+| WHG contributions | ~200K | Staging or production |
 
-Both sources share the same indices and are searchable together.
+**Unique toponyms**: ~80M (deduplicated across all sources)
+
+Both sources share the same indices and are searchable together. New contributions only require embedding generation for genuinely new name@language combinations.
 
 ### Snapshot-Based Deployment
 

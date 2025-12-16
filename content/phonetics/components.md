@@ -18,7 +18,7 @@ The staging instance runs on local NVMe scratch storage (`$SLURM_SCRATCH`, ~870G
 
 ### Places Index
 
-Core gazetteer records with geometry and metadata. Each place aggregates toponyms from multiple authority sources.
+Core gazetteer records with geometry and metadata. Each place references toponyms by their `name@lang` identifiers.
 
 ```json
 {
@@ -38,25 +38,30 @@ Core gazetteer records with geometry and metadata. Each place aggregates toponym
 
 ### Toponyms Index
 
-Individual name attestations with phonetic data. Each toponym links to its parent place and carries:
+Unique name@language combinations with phonetic data. Each toponym appears **once** in this index, regardless of how many places share it:
 
-- Language-tagged name (`name@lang` format, parsed by ingest pipeline)
+- Unique `name@lang` identifier (e.g., "London@en")
 - IPA transcription (where available)
-- BiLSTM phonetic embedding (128 dimensions)
-- Temporal attestation spans
+- Siamese BiLSTM phonetic embedding (128 dimensions)
+- Completion suggester for type-ahead
 
 ```json
 {
-  "place_id": "gn:2643743",
+  "toponym_id": "London@en",
   "name": "London",
   "name_lower": "london",
   "lang": "en",
   "ipa": "ˈlʌndən",
   "embedding_bilstm": [0.23, -0.15, ...],
-  "timespans": [{ "start": 1800, "end": 2025 }],
   "suggest": { "input": ["London"], "contexts": { "lang": ["en"] } }
 }
 ```
+
+This design ensures:
+
+- **Embedding efficiency**: Each unique toponym is embedded once, not once per place
+- **Storage optimisation**: ~80M unique toponyms vs potentially hundreds of millions of place-toponym pairs
+- **Query simplicity**: Search the toponyms index, then join to places
 
 ## Processing Components
 

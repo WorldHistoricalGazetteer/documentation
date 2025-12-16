@@ -21,7 +21,9 @@ Authority source files and snapshots are maintained on bulk storage (/ix1), with
 The phonetic search system extends the core WHG Elasticsearch deployment:
 
 - **`places` index**: Core place records with geometry, classifications, and cross-references
-- **`toponyms` index**: Name variants with language tags, temporal attestations, IPA transcriptions, and phonetic embeddings
+- **`toponyms` index**: Unique name@language combinations with IPA transcriptions and phonetic embeddings
+
+The `toponyms` index is designed for deduplication: each unique name@language string appears only once, regardless of how many places share that name. This optimises embedding generation (computed once per unique toponym) and storage (embeddings stored once, referenced by many places).
 
 Phonetic search is implemented via dense vector similarity on Siamese BiLSTM embeddings stored in the `toponyms` index. The system supports multiple query strategies with graceful degradation.
 
@@ -34,7 +36,7 @@ The system indexes two categories of place data:
 Large-scale reference gazetteers used for reconciliation and enrichment:
 
 - GeoNames, Wikidata, Getty TGN, OpenStreetMap, Pleiades, and others
-- ~39 million places, ~82 million toponyms
+- ~39 million places
 - Indexed on staging Elasticsearch (Slurm worker)
 - Embeddings generated in batch on compute nodes
 - Transferred to production via snapshot/restore
@@ -43,11 +45,20 @@ Large-scale reference gazetteers used for reconciliation and enrichment:
 
 Scholarly datasets contributed by WHG users and partner projects:
 
-- ~200,000 places, ~500,000 toponyms (and growing)
+- ~200,000 places (and growing)
 - The core research content of WHG
 - Converted to canonical JSON format for ingestion
 - Embeddings generated on-the-fly by the VM during indexing
 
-Both data sources follow the same index schemas and are searchable together, enabling contributed places to be matched against the full authority corpus.
+### Toponyms Index
+
+The `toponyms` index contains **unique name@language combinations** extracted from all sources:
+
+- Estimated ~80 million unique toponyms across all authorities and contributions
+- Each toponym stored once, regardless of how many places share it
+- Places reference toponyms; toponyms carry the embeddings
+- This design avoids redundant embedding computation and storage
+
+Both authority and contributed places are searchable together, with phonetic matching powered by the shared toponyms index.
 
 **Reference**: Technical background in [WHG Place Discussion #81](https://github.com/WorldHistoricalGazetteer/place/discussions/81)

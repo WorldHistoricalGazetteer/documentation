@@ -18,7 +18,7 @@ Phonetic search uses a multi-stage approach with graceful fallback:
    - No IPA conversion required at query time
    - Inference latency target: <10ms
    ↓
-4. Elasticsearch multi-stage search:
+4. Elasticsearch multi-stage search on toponyms index:
 
    Stage A: Vector kNN search (primary)
    - Index: toponyms
@@ -36,13 +36,14 @@ Phonetic search uses a multi-stage approach with graceful fallback:
    ↓
 5. Score combination:
    - Weighted blend: 0.7 × vector_score + 0.3 × text_score
-   - Deduplicate by place_id
+   - Return top-scoring toponym_ids (name@lang)
    ↓
 6. Join to places:
-   - Retrieve full place documents for top results
+   - Query places index for documents referencing matched toponyms
    - Apply geographic/temporal filters if specified
+   - Deduplicate and rank by best toponym match score
    ↓
-7. Return ranked results with confidence scores
+7. Return ranked place results with matched toponym and confidence scores
 ```
 
 ## Elasticsearch Query Structure
@@ -57,7 +58,7 @@ Phonetic search uses a multi-stage approach with graceful fallback:
     "k": 100,
     "num_candidates": 500
   },
-  "_source": ["place_id", "name", "lang", "ipa"]
+  "_source": ["toponym_id", "name", "lang", "ipa"]
 }
 ```
 

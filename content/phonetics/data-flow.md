@@ -15,26 +15,31 @@ Large-scale authority datasets are processed on Slurm workers with a dedicated s
    - Extract toponyms with language tags
    - Build locations array with geometry
    - Create cross-references (relations)
+   - Store toponym references as name@lang identifiers
    ↓
-4. For each toponym:
+4. Collect unique toponyms across all places:
+   - Deduplicate by name@lang key
+   - Each unique toponym processed once
+   ↓
+5. For each unique toponym:
    - Generate IPA transcription (Epitran)
    - Normalise IPA (see below)
    ↓
-5. Batch embedding generation on compute nodes
-   - Process all toponyms through Siamese BiLSTM
+6. Batch embedding generation on compute nodes
+   - Process unique toponyms through Siamese BiLSTM
    - Generate 128-dimensional vectors
    ↓
-6. Index to staging Elasticsearch (Slurm worker)
+7. Index places and toponyms to staging Elasticsearch
    ↓
-7. Validate counts and sample data on staging
+8. Validate counts and sample data on staging
    ↓
-8. Create snapshot to /ix1/whcdh/elastic/snapshots/
+9. Create snapshot to /ix1/whcdh/elastic/snapshots/
    ↓
-9. Restore snapshot to production VM
+10. Restore snapshot to production VM
    ↓
-10. Switch aliases atomically on production
+11. Switch aliases atomically on production
    ↓
-11. Validate production indices
+12. Validate production indices
 ```
 
 ### Rationale for Staging Instance
@@ -60,28 +65,31 @@ Scholarly datasets contributed by WHG users follow a similar staged workflow, bu
    - Same schema as authority ingestion
    - Preserve dataset provenance and attribution
    ↓
-3. Index to staging Elasticsearch (Slurm worker or VM)
+3. Extract unique toponyms from dataset
+   - Deduplicate by name@lang key
+   - Check which toponyms already exist in index
    ↓
-4. For each toponym:
+4. For each new unique toponym:
    - Generate IPA transcription (Epitran)
    - Generate embedding via Siamese BiLSTM model
-   - Update toponym document
    ↓
-5. Validate dataset integrity on staging
+5. Index places and new toponyms to staging or production
    ↓
-6. Create snapshot (if staging on Slurm worker)
+6. Validate dataset integrity
    ↓
-7. Restore to production / switch aliases
+7. Create snapshot (if staging on Slurm worker)
+   ↓
+8. Restore to production / switch aliases
 ```
 
 ### Rationale for Flexible Staging
 
-WHG-contributed datasets are much smaller (~200k places, ~500k toponyms) and arrive incrementally. Depending on volume:
+WHG-contributed datasets are much smaller (~200k places) and arrive incrementally. Depending on volume:
 
 - **Small batches**: Can be indexed directly on the VM during low-usage periods
 - **Larger contributions**: Use Slurm staging to avoid production impact
 
-The Siamese BiLSTM model is kept loaded on both staging and production for embedding generation.
+New toponyms from contributions are checked against the existing toponyms index; only genuinely new name@lang combinations require embedding generation.
 
 ## IPA Generation
 
@@ -130,14 +138,14 @@ Consistent normalisation prevents duplicate representations of the same pronunci
 
 ## Embedding Generation
 
-Siamese BiLSTM embeddings are generated as part of the indexing pipeline, prior to snapshot transfer.
+Siamese BiLSTM embeddings are generated for unique toponyms only, prior to snapshot transfer.
 
 ### Batch Generation (Authority Files)
 
 Run on Pitt CRC compute nodes with GPU acceleration, indexed to staging Elasticsearch:
 
 ```python
-# Process authority toponyms in large batches
+# Process unique toponyms in large batches
 for batch in scroll_toponyms_without_embeddings(staging_es, batch_size=10000):
     # Extract names
     names = [doc['name'] for doc in batch]
@@ -147,7 +155,7 @@ for batch in scroll_toponyms_without_embeddings(staging_es, batch_size=10000):
     
     # Bulk update to staging
     updates = [
-        {'_id': doc['_id'], 'doc': {'embedding_bilstm': emb}}
+        {'_id': doc['toponym_id'], 'doc': {'embedding_bilstm': emb}}
         for doc, emb in zip(batch, embeddings)
     ]
     bulk_update(staging_es, updates)
@@ -155,18 +163,21 @@ for batch in scroll_toponyms_without_embeddings(staging_es, batch_size=10000):
 
 ### Incremental Generation (WHG Contributions)
 
-Run during ingestion, either on staging or production depending on volume:
+Run during ingestion for new unique toponyms only:
 
 ```python
-# Process contributed toponyms in smaller batches
-for toponym in dataset_toponyms:
-    # Generate embedding (CPU inference)
+# Check which toponyms are genuinely new
+new_toponyms = [t for t in dataset_toponyms 
+                if not toponym_exists(es_client, t['toponym_id'])]
+
+# Generate embeddings only for new toponyms
+for toponym in new_toponyms:
     embedding = siamese_bilstm_model.embed(toponym['name'])
-    
-    # Index with embedding included
     toponym['embedding_bilstm'] = embedding
     index_toponym(es_client, toponym)
 ```
+
+This deduplication means a contribution of 10,000 places might only require embedding generation for a few hundred genuinely new name@lang combinations.
 
 The same trained Siamese BiLSTM model is deployed to both staging (Slurm worker) and production (VM), ensuring consistent embeddings across the corpus.
 

@@ -2,7 +2,7 @@
 
 ## Overview
 
-The World Historical Gazetteer (WHG) Elasticsearch deployment is designed to index and serve place data from multiple authority sources, supporting both text-based and phonetic similarity search across approximately 40 million places and 80 million toponyms.
+The World Historical Gazetteer (WHG) Elasticsearch deployment is designed to index and serve place data from multiple authority sources, supporting both text-based and phonetic similarity search across approximately 40 million places and 80 million unique toponyms.
 
 This document summarises the infrastructure architecture, storage requirements, and deployment strategy.
 
@@ -20,7 +20,7 @@ The system uses two Elasticsearch instances to separate indexing from query serv
 Both instances serve the same two primary indices:
 
 - **`places`**: Core place records with geometry, type classifications, and cross-references
-- **`toponyms`**: Name variants with language tagging, temporal attestations, and phonetic embeddings
+- **`toponyms`**: Unique name@language combinations with phonetic embeddings (deduplicated across all places)
 
 ### Rationale for Separation
 
@@ -48,33 +48,37 @@ Staging ES uses local NVMe scratch (`$SLURM_SCRATCH`) for fast indexing I/O, whi
 
 The following authority datasets are indexed:
 
-| Authority | Namespace | Est. Places | Est. Toponyms | Source Size |
-|-----------|-----------|-------------|---------------|-------------|
-| GeoNames | `gn` | 12,000,000 | 20,000,000 | 600 MB |
-| Wikidata | `wd` | 8,000,000 | 50,000,000 | 148 GB |
-| OpenStreetMap | `osm` | 15,000,000 | 5,000,000 | 85 GB |
-| Getty TGN | `tgn` | 3,000,000 | 6,000,000 | 2 GB |
-| GB1900 | `gb` | 800,000 | 800,000 | 100 MB |
-| Pleiades | `pl` | 37,000 | 100,000 | 104 MB |
-| Native Land | `nl` | 5,000 | 5,000 | 50 MB |
-| LOC | `loc` | — | — | 1.5 GB |
-| D-PLACE | `dp` | 2,000 | 2,000 | 10 MB |
-| Index Villaris | `iv` | 24,000 | 24,000 | 5 MB |
-| ISO Countries | `un` | 250 | 500 | 15 MB |
+| Authority | Namespace | Est. Places | Source Size |
+|-----------|-----------|-------------|-------------|
+| GeoNames | `gn` | 12,000,000 | 600 MB |
+| Wikidata | `wd` | 8,000,000 | 148 GB |
+| OpenStreetMap | `osm` | 15,000,000 | 85 GB |
+| Getty TGN | `tgn` | 3,000,000 | 2 GB |
+| GB1900 | `gb` | 800,000 | 100 MB |
+| Pleiades | `pl` | 37,000 | 104 MB |
+| Native Land | `nl` | 5,000 | 50 MB |
+| LOC | `loc` | — | 1.5 GB |
+| D-PLACE | `dp` | 2,000 | 10 MB |
+| Index Villaris | `iv` | 24,000 | 5 MB |
+| ISO Countries | `un` | 250 | 15 MB |
 
-**Authority totals**: ~39 million places, ~82 million toponyms
+**Authority totals**: ~39 million places
+
+**Unique toponyms** (across all sources): ~80 million name@language combinations
 
 ## WHG-Contributed Datasets
 
 In addition to authority files, the system indexes scholarly datasets contributed by WHG users and partner projects:
 
-| Source | Est. Places | Est. Toponyms |
-|--------|-------------|---------------|
-| WHG contributions | ~200,000 | ~500,000 |
+| Source | Est. Places |
+|--------|-------------|
+| WHG contributions | ~200,000 |
 
 These represent the core research content of WHG and are indexed alongside authority data, enabling contributed places to be matched against the full authority corpus.
 
-**Combined totals**: ~39.2 million places, ~82.5 million toponyms
+**Combined totals**: ~39.2 million places, ~80 million unique toponyms
+
+Note: The toponym count reflects unique name@language combinations. Many toponyms (e.g., "London@en") are shared by multiple places across different authority sources.
 
 ## Phonetic Search
 
@@ -91,12 +95,12 @@ The Siamese BiLSTM model learns phonetic similarity directly from pairs of equiv
 
 ### Embedding Generation
 
-Embeddings are generated on the staging instance during indexing:
+Embeddings are generated once per unique toponym on the staging instance during indexing:
 
 - **Authority files**: Batch processing on Slurm worker (GPU-accelerated if available)
-- **WHG contributions**: Processed on staging or production depending on volume
+- **WHG contributions**: New unique toponyms processed on staging or production depending on volume
 
-The trained Siamese BiLSTM encoder is deployed to both instances.
+The trained Siamese BiLSTM encoder is deployed to both instances. This deduplication approach means new contributions only require embedding generation for genuinely new name@language combinations.
 
 ### IPA Transcriptions
 
@@ -133,18 +137,21 @@ Where available, IPA transcriptions are stored for reference and display. These 
 
 ### Toponyms Index
 
+Each document represents a unique name@language combination:
+
 ```json
 {
-  "place_id": "keyword",
+  "toponym_id": "keyword",
   "name": "text",
   "name_lower": "keyword",
   "lang": "keyword",
   "ipa": "keyword",
   "embedding_bilstm": "dense_vector[128]",
-  "timespans": [{ "start": "integer", "end": "integer" }],
   "suggest": "completion"
 }
 ```
+
+The `toponym_id` (e.g., "London@en") serves as both the document ID and the join key referenced by places.
 
 ## Deployment Strategy
 
