@@ -33,22 +33,24 @@
 - [ ] Restore snapshot to production VM
 - [ ] Validate production indices
 
-## Phase 3: Phonetic Enrichment
+## Phase 3: Model Training
 
-- [ ] Set up Epitran environment with language models
-- [ ] Generate IPA transcriptions for all toponyms (on staging)
-- [ ] Validate IPA coverage by language
-- [ ] Log unsupported language cases for review
-- [ ] Create IPA-enriched snapshot
-- [ ] Restore to production
+Training data preparation uses IPA/PanPhon for initial phonetic clustering, but IPA is not stored in the index.
+
+- [ ] Set up Epitran and PanPhon environment
+- [ ] Select candidate places (5+ toponyms, 2+ scripts/languages)
+- [ ] Generate IPA and PanPhon vectors for candidates
+- [ ] Cluster toponyms per place by phonetic similarity
+- [ ] Generate training triplets (anchor, positive, negative)
+- [ ] Train initial Siamese BiLSTM model on Pitt CRC GPU nodes
+- [ ] Iterate: re-cluster using model embeddings, regenerate triplets, retrain
+- [ ] Evaluate recall@10 on held-out test set
+- [ ] Export final model (PyTorch + ONNX)
 
 ## Phase 4: Embedding Generation
 
-- [ ] Prepare Siamese BiLSTM training data (positive/negative pairs)
-- [ ] Train initial model on Pitt CRC GPU nodes
-- [ ] Evaluate recall@10 on held-out test set
 - [ ] Deploy model to staging Slurm worker
-- [ ] Generate embeddings for all toponyms on staging
+- [ ] Generate embeddings for all unique toponyms on staging
 - [ ] Benchmark kNN search performance on staging
 - [ ] Tune HNSW parameters if needed
 - [ ] Create embedding-enriched snapshot

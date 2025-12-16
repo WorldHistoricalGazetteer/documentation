@@ -16,10 +16,17 @@
 
 | Metric | Target | Measurement Method |
 |--------|--------|-------------------|
-| IPA coverage | >70% of toponyms | Field existence query |
-| Embedding coverage | >95% of toponyms | Field existence query |
+| Embedding coverage | >99% of toponyms | Field existence query |
 | Cross-reference coverage | >50% of places | Relations field analysis |
 | Duplicate rate | <1% | Clustering analysis |
+
+### Training Data Quality
+
+| Metric | Target | Measurement Method |
+|--------|--------|-------------------|
+| Training candidate coverage | >50% of languages | Language distribution analysis |
+| Cluster purity | >90% | Manual spot-check of sample clusters |
+| Triplet validity | >95% | Validation against known equivalents |
 
 ### Operational
 
@@ -55,8 +62,8 @@
 
 | Deliverable | Target |
 |-------------|--------|
-| IPA-enriched toponym dataset | Publicly available |
-| Trained BiLSTM model | Open-source release |
+| Trained Siamese BiLSTM model | Open-source release |
+| Training data (triplets) | Publicly available |
 | Processing pipeline | Documented and reproducible |
 | Evaluation test set | Published for benchmarking |
 

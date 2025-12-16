@@ -1,6 +1,6 @@
 # Overview
 
-This document outlines the architecture for multilingual phonetic search in the World Historical Gazetteer (WHG). The system supports IPA-based matching and phonetic embeddings to enable cross-lingual place name similarity search across approximately 80 million toponyms.
+This document outlines the architecture for multilingual phonetic search in the World Historical Gazetteer (WHG). The system uses phonetic embeddings to enable cross-lingual place name similarity search across approximately 80 million toponyms.
 
 The infrastructure is hosted at the University of Pittsburgh Center for Research Computing (Pitt CRC), using a two-instance Elasticsearch architecture:
 
@@ -21,7 +21,7 @@ Authority source files and snapshots are maintained on bulk storage (/ix1), with
 The phonetic search system extends the core WHG Elasticsearch deployment:
 
 - **`places` index**: Core place records with geometry, classifications, and cross-references
-- **`toponyms` index**: Unique name@language combinations with IPA transcriptions and phonetic embeddings
+- **`toponyms` index**: Unique name@language combinations with phonetic embeddings
 
 The system uses a two-instance architecture: a persistent production Elasticsearch on the VM, and an **ephemeral staging Elasticsearch** spun up on Slurm workers only for the duration of indexing jobs. This protects production from indexing workload while leveraging compute node resources for batch processing.
 

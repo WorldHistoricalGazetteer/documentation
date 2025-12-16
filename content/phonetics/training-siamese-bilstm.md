@@ -34,35 +34,87 @@ Output: 128-dimensional embedding vector
 
 ## Training Data Construction
 
-### Positive Pairs (phonetically similar)
+Training data is prepared offline, separate from Elasticsearch. The process uses iterative refinement: an initial phonetic clustering bootstraps the first model, which then improves subsequent clustering.
 
-1. **Cross-lingual equivalents**: Same Wikidata/GeoNames ID across languages
-   - "London" (en) ↔ "Londres" (fr) ↔ "Londra" (it)
-   
-2. **Documented aliases**: Known variant spellings from authority data
-   - "New York" ↔ "Nueva York"
-   
-3. **Historical variants**: Temporal spelling changes
-   - "Byzantium" ↔ "Constantinople" ↔ "Istanbul"
-   
-4. **Transliteration pairs**: Same name across scripts
-   - "Москва" ↔ "Moskva" ↔ "Moscow"
+### Phase 1: Candidate Selection
 
-### Negative Pairs (phonetically dissimilar)
+Select places with rich toponym sets for training:
 
-1. **Random sampling**: Easy negatives from different places
-2. **Geographic negatives**: Same country, distant locations
-3. **Homophone disambiguation**: Similar sound, different places
-   - "Springfield, MA" vs "Springfield, IL"
+1. Ingest GeoNames and Wikidata to working storage
+2. Filter to places with 5+ toponyms across 2+ scripts/languages
+3. Extract toponyms with place IDs to `candidate_toponyms.tsv`
 
-### Hard Negative Mining
+These are the interesting cases likely to have both phonetic variants (London/Londres/Londra) and distinct names (New York/Big Apple).
 
-After initial training, identify pairs with:
+### Phase 2: Initial Phonetic Clustering
 
-- High predicted similarity
-- Known to be different places
+Bootstrap clustering using rule-based phonetic features:
 
-Re-train with these hard negatives to improve discrimination.
+1. Generate IPA transcriptions via Epitran (where language is supported)
+2. Convert IPA to PanPhon feature vectors
+3. Cache vectors in Parquet format, grouped by place:
+
+```
+# toponym_vectors.parquet
+place_id    | toponym_id      | panphon_vector
+------------|-----------------|------------------
+gn:2643743  | London@en       | [0.2, -0.1, ...]
+gn:2643743  | Londres@fr      | [0.2, -0.1, ...]
+gn:2643743  | Londra@it       | [0.2, -0.1, ...]
+wd:Q60      | New York@en     | [0.5, 0.2, ...]
+wd:Q60      | Big Apple@en    | [0.8, 0.3, ...]
+```
+
+4. Cluster each place's toponyms by PanPhon feature distance
+5. Write cluster assignments to `toponym_clusters.tsv`
+
+PanPhon provides phonological feature vectors for IPA segments, giving weighted distances based on articulatory similarity (/p/→/b/ is closer than /p/→/ʃ/).
+
+### Phase 3: Training Pair Generation
+
+Generate triplets from clustered toponyms:
+
+- **Positive pairs**: Within-cluster (phonetic variants of same name)
+- **Negative pairs**: Cross-cluster within same place (distinct names for same place)
+
+```
+# training_triplets.tsv (anchor, positive, negative)
+London@en    Londres@fr    Big Apple@en
+München@de   Munchen@de    Bavaria@en
+```
+
+Additional negative sampling:
+- Random toponyms from different places (easy negatives)
+- Same-country different places (geographic negatives)
+
+### Phase 4: Iterative Refinement
+
+After training an initial model:
+
+1. Generate embeddings for all candidate toponyms using trained model
+2. Re-cluster using embedding cosine distance (replacing PanPhon)
+3. Regenerate training triplets from new clusters
+4. Retrain model
+5. Repeat 2-3 times until clusters stabilise
+
+This escapes the limitations of Epitran's language coverage and PanPhon's rule-based approach. The model learns phonetic similarity patterns that generalise beyond the initial bootstrap.
+
+### Storage During Training
+
+All intermediate data lives on /ix1, not in Elasticsearch:
+
+```
+/ix1/whcdh/elastic/training/
+├── candidate_toponyms.tsv      # Extracted candidates
+├── toponym_vectors.parquet     # PanPhon vectors (iteration 0)
+├── toponym_clusters_v0.tsv     # Initial clustering
+├── toponym_clusters_v1.tsv     # Model-based clustering
+├── training_triplets_v0.tsv    # Initial triplets
+├── training_triplets_v1.tsv    # Refined triplets
+└── ...
+```
+
+IPA and PanPhon vectors are intermediate artifacts for training data preparation only — they are not stored in the index.
 
 ## Siamese Training Process
 

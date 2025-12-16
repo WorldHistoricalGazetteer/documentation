@@ -104,10 +104,6 @@ Embeddings are generated once per unique toponym on the staging instance during 
 
 The trained Siamese BiLSTM encoder is deployed to both instances. This deduplication approach means new contributions only require embedding generation for genuinely new name@language combinations.
 
-### IPA Transcriptions
-
-Where available, IPA transcriptions are stored for reference and display. These are generated via Epitran for supported languages (~30 language codes mapped).
-
 ## Index Schemas
 
 ### Places Index
@@ -147,7 +143,6 @@ Each document represents a unique name@language combination:
   "name": "text",
   "name_lower": "keyword",
   "lang": "keyword",
-  "ipa": "keyword",
   "embedding_bilstm": "dense_vector[128]",
   "suggest": "completion"
 }

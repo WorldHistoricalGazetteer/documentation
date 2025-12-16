@@ -58,7 +58,7 @@ Phonetic search uses a multi-stage approach with graceful fallback:
     "k": 100,
     "num_candidates": 500
   },
-  "_source": ["toponym_id", "name", "lang", "ipa"]
+  "_source": ["toponym_id", "name", "lang"]
 }
 ```
 

@@ -2,7 +2,7 @@
 
 ## Index Schemas
 
-The phonetic search system uses the standard WHG index schemas with phonetic-specific fields in the `toponyms` index.
+The phonetic search system uses two indices with a many-to-many relationship: places reference toponyms by their `name@lang` identifier, and each unique toponym is stored once.
 
 ### Places Index
 
@@ -22,18 +22,20 @@ Key fields for phonetic search:
 }
 ```
 
+The `toponyms` array contains `name@lang` identifiers (e.g., `["London@en", "Londra@it"]`) that reference documents in the toponyms index.
+
 ### Toponyms Index
 
 See `schemas/toponyms.json` for full schema.
 
-Phonetic-specific fields:
+Each document represents a **unique name@language combination**:
 
 ```json
 {
+  "toponym_id": "keyword",
   "name": "text",
   "name_lower": "keyword",
   "lang": "keyword",
-  "ipa": "keyword",
   "embedding_bilstm": {
     "type": "dense_vector",
     "dims": 128,
@@ -47,11 +49,13 @@ Phonetic-specific fields:
 }
 ```
 
+The `toponym_id` is the `name@lang` string (e.g., "London@en"), serving as the document ID and the join key to places.
+
 ## Ingest Pipelines
 
 ### Toponym Pipeline
 
-The `extract_language` pipeline parses `name@lang` format:
+The `extract_language` pipeline parses `name@lang` format and sets the document ID:
 
 ```json
 {
@@ -60,15 +64,16 @@ The `extract_language` pipeline parses `name@lang` format:
     {
       "script": {
         "lang": "painless",
-        "source": "if (ctx.name != null && ctx.name.contains('@')) { String[] parts = ctx.name.splitOnToken('@'); if (parts.length == 2) { ctx.name = parts[0]; ctx.name_lower = parts[0].toLowerCase(); ctx.lang = parts[1]; } }"
+        "source": "if (ctx.toponym_id != null && ctx.toponym_id.contains('@')) { String[] parts = ctx.toponym_id.splitOnToken('@'); if (parts.length == 2) { ctx.name = parts[0]; ctx.name_lower = parts[0].toLowerCase(); ctx.lang = parts[1]; } }"
       }
     }
   ]
 }
 ```
 
-This enables ingestion of toponyms in the format `"London@en"`, automatically populating:
+This enables ingestion of toponyms with ID `"London@en"`, automatically populating:
 
+- `toponym_id`: "London@en" (document ID, join key)
 - `name`: "London"
 - `name_lower`: "london"  
 - `lang`: "en"
@@ -126,7 +131,3 @@ Standard multilingual text analysis with edge n-grams for prefix matching:
   }
 }
 ```
-
-### IPA Field
-
-Stored as keyword for exact matching. N-gram analysis could be added for fuzzy IPA search if needed.

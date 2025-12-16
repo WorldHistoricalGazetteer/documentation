@@ -21,25 +21,21 @@ Large-scale authority datasets are processed on Slurm workers with a dedicated s
    - Deduplicate by name@lang key
    - Each unique toponym processed once
    ↓
-5. For each unique toponym:
-   - Generate IPA transcription (Epitran)
-   - Normalise IPA (see below)
-   ↓
-6. Batch embedding generation on compute nodes
+5. Batch embedding generation on compute nodes
    - Process unique toponyms through Siamese BiLSTM
    - Generate 128-dimensional vectors
    ↓
-7. Index places and toponyms to staging Elasticsearch
+6. Index places and toponyms to staging Elasticsearch
    ↓
-8. Validate counts and sample data on staging
+7. Validate counts and sample data on staging
    ↓
-9. Create snapshot to /ix1/whcdh/elastic/snapshots/
+8. Create snapshot to /ix1/whcdh/elastic/snapshots/
    ↓
-10. Restore snapshot to production VM
+9. Restore snapshot to production VM
    ↓
-11. Switch aliases atomically on production
+10. Switch aliases atomically on production
    ↓
-12. Validate production indices
+11. Validate production indices
 ```
 
 ### Rationale for Ephemeral Staging Instance
@@ -70,7 +66,6 @@ Scholarly datasets contributed by WHG users follow a similar staged workflow, bu
    - Check which toponyms already exist in index
    ↓
 4. For each new unique toponym:
-   - Generate IPA transcription (Epitran)
    - Generate embedding via Siamese BiLSTM model
    ↓
 5. Index places and new toponyms to staging or production
@@ -90,51 +85,6 @@ WHG-contributed datasets are much smaller (~200k places) and arrive incrementall
 - **Larger contributions**: Use Slurm staging to avoid production impact
 
 New toponyms from contributions are checked against the existing toponyms index; only genuinely new name@lang combinations require embedding generation.
-
-## IPA Generation
-
-IPA transcriptions are generated using Epitran with language-specific G2P models:
-
-```python
-import epitran
-
-# Language code mapping (ISO 639-1 → Epitran code)
-LANG_MAP = {
-    'en': 'eng-Latn',
-    'fr': 'fra-Latn',
-    'de': 'deu-Latn',
-    'es': 'spa-Latn',
-    # ... ~30 supported languages
-}
-
-def generate_ipa(text, lang_code):
-    epitran_code = LANG_MAP.get(lang_code)
-    if not epitran_code:
-        return None
-    
-    try:
-        epi = epitran.Epitran(epitran_code)
-        return epi.transliterate(text)
-    except Exception:
-        return None
-```
-
-**Fallback strategy**:
-
-- If language unsupported: attempt transliteration via nearest-supported language
-- If transliteration fails: leave `ipa` field empty, rely on text-based matching
-- Log failures for future model expansion
-
-## IPA Normalisation
-
-Consistent normalisation prevents duplicate representations of the same pronunciation:
-
-1. **Unicode NFC normalisation** (canonical decomposition + composition)
-2. **Remove stress marks** (`ˈ` primary, `ˌ` secondary) for base matching
-3. **Remove syllable boundaries** (`.` character)
-4. **Canonical diacritic ordering** (nasalisation before length)
-5. **Strip whitespace**
-6. **Case normalisation** (IPA is case-sensitive but we normalise for consistency)
 
 ## Embedding Generation
 
@@ -186,8 +136,8 @@ The same trained Siamese BiLSTM model is deployed to both staging (Slurm worker)
 For new dataset ingestion after initial population:
 
 1. Ingest new places/toponyms to versioned indices
-2. Generate IPA and embeddings for new toponyms only
+2. Generate embeddings for new unique toponyms only
 3. Merge with existing data or create new index version
 4. Switch aliases when ready
 
-Monthly full re-embedding ensures consistency across the corpus as models improve.
+Quarterly full re-embedding ensures consistency across the corpus as the model improves.

@@ -4,7 +4,7 @@
 
 | Risk | Probability | Impact | Mitigation |
 |------|-------------|--------|------------|
-| Epitran fails for rare language | High | Medium | Fallback to text-only search; log for manual review |
+| Epitran fails for rare language | High | Low | Affects training data coverage only; model generalises |
 | Siamese BiLSTM produces poor embeddings | Low | High | Versioned deployment; A/B evaluation; rollback capability |
 | Production ES memory exhaustion | Low | Critical | Monitor heap usage; tune HNSW parameters; scale vertically |
 | Staging ES runs out of space | Low | Medium | Monitor during indexing; NVMe scratch provides ~870GB |
@@ -30,7 +30,7 @@
 | Risk | Probability | Impact | Mitigation |
 |------|-------------|--------|------------|
 | Duplicate places across authorities | High | Medium | Deduplication via relations; clustering algorithms |
-| Incorrect IPA transcriptions | Medium | Medium | Sample validation; user feedback loop; manual corrections |
+| Training data clustering errors | Medium | Medium | Iterative refinement; manual spot-checks; hold-out validation |
 | Stale authority data | Medium | Low | Scheduled refresh; track source update dates |
 | Inconsistent language tagging | High | Medium | Normalise on ingest; validate against ISO 639 |
 | WHG contribution data quality issues | Medium | Medium | Validation on export; schema enforcement; review workflow |

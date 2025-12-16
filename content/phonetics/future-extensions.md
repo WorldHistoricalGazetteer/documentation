@@ -4,11 +4,13 @@
 
 ### Additional Language Support
 
-Expand Epitran language mappings to cover:
+Expand Epitran language mappings to improve training data coverage:
 
 - African languages (Swahili, Yoruba, Amharic)
 - Southeast Asian languages (Thai, Vietnamese, Burmese)
 - Indigenous languages (where G2P models exist)
+
+Better language coverage in training data improves model generalisation, even for languages not directly supported by Epitran.
 
 ### Query Refinement
 
@@ -26,17 +28,17 @@ Expand Epitran language mappings to cover:
 
 ### Transliteration Fallback
 
-For scripts without Epitran support:
+For scripts without Epitran support during training:
 
 - Implement rule-based transliteration to Latin script
-- Use transliterated form for embedding generation
-- Flag as lower-confidence match in results
+- Use transliterated form for initial clustering
+- Iterative refinement will improve coverage
 
 ### Multi-Model Ensemble
 
 Combine multiple embedding approaches:
 
-- BiLSTM character embeddings (current)
+- Siamese BiLSTM character embeddings (current)
 - Transformer-based embeddings (BERT variants)
 - Traditional phonetic codes (Soundex, Metaphone) as features
 
@@ -67,7 +69,7 @@ Allow audio queries:
 
 - Record native speaker pronunciations
 - Build pronunciation corpus for model training
-- Validate and improve IPA transcriptions
+- Improve training data clustering accuracy
 - Community-driven language coverage expansion
 
 ### Cross-Gazetteer Linking

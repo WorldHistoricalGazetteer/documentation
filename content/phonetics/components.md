@@ -41,7 +41,6 @@ Core gazetteer records with geometry and metadata. Each place references toponym
 Unique name@language combinations with phonetic data. Each toponym appears **once** in this index, regardless of how many places share it:
 
 - Unique `name@lang` identifier (e.g., "London@en")
-- IPA transcription (where available)
 - Siamese BiLSTM phonetic embedding (128 dimensions)
 - Completion suggester for type-ahead
 
@@ -51,7 +50,6 @@ Unique name@language combinations with phonetic data. Each toponym appears **onc
   "name": "London",
   "name_lower": "london",
   "lang": "en",
-  "ipa": "ˈlʌndən",
   "embedding_bilstm": [0.23, -0.15, ...],
   "suggest": { "input": ["London"], "contexts": { "lang": ["en"] } }
 }
@@ -64,12 +62,6 @@ This design ensures:
 - **Query simplicity**: Search the toponyms index, then join to places
 
 ## Processing Components
-
-### IPA Generation (Epitran)
-
-[Epitran](https://github.com/dmort27/epitran) provides grapheme-to-phoneme conversion for 90+ languages. IPA transcriptions are generated during toponym ingestion.
-
-Supported language mappings are defined in the processing scripts, covering major European, Asian, and Middle Eastern languages. Unsupported languages fall back to transliteration or remain without IPA.
 
 ### Phonetic Embeddings (Siamese BiLSTM)
 

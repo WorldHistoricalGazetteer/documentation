@@ -24,7 +24,7 @@ Storage is allocated by I/O requirements:
 ### Two-Index Architecture
 
 - **`places` index**: Core gazetteer records with geometry and metadata; references toponyms by `name@lang`
-- **`toponyms` index**: Unique name@language combinations with IPA transcriptions and phonetic embeddings
+- **`toponyms` index**: Unique name@language combinations with phonetic embeddings
 
 The toponyms index stores each unique name@language combination once, regardless of how many places share it. This optimises embedding generation and storage.
 
@@ -74,7 +74,7 @@ Multi-stage search with fallbacks:
 |-----------|------------|
 | Search engine | Elasticsearch 9.x |
 | Vector search | HNSW via dense_vector |
-| IPA generation | Epitran |
+| Training data prep | Epitran, PanPhon |
 | Embedding model | PyTorch Siamese BiLSTM |
 | Inference runtime | ONNX (VM), PyTorch+CUDA (compute) |
 | Storage | Pitt CRC /ix1, /ix3 |
@@ -84,7 +84,7 @@ Multi-stage search with fallbacks:
 | System | Allocation | Purpose |
 |--------|------------|---------|
 | /ix3 (flash) | 750GB - 1TB | Production Elasticsearch data |
-| /ix1 (bulk) | 1TB | Authority files, snapshots |
+| /ix1 (bulk) | 1TB | Authority files, snapshots, training data |
 | Local NVMe scratch | ~870GB available | Staging ES (per Slurm job) |
 
 ## Timeline
@@ -93,8 +93,8 @@ Multi-stage search with fallbacks:
 |-------|----------|--------------|
 | Infrastructure | 2 weeks | Storage, Elasticsearch |
 | Core indexing | 4 weeks | All authority sources indexed |
-| Phonetic enrichment | 4 weeks | IPA transcriptions |
-| Embedding generation | 4 weeks | Siamese BiLSTM model, embeddings |
+| Model training | 4 weeks | Training data, Siamese BiLSTM model |
+| Embedding generation | 4 weeks | Embeddings for all toponyms |
 | Query integration | 4 weeks | Search endpoints |
 | Production rollout | 2 weeks | Live system |
 
@@ -103,6 +103,7 @@ Multi-stage search with fallbacks:
 ## References
 
 - [WHG Place Discussion #81](https://github.com/WorldHistoricalGazetteer/place/discussions/81) - Original phonetic search proposal
-- [Epitran](https://github.com/dmort27/epitran) - Grapheme-to-phoneme library
+- [Epitran](https://github.com/dmort27/epitran) - Grapheme-to-phoneme library (training data preparation)
+- [PanPhon](https://github.com/dmort27/panphon) - Phonological feature vectors for IPA segments
 - [Elasticsearch kNN Search](https://www.elastic.co/guide/en/elasticsearch/reference/current/knn-search.html) - Vector search documentation
 - [Siamese Networks for One-Shot Learning](https://www.cs.cmu.edu/~rsalakhu/papers/oneshot1.pdf) - Foundational paper

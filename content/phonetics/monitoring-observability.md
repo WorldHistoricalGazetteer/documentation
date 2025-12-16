@@ -35,8 +35,8 @@
 | Metric | Target | Alert Threshold |
 |--------|--------|-----------------|
 | Batch processing rate | >10k/min | <1k/min |
-| IPA generation success rate | >90% | <80% |
 | Model inference latency | <10ms | >50ms |
+| Embedding coverage | >99% | <95% |
 
 ## Health Check Endpoints
 
