@@ -5,8 +5,8 @@
 ### Staging (Slurm)
 - [x] Verify local NVMe scratch availability (~870GB at $SLURM_SCRATCH)
 - [x] Configure ephemeral Elasticsearch on Slurm worker using local scratch
-- [ ] Configure for bulk indexing workload
-- [ ] Document Slurm job submission
+- [x] Configure for bulk indexing workload
+- [x] Document Slurm job submission
 
 ### Production VM
 - [x] Install Elasticsearch 9.x on VM

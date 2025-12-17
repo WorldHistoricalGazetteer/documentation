@@ -5,6 +5,7 @@
 :numbered:
 
     Overview <./phonetics/overview.md>
+    Elastic Management Guide <./phonetics/elastic-management-guide.md>
     Infrastructure Summary <./phonetics/infrastructure-summary.md>
     Components <./phonetics/components.md>
     Data Flow <./phonetics/data-flow.md>
