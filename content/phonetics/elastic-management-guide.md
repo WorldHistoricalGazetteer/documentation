@@ -380,6 +380,34 @@ source /ix1/ishi/esinfo/es-staging.env
 curl -s "http://$ES_NODE:$ES_PORT/_cluster/health?pretty"
 ```
 
+Print out 10 random documents from the `places` index:
+
+```bash
+curl -s "http://$ES_NODE:$ES_PORT/places/_search?size=10&pretty" \
+    -H 'Content-Type: application/json' -d '{
+    "query": {
+        "function_score": {
+            "query": { "match_all": {} },
+            "random_score": {}
+        }
+    }
+}'
+```
+
+Print out 10 random documents from the `toponyms` index:
+
+```bash
+curl -s "http://$ES_NODE:$ES_PORT/toponyms/_search?size=10&pretty" \
+    -H 'Content-Type: application/json' -d '{
+    "query": {
+        "function_score": {
+            "query": { "match_all": {} },
+            "random_score": {}
+        }
+    }
+}'
+```
+
 #### In Slurm Batch Jobs
 
 Jobs that index against staging should check that staging is running:
