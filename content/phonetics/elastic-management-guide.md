@@ -479,6 +479,14 @@ source /ix1/ishi/esinfo/es-staging.env
 curl -X DELETE "http://$ES_NODE:$ES_PORT/_snapshot/staging_repo/old_snapshot_name"
 ```
 
+#### Delete All Snapshots
+
+After tearing down staging, you can delete all snapshots to prevent their being reloaded on restart:
+
+```bash
+rm -rf /ix1/ishi/es/snapshots/staging/*
+```
+
 ### Stopping Staging Instance
 
 **Warning**: This destroys all data on local NVMe. Create snapshots first!
