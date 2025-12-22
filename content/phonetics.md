@@ -10,7 +10,7 @@
     Components <./phonetics/components.md>
     Data Flow <./phonetics/data-flow.md>
     Elasticsearch Index Design <./phonetics/elasticsearch-index-design.md>
-    Training the Siamese BiLSTM <./phonetics/training-siamese-bilstm.md>
+    Training the Phonetic Similarity Model <./phonetics/training-phonetic-similarity-model.md>
     Query Pipeline <./phonetics/query-pipeline.md>
     Advantages of This Architecture <./phonetics/advantages.md>
     Monitoring & Observability <./phonetics/monitoring-observability.md>
