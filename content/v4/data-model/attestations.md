@@ -117,20 +117,50 @@ Users can define domain-specific relation types through AUTHORITY documents:
 
 ## Complete Examples
 
+**Understanding the Star-Schema Pattern:**
+
+In all examples below, the **Attestation acts as the central hub** (star-schema), not a linear chain. All attributes (Names, Geometries, Timespans) and relationships (to Things, Sources, Relation Types) connect **directly and independently** to the Attestation node.
+
+**Incorrect interpretation (Chain):**
+```
+Thing → Attestation → Name → Timespan → Authority
+```
+
+**Correct interpretation (Star):**
+```
+            Name
+             ↑
+        [edge_type]
+             |
+Thing ← Attestation → Timespan
+             |
+        [edge_type]
+             ↓
+         Authority
+```
+
+Each edge represents an independent relationship with the Attestation as the hub. The Timespan does NOT belong to the Name, and the Authority does NOT belong to the Timespan—they are all independent properties of the Attestation itself.
+
+---
+
 ### Example 1: Thing with Name and Timespan
 
 **Scenario:** "The city was called 'Tenochtitlan' during 1325-1521 CE"
 
-**Graph structure:**
+**Graph structure (Star-Schema):**
 ```
-Thing(mexico-city) ←[subject_of]← Attestation(att-001) 
-                                         ↓ [attests_name]
-                                      Name(tenochtitlan)
-                                         ↓ [attests_timespan]
-                                      Timespan(1325-1521)
-                                         ↓ [sourced_by]
-                                      Authority(codex-mendoza)
+                    Name(tenochtitlan)
+                           ↑
+                    [attests_name]
+                           |
+Thing(mexico-city) →[subject_of]→ Attestation(att-001) ─[attests_timespan]→ Timespan(1325-1521)
+                           |
+                    [sourced_by]
+                           ↓
+                    Authority(codex-mendoza)
 ```
+
+**Important:** The Attestation is the central hub (star-schema), with Name, Timespan, and Authority as independent properties directly connected to it. They do NOT form a chain (Name→Timespan→Authority).
 
 **Documents:**
 
@@ -223,15 +253,17 @@ Authority (Source):
 
 **Scenario:** "The Tang Dynasty capital had these boundaries during 618-907 CE"
 
-**Graph structure:**
+**Graph structure (Star-Schema):**
 ```
-Thing(changan) ←[subject_of]← Attestation(att-002)
-                                    ↓ [attests_geometry]
-                                 Geometry(tang-walls)
-                                    ↓ [attests_timespan]
-                                 Timespan(tang-dynasty)
-                                    ↓ [sourced_by]
-                                 Authority(archaeological-survey)
+                    Geometry(tang-walls)
+                           ↑
+                    [attests_geometry]
+                           |
+Thing(changan) ←[subject_of]← Attestation(att-002) ─[attests_timespan]→ Timespan(tang-dynasty)
+                           |
+                    [sourced_by]
+                           ↓
+                    Authority(archaeological-survey)
 ```
 
 **Edges:**
@@ -267,15 +299,17 @@ Thing(changan) ←[subject_of]← Attestation(att-002)
 
 **Scenario:** "Alexandria was the capital of Ptolemaic Egypt"
 
-**Graph structure:**
+**Graph structure (Star-Schema):**
 ```
-Thing(alexandria) ←[subject_of]← Attestation(att-003)
-                                       ↓ [typed_by]
-                                    Authority(capital-of relation)
-                                       ↓ [relates_to]
-                                    Thing(ptolemaic-egypt)
-                                       ↓ [sourced_by]
-                                    Authority(source)
+                    Authority(capital-of relation)
+                           ↑
+                       [typed_by]
+                           |
+Thing(alexandria) ←[subject_of]← Attestation(att-003) ─[relates_to]→ Thing(ptolemaic-egypt)
+                           |
+                      [sourced_by]
+                           ↓
+                    Authority(source)
 ```
 
 **Edges:**
@@ -315,13 +349,17 @@ Thing(alexandria) ←[subject_of]← Attestation(att-003)
 
 **Scenario:** "Samarkand was the 15th waypoint on the Silk Road"
 
-**Graph structure:**
+**Graph structure (Star-Schema):**
 ```
-Thing(samarkand) ←[subject_of]← Attestation(att-005)
-                                      ↓ [typed_by]
-                                   Authority(member-of relation)
-                                      ↓ [relates_to]
-                                   Thing(silk-road)
+                    Authority(member-of relation)
+                           ↑
+                       [typed_by]
+                           |
+Thing(samarkand) ←[subject_of]← Attestation(att-005) ─[relates_to]→ Thing(silk-road)
+                           |
+                      [sourced_by]
+                           ↓
+                    Authority(historical-atlas)
 ```
 
 **Attestation with sequence:**
@@ -366,15 +404,17 @@ Thing(samarkand) ←[subject_of]← Attestation(att-005)
 
 **Scenario:** "Constantinople had trade connections with Venice, exchanging spices and textiles"
 
-**Graph structure:**
+**Graph structure (Star-Schema):**
 ```
-Thing(constantinople) ←[subject_of]← Attestation(att-007)
-                                           ↓ [typed_by]
-                                        Authority(connected-to relation)
-                                           ↓ [relates_to]
-                                        Thing(venice)
-                                           ↓ [attests_timespan]
-                                        Timespan(byzantine-venetian)
+                    Authority(connected-to relation)
+                           ↑
+                       [typed_by]
+                           |
+Thing(constantinople) ←[subject_of]← Attestation(att-007) ─[relates_to]→ Thing(venice)
+                           |
+                    [attests_timespan]
+                           ↓
+                    Timespan(byzantine-venetian)
 ```
 
 **Attestation with connection metadata:**

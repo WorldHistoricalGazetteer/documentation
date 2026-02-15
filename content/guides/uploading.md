@@ -61,10 +61,9 @@ several kinds of decisions only the data creator can make, e.g.:
 * Are an archaeological site and a modern city with the same name the same place?
 * If there are multiple name variants, which should be the primary "title" of the record?
 * If some references are at the scale of settlement and others at the scale of county, should they be normalized to
-  county
-* for purposes of analysis?
+  county for purposes of analysis?
 
-* Linked Places format (LPF), a GeoJSON extension
+### Linked Places format (LPF), a GeoJSON extension
 
 Apart from conflating multiple place references to a single place record, converting data from a delimited format like a
 spreadsheet or shapefile attribute table to the JSON-base LPF will almost certainly require a script—using e.g. Python
