@@ -15,6 +15,63 @@ The World Historical Gazetteer (WHG) provides two complementary APIs:
 - Retrieve full metadata, names, types, geometries, temporal bounds, authority info, and linked resources.
 - Machine-readable feature endpoints support Linked Places Format (LPF) for GIS and reconciliation tools.
 
+### Persistent Identifiers (w3id.org)
+
+WHG entities now have permanent identifiers under the `https://w3id.org/whg/` namespace. These identifiers resolve via
+HTTP 303 redirects to the WHG Entity API and are intended to be stable, citable URIs.
+
+**Canonical identifier pattern**
+
+- Base: `https://w3id.org/whg/`
+- Entity: `https://w3id.org/whg/id/{id}` -> `https://whgazetteer.org/entity/{id}/api` (303 redirect)
+
+**Content negotiation for the base namespace**
+
+- If `Accept: application/json` or `application/ld+json`, redirect (303) to `https://whgazetteer.org/api/schema/`.
+- If `Accept: text/html` or `application/xhtml+xml`, redirect (303) to `https://whgazetteer.org/`.
+- Otherwise, return HTTP 404.
+
+**Examples by entity type**
+
+- Place: `https://w3id.org/whg/id/place:169687`
+- Dataset: `https://w3id.org/whg/id/dataset:1234`
+- Collection: `https://w3id.org/whg/id/collection:5678`
+- Area: `https://w3id.org/whg/id/area:9012`
+- PeriodO period: `https://w3id.org/whg/id/period:3456`
+
+>**Note on DOIs for Published Datasets and Collections**
+>
+>Upon publication, **Datasets** and **Collections** are also assigned DOIs. WHG DOIs use the prefix `10.83427` and
+follow a hyphenated pattern (for example, `10.60681/whg-dataset-1234`), which differs from the colon-separated
+w3id.org identifiers. WHG DOIs are provided through [DataCite](https://datacite.org/) with support from the University of Pittsburgh Library System.
+
+### Namespace Prefix (prefix.cc)
+
+The `whg:` namespace prefix is registered at `http://prefix.cc/whg` and expands to
+`https://w3id.org/whg/id/`. This is useful for compact identifiers in JSON-LD and JSON Schema contexts.
+
+**Example usage in a JSON Schema with JSON-LD context**
+
+```json
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://w3id.org/whg/schema/place.json",
+  "@context": {
+    "whg": "https://w3id.org/whg/id/"
+  },
+  "title": "WHG Place Reference",
+  "type": "object",
+  "properties": {
+    "id": {
+      "type": "string",
+      "format": "iri",
+      "examples": ["whg:place:169687"]
+    }
+  },
+  "required": ["id"]
+}
+```
+
 ## Reconciliation Service API
 
 - Compatible with [OpenRefine](https://openrefine.org/).
