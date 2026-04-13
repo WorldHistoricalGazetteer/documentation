@@ -201,9 +201,14 @@ The following parameters can be included in each query object within a reconcili
 
 | Parameter | Type | Description |
 |---|---|---|
-| `bounds` | object | GeoJSON geometry for spatial restriction. |
+| `bounds` | object | GeoJSON geometry for spatial restriction (see formats below). |
 | `lat`, `lng`, `radius` | float | Circular search: latitude (-90–90), longitude (-180–180), radius in km. All three required together. |
 | `userareas` | array | IDs of user-defined stored areas. |
+
+The `bounds` parameter accepts two formats:
+
+- **Plain GeoJSON geometry** (preferred): `{"type": "Polygon", "coordinates": [[[...]]]}` — any `Polygon` or `MultiPolygon` geometry.
+- **GeometryCollection wrapper**: `{"geometries": [{"type": "Polygon", "coordinates": [[[...]]]}]}` — legacy format, still supported for backward compatibility.
 
 #### Other
 
@@ -211,7 +216,7 @@ The following parameters can be included in each query object within a reconcili
 |---|---|---|
 | `dataset` | integer | Restrict to a specific dataset ID. |
 | `unlocated` | boolean | Include results with no spatial metadata (default: true). |
-| `size` | integer | Maximum results per query (default: 100, max: 1000). |
+| `limit` | integer | Maximum results per query (default: 100, max: 1000). This is the standard Reconciliation API v0.2 parameter name. `size` is accepted as an alias. |
 
 ### Source Namespaces
 
@@ -222,8 +227,14 @@ WHG searches across multiple place indices. Each source is identified by a **nam
 | `whg` | WHG places | `place:169687` |
 | `gn` | GeoNames | `place:gn:745044` |
 | `tgn` | Getty TGN | `place:tgn:7010731` |
+| `wd` | Wikidata | `place:wd:Q84` |
+| `osm` | OpenStreetMap | `place:osm:n123456` |
+| `ohm` | OpenHistoricalMap | `place:ohm:w789012` |
+| `pl` | Pleiades | `place:pl:423025` |
 
-When `namespaces` is omitted, all available sources are searched. When specified, only the listed sources are queried — this can improve performance and relevance.
+> **Note:** The `gb` namespace (Ordnance Survey) is excluded from results by default to reduce noise. To include it, pass an empty `exclude_namespaces` list via the gateway API.
+
+When `namespaces` is omitted, all available sources are searched (except those in the default exclusion list). When specified, only the listed sources are queried — this can improve performance and relevance.
 
 **Examples:**
 - `"namespaces": "whg"` — search only WHG places
@@ -396,17 +407,16 @@ curl -X POST https://whgazetteer.org/reconcile \
         "countries": ["GB","US"],
         "namespaces": "whg",
         "bounds": {
-          "geometries": [{
-            "type": "Polygon",
-            "coordinates": [[
-              [-1.0,51.0],
-              [-1.0,52.0],
-              [0.5,52.0],
-              [0.5,51.0],
-              [-1.0,51.0]
-            ]]
-          }]
-        }
+          "type": "Polygon",
+          "coordinates": [[
+            [-1.0,51.0],
+            [-1.0,52.0],
+            [0.5,52.0],
+            [0.5,51.0],
+            [-1.0,51.0]
+          ]]
+        },
+        "limit": 5
       }
     }
   }'
