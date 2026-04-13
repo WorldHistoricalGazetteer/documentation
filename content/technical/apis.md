@@ -372,7 +372,7 @@ under "Add Standard Service".
 The simplest way to use an API token is to include it as a query parameter in the request URL. For example:
 
 ```bash
-https://whgazetteer.org/reconcile/?token=<token>
+https://whgazetteer.org/reconcile?token=<token>
 ```
 
 Otherwise, it may be included in the `Authorization` header, using the `Bearer` schema. Requests **must** also include a
@@ -380,7 +380,7 @@ suitable
 `User-Agent` to avoid bot-filters. For example:
 
 ```bash
-curl -X POST https://whgazetteer.org/reconcile/ \
+curl -X POST https://whgazetteer.org/reconcile \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer <token>" \
   -H "User-Agent: notbot" \
