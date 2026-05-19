@@ -241,6 +241,36 @@ When `namespaces` is omitted, all available sources are searched (except those i
 - `"namespaces": "gn,tgn"` — search GeoNames and Getty TGN
 - `"namespaces": "whg,gn"` — search WHG and GeoNames
 
+### Result Format
+
+Each entry in a query's `result` array is an object with the following fields:
+
+| Field | Type | Description |
+|---|---|---|
+| `id` | string | Entity ID (e.g. `place:169687`, `place:gn:745044`). The namespace prefix identifies the source — see [Source Namespaces](#source-namespaces). |
+| `name` | string | Canonical name of the matched entity. |
+| `score` | number | Match score on a **0–100** scale (note: not the 0–1 range some Reconciliation API examples imply). |
+| `match` | boolean | `true` if WHG considers this the best confident match for the query. When no result is flagged, treat the highest-scoring entry as the best candidate. |
+| `description` | string | Short human-readable summary, typically of the form `"Country: XX"` for places, where `XX` is an ISO 3166-1 alpha-2 code. Useful as a post-hoc sanity check — see [Filter Behaviour](#filter-behaviour-and-common-pitfalls) below. |
+| `alt_names` | array | Variant toponyms in any language. |
+| `type` | array | LPF type objects. |
+
+### Filter Behaviour and Common Pitfalls
+
+Because WHG aggregates several upstream sources (GeoNames, Wikidata, OSM/OHM, Getty TGN, Pleiades, contributor datasets) that differ in how completely they populate metadata, three of the filters can be unexpectedly aggressive. Understanding when each one bites makes reconciliation results far more useful, especially for historical-place workflows.
+
+- **`fclasses` is sparsely populated upstream.** Many ingested records — OSM relations, Wikidata items, contributor datasets — carry no GeoNames feature class at all. Applying `fclasses=["P"]` or `fclasses=["A"]` will exclude them entirely, even when the named entity is clearly a populated place or admin area. Empirical example: `query="Sardinia", fclasses=["A"]` returns 0 results; the same query without `fclasses` returns three valid matches. For exploratory reconciliation, prefer omitting `fclasses` and disambiguating by `countries` or post-hoc result ranking.
+
+- **`start` and `end` are hard filters; `undated=true` is not a window-widener.** The `undated=true` flag only includes records that carry *no* temporal metadata. Records that *do* carry dates (which is the case for nearly every modern GeoNames or OSM ingestion) are still hard-excluded when those dates sit outside `[start, end]`. The practical consequence: probing a medieval-only window can silently drop the majority of valid hits. Empirical example: `query="Portofino", start=1350, end=1500, undated=true, countries=["IT"]` returns 0 results; the same query without `start`/`end` returns three valid matches. For reconciling historical names against the modern index, consider treating temporal context as a post-hoc disambiguator rather than a pre-filter.
+
+- **`countries` trusts upstream country metadata, which is occasionally wrong or missing.** WHG forwards each source's country tagging without correction, so a legitimate hit can be filtered out when the upstream record is mis-attributed. Empirical example: *Île Sainte-Marguerite* (off Cannes, France) is tagged `Country: IT` in one upstream source and is excluded by `countries=["FR"]`. A robust pattern is to query first with the country filter, and if the result list is empty, retry without it and post-filter on the result's own `description` field — which is itself derived from the source's country tag, so this acts as a self-consistency check rather than a hard veto.
+
+### Geometry Recovery When the Top Hit Has No Centroid
+
+WHG indexes both **source records** (`place:gn:…`, `place:osm:…`, `place:wd:…`, `place:tgn:…`) and **WHG-native abstract entities** (`place:NNN`, no namespace prefix) that aggregate them. The native entity is what `match: true` usually returns, but it does not always carry its own geometry — `whg:geometry_centroid` may come back as an empty array even when the named place clearly has a well-known location.
+
+When this happens, the recommended pattern is to walk through the other results in the same reconciliation response (they typically reference the same physical place via different upstream sources) and request `whg:geometry_centroid` for each until you find one populated. A typical reconciliation of `query="Portofino"` returns five candidate IDs from `gn`, `osm`, and `tgn` namespaces; if the top WHG-native ID has no centroid, the GeoNames or OSM siblings usually do.
+
 ### Data Extension Properties
 
 After reconciliation, you can enrich your data with these properties via the extend endpoint:
@@ -359,7 +389,7 @@ After reconciliation, you can add properties from WHG to your dataset:
 - **Leverage additional columns**: Include date ranges, broader geographic context, or place types in separate columns
   and reference them during reconciliation
 - **Filter by namespace**: If you know your places are in a specific source (e.g. GeoNames), use `namespaces` to restrict the search for faster, more relevant results
-- **Filter by country or feature class**: Use `countries` and `fclasses` to narrow results for common place names
+- **Filter by country**: Use `countries` to narrow results for common place names. Note that `fclasses` is unevenly populated across upstream sources and `start`/`end` will hard-exclude any record with a modern date — see [Filter Behaviour and Common Pitfalls](#filter-behaviour-and-common-pitfalls).
 - **Start with a sample**: Test reconciliation on a small subset before processing large datasets
 - **Review auto-matches**: Even high-confidence matches should be spot-checked, especially for common place names
 
