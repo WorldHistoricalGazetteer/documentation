@@ -154,6 +154,22 @@ store and are read on demand only for exact tests.
      proves `intersects` — so the expensive polygon load runs only on the
      remainder.
 
+#### `intersects` vs `within` (fully-contained)
+
+`relation` chooses between *any overlap* (`intersects`, the default) and
+*fully contained* (`within` — the candidate's whole geometry must lie inside
+the region; a polygon straddling the border is excluded).
+
+- For **point** places the two are identical (a point has no extent to straddle).
+- **`exact` + `within`** is the precise, reliable fully-contained test
+  (true polygon-in-polygon). It applies the same `repr_point` shortcut in
+  reverse — a representative point *outside* the region proves the place
+  cannot be contained, so those candidates are rejected without loading their
+  polygon, and the costly geometry load runs only on the genuine candidates.
+- **`fuzzy` + `within`** is an *approximation* (H3 cells only, no polygon
+  load): it is conservative and resolution-bounded, so for guaranteed
+  full-containment prefer `exact`.
+
 ### Why H3? (performance)
 
 H3 is used as a cheap prefilter so the expensive exact test runs on as few
