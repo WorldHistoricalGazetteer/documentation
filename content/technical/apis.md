@@ -177,7 +177,7 @@ The following parameters can be included in each query object within a reconcili
 
 | Parameter | Type | Description |
 |---|---|---|
-| `query` | string | Free-text search string. Required. |
+| `query` | string | Free-text search string. Required **unless** a spatial filter (`contained_in`, `bounds`, or circular `lat`/`lng`/`radius`) or `dataset` is supplied — in which case it may be omitted for a spatial-only query. |
 | `mode` | string | Search mode: `exact`, `fuzzy` (default), `starts`, or `in`. Fuzzy mode can also be specified as `prefix_length\|fuzziness` (e.g. `2\|1`). |
 
 #### Facet Filtering
@@ -202,6 +202,9 @@ The following parameters can be included in each query object within a reconcili
 | Parameter | Type | Description |
 |---|---|---|
 | `bounds` | object | GeoJSON geometry for spatial restriction (see formats below). |
+| `contained_in` | array or string | Restrict to places spatially inside the region formed by the **union of one or more existing places' geometries**, given by namespaced place IDs. Format: `["un:ita"]` or `"un:ita,osm:r365331"`. May be used on its own (a spatial-only query, no `query` text) or combined with `query`. Only the IDs are sent — WHG resolves their geometry server-side. |
+| `containment` | string | How `contained_in` / `bounds` membership is tested: `fuzzy` (default — fast, tolerant; uses an H3 cell grid) or `exact` (precise polygon geometry). Use `exact` when boundary precision matters. |
+| `relation` | string | Spatial relation for `contained_in` / `bounds`: `intersects` (default — any overlap with the region) or `within` (the place's whole geometry must lie inside the region; border-straddling features are excluded). Equivalent for point places. Reliable `within` requires `containment=exact`. |
 | `lat`, `lng`, `radius` | float | Circular search: latitude (-90–90), longitude (-180–180), radius in km. All three required together. |
 | `userareas` | array | IDs of user-defined stored areas. |
 
@@ -209,6 +212,8 @@ The `bounds` parameter accepts two formats:
 
 - **Plain GeoJSON geometry** (preferred): `{"type": "Polygon", "coordinates": [[[...]]]}` — any `Polygon` or `MultiPolygon` geometry.
 - **GeometryCollection wrapper**: `{"geometries": [{"type": "Polygon", "coordinates": [[[...]]]}]}` — legacy format, still supported for backward compatibility.
+
+**Filtering by place ID (`contained_in`)** is the most convenient way to scope results to a region you can already name — a country (`un:ita`), an administrative area (`osm:r365331`), or any other place with a polygon. For example, `{"contained_in": ["un:ita"], "containment": "exact", "relation": "within"}` (no `query`) returns the places whose geometry lies entirely within Italy. With `relation: "intersects"` (the default) a feature need only overlap the region, so large/historical polygons that straddle the border are included.
 
 #### Other
 
