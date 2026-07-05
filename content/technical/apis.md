@@ -258,6 +258,7 @@ Each entry in a query's `result` array is an object with the following fields:
 | `match` | boolean | `true` if WHG considers this the best confident match for the query. When no result is flagged, treat the highest-scoring entry as the best candidate. |
 | `description` | string | Short human-readable summary, typically of the form `"Country: XX"` for places, where `XX` is an ISO 3166-1 alpha-2 code. Useful as a post-hoc sanity check — see [Filter Behaviour](#filter-behaviour-and-common-pitfalls) below. |
 | `alt_names` | array | Variant toponyms in any language. |
+| `has_geom` | boolean | `true` if the matched place is backed by a full **polygon** geometry — i.e. it can itself serve as a `contained_in` region for a subsequent spatial query. Point/line-only places report `false`. Use this to pick valid parents when reconciling hierarchically (resolve a place, then scope its children with `contained_in: ["place:<id>"]`). |
 | `type` | array | LPF type objects. |
 
 ### Filter Behaviour and Common Pitfalls
