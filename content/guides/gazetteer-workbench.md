@@ -172,16 +172,36 @@ row sharing that name.
 
 ## 5 · Enrich & export
 
-```{admonition} Under construction
-:class: warning
+The final step produces an **augmented copy** of your table for use elsewhere —
+generated entirely in your browser, with nothing uploaded. Your original columns are
+always kept; you choose which augmented columns to add:
 
-This final step is still being built. When complete it will let you **export an
-augmented copy** of your table — your original columns plus added WGS84 latitude/
-longitude and ISO start/end date columns wherever the Workbench converted them, and
-identifiers for your confirmed matches — in CSV, JSON, and WHG's Linked Places
-formats, ready either for use in other software or for contribution to WHG through
-the existing [upload and publication](uploading.md) workflow.
+- **WGS84 latitude & longitude** — the coordinates the Workbench converted from
+  whatever format your source used;
+- **ISO start & end dates** — the standardised dates from step 2;
+- **Confirmed WHG match** — the identifier, title, score, and source gazetteer of
+  the candidate you accepted for each place;
+- **Enrich from WHG** — richer detail for your confirmed matches (the matched
+  place's coordinates, variant names, description, and type), fetched from WHG.
+
+Choose a format and export:
+
+- **CSV** and **JSON** — your table plus the augmented columns, for spreadsheets or
+  other software;
+- **Linked Places (LPF GeoJSON)** and **LP-TSV** — WHG's own upload formats, giving
+  you a head start if you go on to contribute the data.
+
+```{note}
+The LP-TSV and LPF exports map a sensible subset of your data onto WHG's upload
+schema as a **starting point** — you will usually want to review and complete them
+(titles, sources, licences, and so on) before uploading.
 ```
+
+When your data is ready, contributing it to WHG through the existing
+[upload and publication](uploading.md) workflow accessions your places into the
+union index and links them with records for the same places from other datasets —
+the step that generates the rich Place Portal pages. The Workbench is the
+preparation bench; publication remains the way your work becomes part of WHG.
 
 ## Caveats
 
