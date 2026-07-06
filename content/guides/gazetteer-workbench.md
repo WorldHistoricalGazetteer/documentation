@@ -218,20 +218,20 @@ Choose a format and export:
 
 - **CSV** and **JSON** — your table plus the augmented columns, for spreadsheets or
   other software;
-- **Linked Places (LPF GeoJSON)** and **LP-TSV** — WHG's own upload formats, giving
-  you a head start if you go on to contribute the data.
+- **Linked Places (LPF GeoJSON)** — WHG's own upload format, and the best starting
+  point if you go on to contribute the data.
 
 ```{note}
-The LP-TSV and LPF exports map a sensible subset of your data onto WHG's upload
-schema as a **starting point** — you will usually want to review and complete them
-(titles, sources, licences, and so on) before uploading.
+The LPF export maps a sensible subset of your data onto WHG's upload schema as a
+**starting point** — you will usually want to review and complete it (titles,
+sources, licences, and so on) before uploading.
 ```
 
 When your data is ready, contributing it to WHG through the existing
-[upload and publication](uploading.md) workflow accessions your places into the
-union index and links them with records for the same places from other datasets —
-the step that generates the rich Place Portal pages. The Workbench is the
-preparation bench; publication remains the way your work becomes part of WHG.
+[upload and publication](uploading.md) workflow publishes your places and links
+them with records for the same places from other datasets — the step that generates
+the rich Place Portal pages. The Workbench is the preparation bench; publication
+remains the way your work becomes part of WHG.
 
 ## Caveats
 
