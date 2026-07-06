@@ -136,39 +136,68 @@ regnal years, movable feasts, and calendar conversions near a year boundary.
 ## 3 · Reconcile against WHG
 
 Reconciliation matches your **name** column against WHG's gazetteers using the
-standard WHG reconciliation service. Only your distinct place names (with any
-admin-parent context) are sent — duplicates are collapsed — and matches are fanned
-back out to every row that shares a name. Progress is shown, and you can stop and
+standard WHG reconciliation service. Only the place name (with a country hint where
+available) is sent — never your full rows. Progress is shown, and you can stop and
 resume.
 
-Two controls shape the results:
+```{note}
+**Every row is reconciled individually — identical names are _not_ merged.** Earlier
+designs de-duplicated names and fanned one result out to all rows sharing it. The
+Workbench deliberately does **not** do this: you have already disambiguated your
+places, so two rows both called "Newton" may be different Newtons and each deserves
+its own candidate list, its own match, and its own geometry. This makes the row count
+and the query count the same.
+```
+
+Controls that shape the results:
 
 - **Auto-confirm threshold.** Matches at or above the score you set (or an exact
   name match) are accepted automatically, leaving only the genuinely ambiguous
   cases for you to review.
+- **Phonetic matching** *(on by default).** As well as text matching, the Workbench
+  computes a **phonetic embedding** for each name — using WHG's *Symphonym* model
+  running **entirely in your browser** — and sends it with the query, so candidates
+  are ranked by how the name *sounds*, not just how it is spelled. This helps across
+  spelling variants, transliterations, and scripts. A **Language** selector (auto-detected
+  from your data, overridable) conditions the embedding; set it if the automatic guess
+  is wrong. The first run downloads the model (~20 MB, then cached); untick the box to
+  fall back to plain text matching.
 - **Sources.** A picker lets you set which source gazetteers to use: *all*,
   *prioritise* a chosen few (they sort to the top), or *only* those few (others are
-  excluded from the query). Your choice is remembered across page loads.
+  excluded from the query). Hover a source for its description. Your choice is
+  remembered across page loads.
 
 ## 4 · Review & confirm matches
 
-This step walks you through the names that need a human decision, highest-impact
-first (those affecting the most rows). For each name you see the ranked candidate
-matches on the left and a map on the right:
+This step walks you through the rows that need a human decision. For each one you
+see the ranked candidate matches on the left and a map on the right:
 
 - candidates are **numbered and colour-coded**, and the same numbers and colours
   mark their locations on the map; a ★ shows your own coordinate for the place if
   you supplied one;
+- **hovering** a candidate in the list highlights its marker on the map (and vice
+  versa); **accepted** candidates get a coloured ring;
 - hovering a map marker shows the candidate's source gazetteer (by name) and its
   alternate names;
-- the map uses WHG's portal basemap, with a layer switcher and terrain toggle.
+- the map uses WHG's portal basemap, with a layer switcher and terrain toggle
+  (your basemap choice is remembered across page loads).
 
-It is built for the keyboard: press **1–9** (or click) to accept a candidate,
+It is built for the keyboard: press **1–9** (or click) to **toggle** a candidate,
 **x** to reject, **s** to skip, **n** for no-match, **u** to undo, and the arrow
-keys to move between names. If the first few candidates aren't enough, **load more
+keys to move between rows. If the first few candidates aren't enough, **load more
 candidates** fetches a larger batch. A "review all" toggle lets you revisit even
-the auto-confirmed matches. Your decisions are saved as you go and apply to every
-row sharing that name.
+the auto-confirmed matches. Decisions are saved as you go.
+
+**Accepting more than one match.** Toggling lets you accept **several** candidates
+for a row — each becomes a `closeMatch` (a place legitimately linked to more than one
+record, e.g. the same place in both GeoNames and a WHG dataset).
+
+**Setting the location.** A *Location* toolbar lets you fix the geometry for the
+row: **Use match location** clones the selected match's geometry (point, line, or
+polygon) into your data, or you can **draw** your own — Point, Line, or Polygon,
+clicking on the map to add vertices and *Finish* to complete. Press a shape's button
+again to add another part (→ Multi-point / -line / -polygon). *Clear* removes the
+override. Whatever you set here wins on export.
 
 ## 5 · Enrich & export
 
@@ -182,7 +211,8 @@ always kept; you choose which augmented columns to add:
 - **Confirmed WHG match** — the identifier, title, score, and source gazetteer of
   the candidate you accepted for each place;
 - **Enrich from WHG** — richer detail for your confirmed matches (the matched
-  place's coordinates, variant names, description, and type), fetched from WHG.
+  place's coordinates, variant names, description, type, and — for Wikidata-backed
+  matches — a **Wikipedia** article link), fetched from WHG.
 
 Choose a format and export:
 
