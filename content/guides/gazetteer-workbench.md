@@ -56,6 +56,10 @@ Open the tool from the **Reconciliation beta** tab in the main menu (staff only,
 for now). The page is organised as a set of numbered, collapsing panels; you work
 down them in order, and each one summarises its state in its header once done.
 
+New to it? **Take a tour** (top of the page) loads the sample dataset and walks you
+through the whole flow — import, column roles, reconciliation, review, map, and
+export — highlighting each stage as it goes.
+
 Your work is saved automatically in the browser as you go, so you can close the
 tab and come back to it later. Two controls make this explicit:
 
@@ -87,17 +91,41 @@ confirming the columns.
 ## 2 · Confirm column roles
 
 The Workbench shows a preview of your table and its best guess at what each column
-is for. You assign each column a **role**:
+is for. You assign each column a **role** from a dropdown:
 
-- **name** — the place name to reconcile (required);
-- **coordinate(s)** — a single coordinate column, or separate latitude and
-  longitude columns;
-- **date** — a column of dates to interpret;
-- **admin parent** — an administrative parent (county, region, country…), used to
-  disambiguate names;
-- **ignore** — columns you want carried through untouched but not processed.
+- **Place name** — the place name to reconcile (required);
+- **Coordinates / grid ref**, or **Latitude** and **Longitude** — location;
+- **Date / year** — a column of dates to interpret;
+- **Country / ccode** — a country hint used to narrow matches;
+- **↳ Contains "…"** — marks this column as a spatial **container** of another
+  column, building the containment hierarchy (see [below](#the-spatial-hierarchy));
+- **Feature type**, **Identifier** — carried through and used as hints;
+- **Other (ignore)** — columns carried through untouched but not processed.
 
 Ignored columns are hidden in the preview by default; a toggle shows or hides them.
+
+### The spatial hierarchy
+
+If your table has administrative columns (a county, parish, region, province…),
+you can tell the Workbench how they **nest**, and it will use that nesting to
+disambiguate place names during reconciliation. You express the hierarchy directly
+in each column's role dropdown: a container column's role reads **"↳ Contains
+‹child column›"**. So for a `County, Parish, Place` table you would have:
+
+- **County** → *Contains "Parish"*
+- **Parish** → *Contains "Place"*
+- **Place** → *Place name*
+
+From these links the Workbench derives the containment chain **County → Parish →
+Place** — coarsest first, place name last. There is no separate ordering control:
+to **re-order or re-nest** the hierarchy, just change a column's "Contains" choice
+(for example, point *Parish → Contains "County"* to swap the two levels), and the
+chain updates. The number of levels is unlimited — a
+`Country → Region → District → Settlement` table works the same way.
+
+The Workbench guesses a sensible default chain on import (recognising common
+administrative column names and linking them coarse-to-fine down to the place-name
+column); adjust any that are wrong.
 
 ### Coordinates
 
@@ -153,19 +181,42 @@ its own candidate list, its own match, and its own geometry. This makes the row 
 and the query count the same.
 ```
 
-**Multi-column, containment-chained reconciliation.** If your table has
-administrative-parent columns (mark them *County / region*), the Workbench reconciles
-**parent → child**: the parent columns first, then the place name — matching each child
-*within* its resolved parent (`County → Parish → Place`). So a Parish is matched within
-its County, and a place-name within its Parish, which sharpens the disambiguation of
-same-name places far more than a country hint alone. A **column switcher** (parent → child
-pills) in the review pane chooses which column's matches you are reviewing.
+**Iterative, containment-chained reconciliation.** If you defined a
+[spatial hierarchy](#the-spatial-hierarchy), the Workbench reconciles it **one column
+at a time, parent → child**, and gates each step on your review:
+
+1. You reconcile the **outermost** column first (e.g. *County*).
+2. You **review and confirm** its matches (step 4).
+3. Only then does the **next** column unlock — and it is matched *within* the
+   places you just confirmed (a Parish is searched inside its County, a Place inside
+   its Parish). This containment sharpens the disambiguation of same-name places far
+   more than a country hint alone.
+
+A **column switcher** — parent → child pills, shown in both the reconcile and review
+panes — tracks each column's state (ready, in review, confirmed, or locked) and lets
+you focus a column to review or re-run it. Because a child inherits containment from
+its *confirmed* parents, changing a parent decision later resets the columns below it,
+so the chain always stays consistent.
 
 Controls that shape the results:
 
-- **Auto-confirm threshold.** Matches at or above the score you set (or an exact
-  name match) are accepted automatically, leaving only the genuinely ambiguous
-  cases for you to review.
+- **Auto-confirm threshold.** A match at or above the score you set (or an exact
+  name match) is accepted automatically — **unless it is ambiguous**: if two or more
+  *different* places tie for the top score (say a "Devon" in several countries), the
+  row is held back for review rather than guessed. This leaves only the genuinely
+  uncertain cases for you to decide.
+- **Per-column Sources.** Each column can draw on its **own** source gazetteers,
+  which is often what you want: reconcile a *County* column against a historic-counties
+  gazetteer, a *Parish* column against a parish gazetteer, and the place names against
+  everything. Open **Sources** (its label shows which column it targets) and choose
+  *all* sources, *prioritise* a chosen few (they sort to the top), or *only* those few
+  (others are excluded from the query). The list of gazetteers, with record counts, comes
+  from WHG's registry. A column with no explicit choice uses **all** sources; a per-column
+  choice never changes another column's default.
+- **Re-reconcile a column.** Realised a column needs a different gazetteer after
+  confirming it? Select it in the switcher, change its **Sources**, and press
+  **Re-reconcile ‹column›** to run it again; the columns below it reset so the new
+  containment flows through.
 - **Phonetic matching** *(on by default).** As well as text matching, the Workbench
   computes a **phonetic embedding** for each name — using WHG's *Symphonym* model
   running **entirely in your browser** — and sends it with the query, so candidates
@@ -174,10 +225,6 @@ Controls that shape the results:
   from your data, overridable) conditions the embedding; set it if the automatic guess
   is wrong. The first run downloads the model (~20 MB, then cached); untick the box to
   fall back to plain text matching.
-- **Sources.** A picker lets you set which source gazetteers to use: *all*,
-  *prioritise* a chosen few (they sort to the top), or *only* those few (others are
-  excluded from the query). Hover a source for its description. Your choice is
-  remembered across page loads.
 
 ## 4 · Review & confirm matches
 
@@ -211,7 +258,17 @@ clicking on the map to add vertices and *Finish* to complete. Press a shape's bu
 again to add another part (→ Multi-point / -line / -polygon). *Clear* removes the
 override. Whatever you set here wins on export.
 
-## 5 · Enrich & export
+## 5 · Map
+
+Every located row appears on a single map, built from the coordinates the Workbench
+converted (or a geometry you drew or cloned in review). **Hover** any point to see its
+details — name, administrative context, date, confirmed match, and coordinates.
+
+The map is designed to stay fast at scale: points **cluster** as you zoom out (click a
+cluster to zoom in and split it), and a **heatmap** takes over at low zoom, so a table
+of thousands of places renders smoothly in the browser without a server round-trip.
+
+## 6 · Enrich & export
 
 The final step produces an **augmented copy** of your table for use elsewhere —
 generated entirely in your browser, with nothing uploaded. Your original columns are
