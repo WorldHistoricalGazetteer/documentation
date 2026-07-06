@@ -77,6 +77,10 @@ Drag a file onto the import area, or click to choose one. CSV, TSV, and JSON are
 accepted (including JSON in WHG's `{id, fields}` shape). A `.whgproj` backup
 dropped here is recognised and restored in full rather than treated as new data.
 
+To try the tool without your own data, use **Load a sample dataset** — a small demo
+that exercises coordinate and date conversion and multi-column (County → Parish →
+Place) reconciliation.
+
 Once a file loads, the panel collapses to a summary and the tool moves you on to
 confirming the columns.
 
@@ -148,6 +152,14 @@ places, so two rows both called "Newton" may be different Newtons and each deser
 its own candidate list, its own match, and its own geometry. This makes the row count
 and the query count the same.
 ```
+
+**Multi-column, containment-chained reconciliation.** If your table has
+administrative-parent columns (mark them *County / region*), the Workbench reconciles
+**parent → child**: the parent columns first, then the place name — matching each child
+*within* its resolved parent (`County → Parish → Place`). So a Parish is matched within
+its County, and a place-name within its Parish, which sharpens the disambiguation of
+same-name places far more than a country hint alone. A **column switcher** (parent → child
+pills) in the review pane chooses which column's matches you are reviewing.
 
 Controls that shape the results:
 
@@ -227,11 +239,13 @@ The LPF export maps a sensible subset of your data onto WHG's upload schema as a
 sources, licences, and so on) before uploading.
 ```
 
-When your data is ready, contributing it to WHG through the existing
-[upload and publication](uploading.md) workflow publishes your places and links
-them with records for the same places from other datasets — the step that generates
-the rich Place Portal pages. The Workbench is the preparation bench; publication
-remains the way your work becomes part of WHG.
+**Contribute to WHG — one click.** When your data is ready, the **Contribute to WHG**
+button builds the Linked Places file and submits it straight to WHG's
+[upload and publication](uploading.md) workflow for you — no separate export/upload
+step. You land on WHG's validation page to review and publish; your local copy stays
+in the browser. Publishing links your places with records for the same places from
+other datasets — the step that generates the rich Place Portal pages. The Workbench is
+the preparation bench; publication remains the way your work becomes part of WHG.
 
 ## Caveats
 
