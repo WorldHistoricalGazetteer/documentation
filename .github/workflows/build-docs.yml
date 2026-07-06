@@ -10,6 +10,14 @@ permissions:
   pages: write
   id-token: write
 
+# GitHub Pages allows only one active deployment at a time; without this group,
+# overlapping runs (or a lingering in-progress deployment) make the deploy-pages
+# step fail with "Deployment failed, try again later". Serialise on a single
+# "pages" group and let an in-flight deploy finish (don't cancel a live publish).
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
 jobs:
   deploy:
     environment:
