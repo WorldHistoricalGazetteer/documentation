@@ -4,7 +4,8 @@
 :class: important
 
 The Gazetteer Workbench is **not yet available to WHG users**. It is currently
-in staff testing behind a "Reconciliation beta" menu tab and is documented here
+in staff testing behind the **Map your Data** (beta) menu tab — the name it
+carries in the interface — and is documented here
 in advance so that the design can be reviewed and refined before release. Screens,
 labels, and behaviour described below may still change. When the feature is
 released this notice will be removed.
@@ -52,13 +53,14 @@ replacement for — the existing publication and accessioning pipeline.
 
 ## Getting started
 
-Open the tool from the **Reconciliation beta** tab in the main menu (staff only,
-for now). The page is organised as a set of numbered, collapsing panels; you work
-down them in order, and each one summarises its state in its header once done.
+Open the tool from the **Map your Data** tab in the main menu (marked *beta*,
+staff only for now). The page is organised as a set of numbered, collapsing
+panels; you work down them in order, and each one summarises its state in its
+header once done.
 
 New to it? **Take a tour** (top of the page) loads the sample dataset and walks you
-through the whole flow — import, column roles, reconciliation, review, map, and
-export — highlighting each stage as it goes.
+through the whole flow — import, column roles and cleaning, scope, reconciliation,
+review, map, place types, and export — highlighting each stage as it goes.
 
 Your work is saved automatically in the browser as you go, so you can close the
 tab and come back to it later. Two controls make this explicit:
@@ -104,6 +106,23 @@ is for. You assign each column a **role** from a dropdown:
 
 Ignored columns are hidden in the preview by default; a toggle shows or hides them.
 
+### Cleaning and reshaping your table
+
+Each column in the roles table carries a small set of controls, so you can tidy
+the data here rather than going back to a spreadsheet:
+
+- a **drag handle** to **re-order** columns (ignored columns can be moved too);
+- a **transform** button that applies a light cell operation to every value in
+  the column — trim whitespace, change case (upper/lower/title), collapse
+  repeated spaces, or **find & replace** (plain or regular-expression) — with a
+  live preview of the effect before you commit;
+- a **delete** button to drop a column you don't need.
+
+Every edit — a transform, a reorder, a deletion, a role change — is **undoable**.
+Use the **Undo** / **Redo** buttons (or <kbd>Ctrl</kbd>/<kbd>⌘</kbd>+<kbd>Z</kbd>
+and <kbd>Shift</kbd>+<kbd>Ctrl</kbd>/<kbd>⌘</kbd>+<kbd>Z</kbd>) to step backwards
+and forwards through your changes.
+
 ### The spatial hierarchy
 
 If your table has administrative columns (a county, parish, region, province…),
@@ -135,7 +154,9 @@ longitude (in either order, with a swap toggle when two columns are used),
 degrees-minutes-seconds, well-known text (WKT), **OS National Grid** references
 (e.g. `SK690965`), **Irish Grid**, and UTM. Where the format is ambiguous you can
 override the detected choice. A **Validate all rows** check reports how many values
-convert cleanly and lists any that do not.
+convert cleanly and lists any that do not. **Insert WGS84 columns** adds the
+converted latitude and longitude to your table as real columns, so the standardised
+coordinates travel with the data through every later step and every export.
 
 ### Dates
 
@@ -156,7 +177,8 @@ start/end values. It handles, among others:
   converted to Gregorian intervals.
 
 The panel names the calendar or format it detected, and offers the same
-validate-all check as for coordinates.
+validate-all check as for coordinates. As with coordinates, **Insert ISO date
+columns** writes the parsed start/end dates back into your table as real columns.
 
 ```{note}
 Date interpretation is a genuinely hard problem and the parser is deliberately
@@ -197,6 +219,26 @@ panes — tracks each column's state (ready, in review, confirmed, or locked) an
 you focus a column to review or re-run it. Because a child inherits containment from
 its *confirmed* parents, changing a parent decision later resets the columns below it,
 so the chain always stays consistent.
+
+### Scope — narrowing the whole dataset
+
+Where per-column **Sources** choose *which gazetteers* a column queries, **Scope**
+constrains *what counts as a candidate* across the **entire** dataset — a coarse
+filter you set once, before matching. Open **Scope** (its button shows a badge when
+any constraint is active) to set any combination of:
+
+- **Where** — a place filter, given as one or more **country codes**, a **WHG
+  region** chosen by name, or an **area you draw** on a modal map (a bounding
+  polygon). Candidates outside it are dropped.
+- **When** — a **year range**; candidates whose own dates fall wholly outside it are
+  dropped.
+- **What** — a Getty **AAT place type**, chosen with the type picker (see
+  [Place types](#place-types-required) below). Restricts candidates to that type and
+  its descendants — e.g. scoping to *inhabited places* keeps rivers and buildings out
+  of the running.
+
+Scope is optional, but on a dataset with a clear geographic, temporal, or typological
+focus it removes whole classes of wrong candidate before scoring even begins.
 
 Controls that shape the results:
 
@@ -258,6 +300,15 @@ clicking on the map to add vertices and *Finish* to complete. Press a shape's bu
 again to add another part (→ Multi-point / -line / -polygon). *Clear* removes the
 override. Whatever you set here wins on export.
 
+### Filtering the results
+
+On a large table you rarely want to page through every row. A **filter** panel lets
+you slice the reconciled results by **status** (needs review, auto-confirmed, no
+match), **match score**, a **column's values**, whether a row has coordinates or
+dates, or a free-text **name search**. The filter is shared: it drives the results
+table, the review queue, *and* the map together, so you can zero in on — say — just
+the unmatched rows in one county and work only on those.
+
 ## 5 · Map
 
 Every located row appears on a single map, built from the coordinates the Workbench
@@ -268,20 +319,38 @@ The map is designed to stay fast at scale: points **cluster** as you zoom out (c
 cluster to zoom in and split it), and a **heatmap** takes over at low zoom, so a table
 of thousands of places renders smoothly in the browser without a server round-trip.
 
-## 6 · Enrich & export
+## 6 · Place types, enrich & export
 
-The final step produces an **augmented copy** of your table for use elsewhere —
-generated entirely in your browser, with nothing uploaded. Your original columns are
-always kept; you choose which augmented columns to add:
+The final step assigns place types, produces an **augmented copy** of your table for
+use elsewhere, and — when you're ready — contributes it to WHG. Everything here is
+generated in your browser, with nothing uploaded until you choose to contribute.
 
-- **WGS84 latitude & longitude** — the coordinates the Workbench converted from
-  whatever format your source used;
-- **ISO start & end dates** — the standardised dates from step 2;
+### Place types (required)
+
+WHG requires every place to carry a Getty **AAT place type** (a controlled term such
+as *inhabited place*, *river*, or *castle*), so this is usually the one thing you add
+before contributing. Assign types with the built-in **type picker** — the same
+searchable widget used by Scope — which searches WHG's curated AAT index with
+live suggestions and shows each term's place in the hierarchy. Two modes:
+
+- **One type for all rows** — pick a single type that applies to the whole dataset
+  (a gazetteer of parishes, say);
+- **Map a column's values** — when a column already records a kind (`town`, `river`,
+  `castle`…), map each distinct value to its own AAT type once, and every row inherits
+  the type for its value.
+
+### Augmented columns
+
+Your original columns are always kept; you choose which augmented columns to add:
+
 - **Confirmed WHG match** — the identifier, title, score, and source gazetteer of
   the candidate you accepted for each place;
 - **Enrich from WHG** — richer detail for your confirmed matches (the matched
   place's coordinates, variant names, description, type, and — for Wikidata-backed
   matches — a **Wikipedia** article link), fetched from WHG.
+
+(The standardised **WGS84 coordinates** and **ISO dates** are added earlier, in
+[step 2](#coordinates), so they are already part of your table.)
 
 Choose a format and export:
 
@@ -296,11 +365,17 @@ The LPF export maps a sensible subset of your data onto WHG's upload schema as a
 sources, licences, and so on) before uploading.
 ```
 
-**Contribute to WHG — one click.** When your data is ready, the **Contribute to WHG**
-button builds the Linked Places file and submits it straight to WHG's
-[upload and publication](uploading.md) workflow for you — no separate export/upload
-step. You land on WHG's validation page to review and publish; your local copy stays
-in the browser. Publishing links your places with records for the same places from
+**Validated before you contribute.** The **Contribute to WHG** button builds the
+Linked Places file and checks it **in your browser** against WHG's own upload
+schema before anything is sent. Until every place passes, the button stays disabled
+and a summary lists what's still missing — most often a **place type** (see above),
+but also a title, a name, or a location — so problems surface here rather than as a
+rejection after upload.
+
+**Contribute to WHG — one click.** Once it validates, the button submits the file
+straight to WHG's [upload and publication](uploading.md) workflow for you — no
+separate export/upload step. You land on WHG's validation page to review and publish;
+your local copy stays in the browser. Publishing links your places with records for the same places from
 other datasets — the step that generates the rich Place Portal pages. The Workbench is
 the preparation bench; publication remains the way your work becomes part of WHG.
 
