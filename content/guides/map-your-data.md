@@ -122,6 +122,28 @@ Use the **Undo** / **Redo** buttons (or <kbd>Ctrl</kbd>/<kbd>⌘</kbd>+<kbd>Z</k
 and <kbd>Shift</kbd>+<kbd>Ctrl</kbd>/<kbd>⌘</kbd>+<kbd>Z</kbd>) to step backwards
 and forwards through your changes.
 
+### Browsing and editing the data
+
+Below the column controls, the **Data** table shows your *whole* dataset — not just a
+sample — and stays responsive even at tens of thousands of rows (only the rows on
+screen are rendered). **Search all columns** filters the rows live. Switch on **Edit
+cells** to correct values in place: click a cell, edit, press <kbd>Enter</kbd> to
+commit (<kbd>Esc</kbd> to cancel). Every edit is undoable, and editing a value in a
+column you have already reconciled re-flags that row so it can be matched again.
+
+### Place types
+
+Contributing to WHG requires each place to carry a Getty **AAT place type** (a
+controlled term such as *inhabited place*, *river*, or *castle*) — but this is
+**optional** if you only want to export your data. Assign types right here in the
+table, per row:
+
+- if your data has no type column, **Add a "Place type" column** when prompted;
+- in **Edit cells** mode, click a cell in the type column to pick from the AAT
+  hierarchy (searchable, with live suggestions), with a one-click option to **apply
+  it to every row sharing that value** — so a column of repeated kinds
+  (town, river, church…) takes just a handful of picks.
+
 ### The spatial hierarchy
 
 If your table has administrative columns (a county, parish, region, province…),
@@ -231,7 +253,7 @@ any constraint is active) to set any combination of:
 - **When** — a **year range**; candidates whose own dates fall wholly outside it are
   dropped.
 - **What** — a Getty **AAT place type**, chosen with the type picker (see
-  [Place types](#place-types-required) below). Restricts candidates to that type and
+  [Place types](#place-types) below). Restricts candidates to that type and
   its descendants — e.g. scoping to *inhabited places* keeps rivers and buildings out
   of the running.
 
@@ -317,25 +339,13 @@ The map is designed to stay fast at scale: points **cluster** as you zoom out (c
 cluster to zoom in and split it), and a **heatmap** takes over at low zoom, so a table
 of thousands of places renders smoothly in the browser without a server round-trip.
 
-## 6 · Place types, enrich & export
+## 6 · That's a gazetteer — enrich & export
 
-The final step assigns place types, produces an **augmented copy** of your table for
-use elsewhere, and — when you're ready — contributes it to WHG. Everything here is
-generated in your browser, with nothing uploaded until you choose to contribute.
-
-### Place types (required)
-
-WHG requires every place to carry a Getty **AAT place type** (a controlled term such
-as *inhabited place*, *river*, or *castle*), so this is usually the one thing you add
-before contributing. Assign types with the built-in **type picker** — the same
-searchable widget used by Scope — which searches WHG's curated AAT index with
-live suggestions and shows each term's place in the hierarchy. Two modes:
-
-- **One type for all rows** — pick a single type that applies to the whole dataset
-  (a gazetteer of parishes, say);
-- **Map a column's values** — when a column already records a kind (`town`, `river`,
-  `castle`…), map each distinct value to its own AAT type once, and every row inherits
-  the type for its value.
+What began as a table of names is now located, dated, standardised, and linked to the
+world's places: that is the difference between a spreadsheet and a **gazetteer**. This
+final step produces an **augmented copy** of your table for use elsewhere and — when
+you're ready — contributes it to WHG. Everything here is generated in your browser,
+with nothing uploaded until you choose to contribute.
 
 ### Augmented columns
 
@@ -366,7 +376,7 @@ sources, licences, and so on) before uploading.
 **Validated before you contribute.** The **Contribute to WHG** button builds the
 Linked Places file and checks it **in your browser** against WHG's own upload
 schema before anything is sent. Until every place passes, the button stays disabled
-and a summary lists what's still missing — most often a **place type** (see above),
+and a summary lists what's still missing — most often a **place type** (assign them per row in Step 2),
 but also a title, a name, or a location — so problems surface here rather than as a
 rejection after upload.
 

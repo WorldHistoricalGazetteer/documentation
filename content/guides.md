@@ -9,6 +9,6 @@ Workbench <./guides/workbench.md>
 Publishing Data <./guides/publishing.md>
 Uploading Data <./guides/uploading.md>
 Reconciliation <./guides/reconciliation.md>
-Map your Data (coming soon) <./guides/gazetteer-workbench.md>
+Map your Data (coming soon) <./guides/map-your-data.md>
 Collection Groups <./guides/collection-groups.md>
 ```
