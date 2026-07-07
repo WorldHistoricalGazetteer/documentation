@@ -1,19 +1,18 @@
-# Gazetteer Workbench
+# Map your Data
 
 ```{admonition} Coming soon — preview feature
 :class: important
 
-The Gazetteer Workbench is **not yet available to WHG users**. It is currently
-in staff testing behind the **Map your Data** (beta) menu tab — the name it
-carries in the interface — and is documented here
-in advance so that the design can be reviewed and refined before release. Screens,
-labels, and behaviour described below may still change. When the feature is
-released this notice will be removed.
+**Map your Data** is **not yet available to WHG users**. It is currently in staff
+testing behind a **beta** menu tab, and is documented here in advance so that the
+design can be reviewed and refined before release. Screens, labels, and behaviour
+described below may still change. When the feature is released this notice will be
+removed.
 ```
 
 ## What it is
 
-The **Gazetteer Workbench** is a browser-based tool for taking a table of places
+**Map your Data** is a browser-based tool for taking a table of places
 — a spreadsheet, CSV, TSV, or JSON export — all the way from a messy first draft
 through to reconciled, standardised data, **without uploading anything to WHG
 first**. You import your file, tidy and interpret its columns, match its place
@@ -33,14 +32,14 @@ you upload a dataset into your WHG workspace, run a server-side reconciliation
 task, and review the results there. It works well once your data is clean and you
 intend to contribute it.
 
-The Gazetteer Workbench addresses the stage *before* that, and some cases that sit
+Map your Data addresses the stage *before* that, and some cases that sit
 outside it:
 
 - **Local-first and private.** Your data never leaves your browser except as
   anonymous name-lookups. That suits work that is unpublished, sensitive, still in
   progress, or simply not (yet) destined for WHG at all.
 - **Messy real-world data.** Historical sources rarely arrive in tidy WGS84
-  decimal degrees and ISO dates. The Workbench recognises a wide range of
+  decimal degrees and ISO dates. The tool recognises a wide range of
   coordinate formats and historical/calendrical date styles and converts them for
   you, up front.
 - **Instant feedback.** Because it runs in the page, you see the effect of every
@@ -92,7 +91,7 @@ confirming the columns.
 
 ## 2 · Confirm column roles
 
-The Workbench shows a preview of your table and its best guess at what each column
+The tool shows a preview of your table and its best guess at what each column
 is for. You assign each column a **role** from a dropdown:
 
 - **Place name** — the place name to reconcile (required);
@@ -126,7 +125,7 @@ and forwards through your changes.
 ### The spatial hierarchy
 
 If your table has administrative columns (a county, parish, region, province…),
-you can tell the Workbench how they **nest**, and it will use that nesting to
+you can tell the tool how they **nest**, and it will use that nesting to
 disambiguate place names during reconciliation. You express the hierarchy directly
 in each column's role dropdown: a container column's role reads **"↳ Contains
 ‹child column›"**. So for a `County, Parish, Place` table you would have:
@@ -135,20 +134,20 @@ in each column's role dropdown: a container column's role reads **"↳ Contains
 - **Parish** → *Contains "Place"*
 - **Place** → *Place name*
 
-From these links the Workbench derives the containment chain **County → Parish →
+From these links the tool derives the containment chain **County → Parish →
 Place** — coarsest first, place name last. There is no separate ordering control:
 to **re-order or re-nest** the hierarchy, just change a column's "Contains" choice
 (for example, point *Parish → Contains "County"* to swap the two levels), and the
 chain updates. The number of levels is unlimited — a
 `Country → Region → District → Settlement` table works the same way.
 
-The Workbench guesses a sensible default chain on import (recognising common
+The tool guesses a sensible default chain on import (recognising common
 administrative column names and linking them coarse-to-fine down to the place-name
 column); adjust any that are wrong.
 
 ### Coordinates
 
-If you assign a coordinate role, the Workbench detects the format automatically and
+If you assign a coordinate role, the tool detects the format automatically and
 converts it to standard WGS84 decimal degrees. It recognises decimal latitude/
 longitude (in either order, with a swap toggle when two columns are used),
 degrees-minutes-seconds, well-known text (WKT), **OS National Grid** references
@@ -160,7 +159,7 @@ coordinates travel with the data through every later step and every export.
 
 ### Dates
 
-If you assign a date role, the Workbench parses messy historical dates into ISO
+If you assign a date role, the tool parses messy historical dates into ISO
 start/end values. It handles, among others:
 
 - day/month/year in UK order (`dd/mm/yyyy`) by default, with automatic detection
@@ -194,17 +193,8 @@ standard WHG reconciliation service. Only the place name (with a country hint wh
 available) is sent — never your full rows. Progress is shown, and you can stop and
 resume.
 
-```{note}
-**Every row is reconciled individually — identical names are _not_ merged.** Earlier
-designs de-duplicated names and fanned one result out to all rows sharing it. The
-Workbench deliberately does **not** do this: you have already disambiguated your
-places, so two rows both called "Newton" may be different Newtons and each deserves
-its own candidate list, its own match, and its own geometry. This makes the row count
-and the query count the same.
-```
-
 **Iterative, containment-chained reconciliation.** If you defined a
-[spatial hierarchy](#the-spatial-hierarchy), the Workbench reconciles it **one column
+[spatial hierarchy](#the-spatial-hierarchy), the tool reconciles it **one column
 at a time, parent → child**, and gates each step on your review:
 
 1. You reconcile the **outermost** column first (e.g. *County*).
@@ -267,7 +257,7 @@ Controls that shape the results:
   confirming it? Select it in the switcher, change its **Sources**, and press
   **Re-reconcile ‹column›** to run it again; the columns below it reset so the new
   containment flows through.
-- **Phonetic matching** *(on by default).** As well as text matching, the Workbench
+- **Phonetic matching** *(on by default).** As well as text matching, the tool
   computes a **phonetic embedding** for each name — using WHG's *Symphonym* model
   running **entirely in your browser** — and sends it with the query, so candidates
   are ranked by how the name *sounds*, not just how it is spelled. This helps across
@@ -319,7 +309,7 @@ the unmatched rows in one county and work only on those.
 
 ## 5 · Map
 
-Every located row appears on a single map, built from the coordinates the Workbench
+Every located row appears on a single map, built from the coordinates the tool
 converted (or a geometry you drew or cloned in review). **Hover** any point to see its
 details — name, administrative context, date, confirmed match, and coordinates.
 
@@ -384,13 +374,13 @@ rejection after upload.
 straight to WHG's [upload and publication](uploading.md) workflow for you — no
 separate export/upload step. You land on WHG's validation page to review and publish;
 your local copy stays in the browser. Publishing links your places with records for the same places from
-other datasets — the step that generates the rich Place Portal pages. The Workbench is
+other datasets — the step that generates the rich Place Portal pages. The tool is
 the preparation bench; publication remains the way your work becomes part of WHG.
 
 ## Caveats
 
 ```{warning}
-- **Preview / staff only.** The Workbench is not yet released to users; behaviour
+- **Preview / staff only.** The tool is not yet released to users; behaviour
   may change.
 - **Your data is local.** It lives in this browser only. Take a `.whgproj` backup
   before clearing browser data or switching computers, and note that this local
