@@ -220,13 +220,12 @@ you focus a column to review or re-run it. Because a child inherits containment 
 its *confirmed* parents, changing a parent decision later resets the columns below it,
 so the chain always stays consistent.
 
-```{tip}
-Containment can only *exclude* candidates that fall outside a parent when the confirmed
-**parent record has a geometry** to test against. Many administrative records — especially
-Wikidata- and OpenHistoricalMap-sourced counties — carry no geometry, so a parish "within"
-them cannot be narrowed. To get reliable containment for an administrative column, set its
-**Sources** to a gazetteer whose records *do* have geometry — for English counties, **UK
-Historic Counties** — so every parent resolves to a shape the child can be matched inside.
+```{note}
+Containment narrows a child only when the confirmed **parent record has an area geometry**
+to test candidates against. Where a parent resolves to a record with only a point — or no
+geometry at all — that step cannot be reliably constrained. Choosing **Sources** for an
+administrative column that favour gazetteers carrying area geometries gives the most reliable
+containment.
 ```
 
 ### Scope — narrowing the whole dataset
