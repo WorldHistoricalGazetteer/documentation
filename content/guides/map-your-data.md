@@ -440,14 +440,22 @@ pick up a shared dataset from any computer where you're signed in.
 
 ### Live co-editing
 
-Team projects sync **live**. When teammates are working on the same project, the
-confirmed **match decisions** each person makes appear for everyone within about a
-second, and the shared copy is kept safe on the server — so two people reviewing
-different parts of a large dataset never overwrite each other. A **● live** indicator by
-the Collaborate button shows when you're connected. If you go offline or lose the
-connection, your work is still saved to the team copy and merges back in when you
-reconnect. (Live co-editing currently covers review decisions; more of the workbench
-becomes collaborative as the feature matures.)
+Team projects sync **live**, and it's the *whole* project — not just one part. When
+teammates are working on the same dataset, everything each person does appears for the
+others within about a second: **cell edits** in the data table, **column roles**,
+reconciliation **matches** and confirmed **decisions**, drawn or cloned **geometry**,
+**place types**, and the dataset **scope**. Edits merge automatically per field, so two
+people working on different rows — or different columns of the same row — never overwrite
+each other; there's no lock, no "save and refresh", no merge dialog.
+
+**See who's here.** Small avatars by the Collaborate button show who else is editing, and
+in the data browser a **coloured outline with their name** marks the exact cell a teammate
+is in, so you can see each other work in real time. A **● live** indicator shows when
+you're connected.
+
+**Works offline too.** If you lose the connection (or close your laptop on the train), you
+can keep editing your local copy; your changes are saved and **merge back into the team
+copy automatically when you reconnect**. Viewers stay read-only throughout.
 
 ```{note}
 Collaboration is **decoupled from publishing**. A team can work on an in-progress copy
