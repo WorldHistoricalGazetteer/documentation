@@ -3,11 +3,11 @@
 ```{admonition} Coming soon — preview feature
 :class: important
 
-**Map your Data** is **not yet available to WHG users**. It is currently in staff
-testing behind a **beta** menu tab, and is documented here in advance so that the
-design can be reviewed and refined before release. Screens, labels, and behaviour
-described below may still change. When the feature is released this notice will be
-removed.
+**Map your Data** is **not yet generally available**. It is currently in beta behind
+a **beta** menu tab, open to WHG staff and invited **beta testers**, and is documented
+here in advance so that the design can be reviewed and refined before release. Screens,
+labels, and behaviour described below may still change. When the feature is released
+this notice will be removed.
 ```
 
 ## What it is
@@ -53,7 +53,7 @@ replacement for — the existing publication and accessioning pipeline.
 ## Getting started
 
 Open the tool from the **Map your Data** tab in the main menu (marked *beta*,
-staff only for now). The page is organised as a set of numbered, collapsing
+available to staff and invited beta testers for now). The page is organised as a set of numbered, collapsing
 panels; you work down them in order, and each one summarises its state in its
 header once done.
 
@@ -247,15 +247,20 @@ constrains *what counts as a candidate* across the **entire** dataset — a coar
 filter you set once, before matching. Open **Scope** (its button shows a badge when
 any constraint is active) to set any combination of:
 
-- **Where** — a place filter, given as one or more **country codes**, a **WHG
-  region** chosen by name, or an **area you draw** on a modal map (a bounding
-  polygon). Candidates outside it are dropped.
-- **When** — a **year range**; candidates whose own dates fall wholly outside it are
-  dropped.
+- **Where** — a place filter, given as one or more **country codes** (with type-ahead
+  and validation — start typing a country name or ISO code and pick from the list), a
+  **WHG region** chosen by name (also type-ahead), or an **area you draw** on a modal
+  map (a bounding polygon). Candidates outside it are dropped.
 - **What** — a Getty **AAT place type**, chosen with the type picker (see
   [Place types](#place-types) below). Restricts candidates to that type and
   its descendants — e.g. scoping to *inhabited places* keeps rivers and buildings out
   of the running.
+- **When** — a **year range**, and/or a canonical **historical period** from
+  [PeriodO](https://perio.do/). Search PeriodO by name (type-ahead — e.g. *Ming*,
+  *Viking Age*, *Hellenistic*) or pick from suggestions ranked by your data's own
+  geographic area and dates; choosing one fills the year range and travels into the
+  exported `when.periods`. Candidates whose own dates fall wholly outside the year
+  range are dropped.
 
 Scope is optional, but on a dataset with a clear geographic, temporal, or typological
 focus it removes whole classes of wrong candidate before scoring even begins.
@@ -390,8 +395,8 @@ the preparation bench; publication remains the way your work becomes part of WHG
 ## Caveats
 
 ```{warning}
-- **Preview / staff only.** The tool is not yet released to users; behaviour
-  may change.
+- **Beta — staff & invited testers only.** The tool is not yet released to all users;
+  behaviour may change.
 - **Your data is local.** It lives in this browser only. Take a `.whgproj` backup
   before clearing browser data or switching computers, and note that this local
   copy is *not* itself a contribution to WHG — publishing still goes through the
