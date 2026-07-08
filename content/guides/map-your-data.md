@@ -265,6 +265,11 @@ any constraint is active) to set any combination of:
 Scope is optional, but on a dataset with a clear geographic, temporal, or typological
 focus it removes whole classes of wrong candidate before scoring even begins.
 
+The **What** and **When** settings do double duty: as well as narrowing candidates, a
+Scope place type or date/period is written into the export and contribution for any row
+that lacks its own — the quickest way to satisfy the *place type* and *date/period*
+requirements dataset-wide (see the **Enrich & export** step below).
+
 Controls that shape the results:
 
 - **Auto-confirm threshold.** A match at or above the score you set (or an exact
@@ -359,8 +364,13 @@ Your original columns are always kept; you choose which augmented columns to add
 - **Confirmed WHG match** — the identifier, title, score, and source gazetteer of
   the candidate you accepted for each place;
 - **Enrich from WHG** — richer detail for your confirmed matches (the matched
-  place's coordinates, variant names, description, type, and — for Wikidata-backed
-  matches — a **Wikipedia** article link), fetched from WHG.
+  place's coordinates, variant names, description, and type), fetched from WHG;
+- **Wikipedia link** — a `wikipedia` column holding the article link for each place.
+  Links come **only from Wikidata (`wd`) matches**, and only from the **place-name**
+  column's match (the lowest level — *not* higher containment levels such as County or
+  Parish). So a row needs to be reconciled to a Wikidata record (see *Sources*) to get
+  a link; others leave the column blank. The header is kept unique so it never collides
+  with a column of your own.
 
 (The standardised **WGS84 coordinates** and **ISO dates** are added earlier, in
 [step 2](#coordinates), so they are already part of your table.)
@@ -379,11 +389,18 @@ sources, licences, and so on) before uploading.
 ```
 
 **Validated before you contribute.** The **Contribute to WHG** button builds the
-Linked Places file and checks it **in your browser** against WHG's own upload
-schema before anything is sent. Until every place passes, the button stays disabled
-and a summary lists what's still missing — most often a **place type** (assign them per row in Step 2),
-but also a title, a name, or a location — so problems surface here rather than as a
-rejection after upload.
+Linked Places file and checks it **in your browser** against WHG's own upload schema
+before anything is sent. Until every place passes, the button stays disabled and the
+**Contribution readiness** panel lists — in plain language — what is still missing (a
+place type, a date or period, a location, a name), each with how to fix it; the full
+technical schema report is tucked behind an expandable *Technical validation details*
+line. Problems surface here, rather than as a rejection after upload.
+
+**Fill gaps for the whole dataset from Scope.** The two most common gaps — a missing
+**place type** and missing **dates/periods** — can be filled once for every place from
+the **Scope** picker: set a type under *What* and a year range or historical period
+under *When*. Any row without its own value then inherits the Scope value in the export
+and the contribution.
 
 **Contribute to WHG — one click.** Once it validates, the button submits the file
 straight to WHG's [upload and publication](uploading.md) workflow for you — no
