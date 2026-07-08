@@ -409,6 +409,52 @@ your local copy stays in the browser. Publishing links your places with records 
 other datasets — the step that generates the rich Place Portal pages. The tool is
 the preparation bench; publication remains the way your work becomes part of WHG.
 
+## 7 · Collaborate & share
+
+By default a project lives on **your device only** — nothing is uploaded. When you
+want another pair of eyes, or a team working the same dataset together, the
+**Collaborate** button (in the *Confirm column roles* header) opens everything sharing
+in one place. Data only leaves your browser at the moment you choose to save or share.
+
+### Share a read-only link
+
+**Create read-only link** saves a snapshot of the current project and gives you a
+link. Anyone you send it to opens the tool and **imports their own copy** to work on —
+they can't change yours, and the link never lets them touch your live project. It's the
+quickest way to say "here's where I've got to, take a look" or to hand a starting point
+to a collaborator. Stop sharing at any time and the link stops working.
+
+### Work together as a team
+
+To edit *together*, save the project to a **team**. Pick **My workbench (private)** to
+keep a project server-side just for yourself, or create a team and invite people by
+username or email. Each member has a **role**:
+
+- **Owner** — full control, manages members;
+- **Editor** — can edit the shared project;
+- **Viewer** — read-only; the tool shows a *View only* badge and the editing controls
+  are disabled.
+
+**Open a saved project** lists everything you can reach across your teams, so you can
+pick up a shared dataset from any computer where you're signed in.
+
+### Live co-editing
+
+Team projects sync **live**. When teammates are working on the same project, the
+confirmed **match decisions** each person makes appear for everyone within about a
+second, and the shared copy is kept safe on the server — so two people reviewing
+different parts of a large dataset never overwrite each other. A **● live** indicator by
+the Collaborate button shows when you're connected. If you go offline or lose the
+connection, your work is still saved to the team copy and merges back in when you
+reconnect. (Live co-editing currently covers review decisions; more of the workbench
+becomes collaborative as the feature matures.)
+
+```{note}
+Collaboration is **decoupled from publishing**. A team can work on an in-progress copy
+for as long as it likes; it only becomes part of WHG when someone chooses to contribute
+it through the normal [upload](uploading.md) workflow (see step 6).
+```
+
 ## Caveats
 
 ```{warning}
