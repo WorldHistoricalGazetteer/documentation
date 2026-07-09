@@ -127,18 +127,21 @@ source of truth; your working copy is explicit and versioned.
 You don't have to move a whole gazetteer to fix one thing. On a **published place page**, if you have
 edit rights on its gazetteer, a **Correct this record** button checks out just **that one record** into
 a focused editor. It exposes the record's common Linked Places fields — **primary name**, **country
-codes**, **also-known-as names**, **place types**, **coordinate**, **dates**, **authority links**, and
-**descriptions** — each as an add/edit/remove list. You can also **re-reconcile the record** in place:
-one click searches WHG and the linked authorities again and lets you attach a fresh match (adopting its
-coordinate if the record has none). Publish, and the changes are written back to that record alone —
-its name/type/link/description sub-records are rebuilt and, if the record is in WHG search, **only that
-record's search entry is re-indexed**; the rest of the gazetteer is untouched. As with any check-out,
-it's guarded against overwriting a change someone else made meanwhile.
+codes**, **also-known-as names**, **place types**, **location/geometry**, **dates**, **authority
+links**, and **descriptions** — each as an add/edit/remove list. You can also **re-reconcile the
+record** in place: one click searches WHG and the linked authorities again and lets you attach a fresh
+match (adopting its location if the record has none). Publish, and the changes are written back to that
+record alone — its sub-records are rebuilt and, if the record is in WHG search, **only that record's
+search entry is re-indexed**; the rest of the gazetteer is untouched. As with any check-out, it's
+guarded against overwriting a change someone else made meanwhile.
 
-Coordinate editing here is for simple point places; a place with complex geometry (polygons, multiple
-points) shows its representative point read-only — edit that geometry in the dataset editor. Fields not
-yet surfaced (depictions, relations, named periods, and any authority citations) are preserved
-untouched through a correction.
+**Location / geometry** is drawn on a map, the same way you draw geometry in *Map your Data*: pick
+**Point**, **Line**, or **Polygon** and click the map, and click a shape button again to add another
+part (making a multi-point, multi-line, or multi-polygon geometry). A place whose geometry carries
+richer detail — a mix of geometry types, or per-geometry temporal spans or citations — is shown
+read-only (view-only on the map) so that detail can't be lost; edit those in the dataset editor. Other
+fields not yet surfaced (depictions, relations, named periods, and any authority citations) are likewise
+preserved untouched through a correction.
 
 ### Suggesting a correction to someone else's record
 
