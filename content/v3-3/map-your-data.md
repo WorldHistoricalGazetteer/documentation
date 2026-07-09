@@ -26,8 +26,8 @@ decisions — stays on your own computer.
 ## Why a new tool
 
 WHG already has a well-established reconciliation and accessioning workflow (see
-[Reconciliation & Accessioning](reconciliation.md) and the
-[Workbench Pathways](workbench.md) guide). That flow is built around **publishing**:
+[Reconciliation & Accessioning](../guides/reconciliation.md) and the
+[Workbench Pathways](../guides/workbench.md) guide). That flow is built around **publishing**:
 you upload a dataset into your WHG workspace, run a server-side reconciliation
 task, and review the results there. It works well once your data is clean and you
 intend to contribute it.
@@ -445,7 +445,7 @@ under *When*. Any row without its own value then inherits the Scope value in the
 and the contribution.
 
 **Contribute to WHG — one click.** Once it validates, the button submits the file
-straight to WHG's [upload and publication](uploading.md) workflow for you — no
+straight to WHG's [upload and publication](../guides/uploading.md) workflow for you — no
 separate export/upload step. You land on WHG's validation page to review and publish;
 your local copy stays in the browser. Publishing links your places with records for the same places from
 other datasets — the step that generates the rich Place Portal pages. The tool is
@@ -502,7 +502,7 @@ copy automatically when you reconnect**. Viewers stay read-only throughout.
 ```{note}
 Collaboration is **decoupled from publishing**. A team can work on an in-progress copy
 for as long as it likes; it only becomes part of WHG when someone chooses to contribute
-it through the normal [upload](uploading.md) workflow (see step 6).
+it through the normal [upload](../guides/uploading.md) workflow (see step 6).
 ```
 
 ## Caveats
@@ -513,7 +513,7 @@ it through the normal [upload](uploading.md) workflow (see step 6).
 - **Your data is local.** It lives in this browser only. Take a `.whgproj` backup
   before clearing browser data or switching computers, and note that this local
   copy is *not* itself a contribution to WHG — publishing still goes through the
-  normal [upload](uploading.md) and [reconciliation/accessioning](reconciliation.md)
+  normal [upload](../guides/uploading.md) and [reconciliation/accessioning](../guides/reconciliation.md)
   workflow.
 - **Automated conversions need checking.** Coordinate and, especially, historical
   date conversions are best treated as a well-informed first pass. Use the
@@ -521,5 +521,5 @@ it through the normal [upload](uploading.md) workflow (see step 6).
 - **Reconciliation suggests, you decide.** A high match score is a prompt for a
   human judgement, not a guarantee; the meaning of a confirmed match is a
   `closeMatch` assertion, explained in
-  [Reconciliation & Accessioning](reconciliation.md#what-does-closematch-mean).
+  [Reconciliation & Accessioning](../guides/reconciliation.md#what-does-closematch-mean).
 ```
