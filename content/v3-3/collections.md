@@ -114,9 +114,20 @@ published copy hasn't changed underneath you. If someone else edited it meanwhil
 asked to reload the latest rather than overwrite their work. The published record stays the single
 source of truth; your working copy is explicit and versioned.
 
-Check-out covers Place Collections and Gazetteer Groups today. Editing whole **gazetteers** (datasets),
-and making a **small correction to a single record** without moving an entire dataset, follow as the
-tooling for record-level / partial check-out and targeted re-indexing matures.
+### Correcting a single record
+
+You don't have to move a whole gazetteer to fix one thing. On a **published place page**, if you have
+edit rights on its gazetteer, a **Correct this record** button checks out just **that one record** into
+a tiny editor. Fix its **name** or **coordinate**, publish, and the change is written back to that
+record alone — and, if the record is in WHG search, **only that record's search entry is re-indexed**;
+the rest of the gazetteer is untouched. As with any check-out, it's guarded against overwriting a
+change someone else made meanwhile. (Coordinate editing here is for simple point places; places with
+complex geometry show the point read-only — edit those in the dataset editor. Date/temporal corrections
+are a planned addition.)
+
+Check-out covers Place Collections, Gazetteer Groups, and single place records today. Editing a whole
+**gazetteer** wholesale (bulk re-reconciliation, large moves) follows as the streaming/partial-transfer
+tooling matures.
 
 ## Collaborating
 
