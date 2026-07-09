@@ -78,16 +78,58 @@ your browser storage or switching machines will lose an un-saved project — tak
 
 ## 1 · Import a dataset
 
-Drag a file onto the import area, or click to choose one. CSV, TSV, and JSON are
-accepted (including JSON in WHG's `{id, fields}` shape). A `.whgproj` backup
-dropped here is recognised and restored in full rather than treated as new data.
+Drag a file onto the import area, or click to choose one. CSV, TSV, JSON, and
+**Excel** (`.xlsx`/`.xls`) files are accepted (including JSON in WHG's
+`{id, fields}` shape). A `.whgproj` backup dropped here is recognised and restored
+in full rather than treated as new data.
+
+You can also import a **shared Google Sheet** — paste its link and the tool fetches
+it as data. (The sheet must be shared so that "anyone with the link can view".)
 
 To try the tool without your own data, use **Load a sample dataset** — a small demo
 that exercises coordinate and date conversion and multi-column (County → Parish →
 Place) reconciliation.
 
-Once a file loads, the panel collapses to a summary and the tool moves you on to
+Once a dataset loads, the panel collapses to a summary and the tool moves you on to
 confirming the columns.
+
+### Extracting place names from text
+
+If you don't have a table yet — only prose — the tool can build one for you. Under
+**Extract place names from text** you can paste text, use **Paste from clipboard**,
+upload a **`.txt`, `.md`, `.html`, `.docx`, or `.pdf`** file, or load a shared
+**Google Doc**. Files are read in your browser; the tool then finds the place names
+and turns them into a table you can reconcile like any other.
+
+```{admonition} This step sends text to WHG
+:class: note
+Unlike the rest of Map your Data — which stays in your browser — place-name
+extraction sends the text to WHG's server, where a language model detects the
+names. The text is used only to find place names and is **not stored**. (Files are
+read locally; only the extracted text is sent.)
+```
+
+**How extraction works, and why the matches are a starting point.** Names are first
+detected by [spaCy](https://spacy.io/), a general-purpose language model. Because
+that model is trained on modern news, it can miss historical, archaic, or
+non-English place names — so the tool also cross-checks the text against WHG's own
+gazetteer, which catches names the model misses and, at the same time, **locates**
+them.
+
+When a document mentions several places, the tool uses them *together* to choose
+between places that share a name: it finds the geographic region where most of your
+names have a candidate, and prefers the candidate nearest that region. So *Boston*
+alongside *Lincoln*, *Sleaford*, and *Grantham* resolves to Boston in Lincolnshire,
+while *Boston* alongside *Cambridge*, *Worcester*, and *Lowell* resolves to Boston,
+Massachusetts — the same word, read from its company.
+
+The result is a table whose place names arrive **already located and provisionally
+matched** to WHG (extra columns carry the matched name, country, and coordinates).
+Treat these as a well-informed first guess: continue to
+[Reconcile against WHG](#3-reconcile-against-whg) and
+[Review & confirm](#4-review-confirm-matches) to check and confirm them. Very
+ambiguous names (a *Springfield* far from the rest of your places) may need a manual
+choice, and misspelled names won't be found automatically.
 
 ## 2 · Confirm column roles
 
