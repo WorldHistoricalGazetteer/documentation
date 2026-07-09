@@ -140,6 +140,27 @@ points) shows its representative point read-only — edit that geometry in the d
 yet surfaced (depictions, relations, named periods, and any authority citations) are preserved
 untouched through a correction.
 
+### Suggesting a correction to someone else's record
+
+You don't have to own a gazetteer to help fix it. On any published record — its **place page**, each
+source box on a **portal page**, and the detail popup in a **gazetteer's places view** — a **Suggest a
+correction** button opens the same field editor described above. Make your changes (and, optionally, a
+short note explaining why), then **Submit suggestion**. Nothing changes on the record: your suggestion
+goes to the gazetteer's owner and WHG staff for review.
+
+Reviewers see pending suggestions in **Workbench → Review suggestions**: a side-by-side "current →
+proposed" diff for each, with one-click **Accept** (applies the change to the record and re-indexes it)
+or **Reject** (with an optional note back to you). If the record changed in the meantime, the suggestion
+is safely set aside rather than overwriting the newer version. A small "corrections proposed" note also
+appears on the record itself so everyone can see it is under discussion.
+
+This is intentionally scoped to **fixing genuine errors** — a wrong coordinate, a mis-spelled name, a
+missing Wikidata link. Recording *competing* claims from different sources (where two gazetteers
+legitimately disagree) is a richer idea that belongs to the forthcoming graph data model; every
+suggestion is preserved as a provenance record so it can feed that later work.
+
+*While in beta, suggesting and reviewing corrections is limited to WHG beta testers and staff.*
+
 ### Correcting records across a gazetteer
 
 Fixing records one page at a time is fine for the odd correction, but when you need to work through
