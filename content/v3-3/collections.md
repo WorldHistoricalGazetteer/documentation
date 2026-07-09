@@ -140,9 +140,30 @@ points) shows its representative point read-only — edit that geometry in the d
 yet surfaced (depictions, relations, named periods, and any authority citations) are preserved
 untouched through a correction.
 
-Check-out covers Place Collections, Gazetteer Groups, and single place records today. Editing a whole
-**gazetteer** wholesale (bulk re-reconciliation, large moves) follows as the streaming/partial-transfer
-tooling matures.
+### Correcting records across a gazetteer
+
+Fixing records one page at a time is fine for the odd correction, but when you need to work through
+many records of a **whole gazetteer** there is a shell for that. On a gazetteer's own page (and in the
+**Edit published…** hub) an **Edit records in Workbench** button checks out a set of its records into a
+list; expand any record to edit every field with the same editor described above, and the ones you
+change are marked and published together.
+
+Because a large gazetteer can hold far more records than a browser can comfortably hold, check-out is
+**capacity-aware**. When you start, the tool measures how much room your browser has and offers:
+
+- **the whole gazetteer**, when it comfortably fits, or
+- **a subset** — filter by name and/or country, and cap how many records to pull in — which is the
+  right choice for large gazetteers and for "fix these dozen records" work.
+
+You then edit records locally (saved to your account as you go), and **Publish changes** writes back
+only the records you actually changed — each one re-indexed in WHG search, the rest of the gazetteer
+untouched. Every record is guarded individually: if someone else changed a record since you checked it
+out, that one is skipped and reported (never silently overwritten) while your other corrections go
+through. You can re-reconcile any record in place, exactly as in the single-record editor.
+
+*While in beta this whole-/subset-gazetteer editing is limited to WHG staff; it opens to gazetteer
+owners and their team members when v3.3 is released. Very large gazetteers are edited a filtered subset
+at a time; fully streamed check-out of enormous gazetteers is a later enhancement.*
 
 ## Collaborating
 
