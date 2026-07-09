@@ -137,11 +137,12 @@ guarded against overwriting a change someone else made meanwhile.
 
 **Location / geometry** is drawn on a map, the same way you draw geometry in *Map your Data*: pick
 **Point**, **Line**, or **Polygon** and click the map, and click a shape button again to add another
-part (making a multi-point, multi-line, or multi-polygon geometry). A place whose geometry carries
-richer detail — a mix of geometry types, or per-geometry temporal spans or citations — is shown
-read-only (view-only on the map) so that detail can't be lost; edit those in the dataset editor. Other
-fields not yet surfaced (depictions, relations, named periods, and any authority citations) are likewise
-preserved untouched through a correction.
+part (making a multi-point, multi-line, or multi-polygon geometry). If the record's geometry carries
+date or citation detail, that detail is kept attached when you reshape it. A place whose geometry can't
+be edited unambiguously — a *mix* of geometry types, or *several* geometries that each carry their own
+dates or citations — is shown read-only (view-only on the map) so nothing is lost; edit those in the
+dataset editor. Other fields not yet surfaced (depictions, relations, named periods, and any authority
+citations) are likewise preserved untouched through a correction.
 
 ### Suggesting a correction to someone else's record
 
