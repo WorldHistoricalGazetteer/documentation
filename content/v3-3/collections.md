@@ -45,6 +45,14 @@ Open the Workbench and choose **New…**. You are offered a tile for each doc-ty
 Published items you have permission to edit also carry an **Edit in Workbench** button on their own
 page (see [Editing something already published](#editing-something-already-published)).
 
+## Finding your material — "Edit published…"
+
+The Workbench menu also has an **Edit published…** entry: one page listing **everything you own or
+collaborate on** — place collections, gazetteer groups, and gazetteers — with a search box and a type
+filter. Each collection or group has an **Edit in Workbench** button that checks it out and opens the
+right editor; gazetteers link to their page, where you can correct individual records (whole-gazetteer
+editing arrives later). It's the quickest way back into anything you've published.
+
 ## The editor at a glance
 
 Every editor is a single page of **numbered steps** — a sole-open accordion, so you focus on one at
