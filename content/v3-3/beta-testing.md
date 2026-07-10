@@ -4,8 +4,8 @@
 :class: note
 WHG staff and invited beta testers exercising the v3.3 **Collaborative Workbench** before public
 release. Anyone may read this page and watch progress; only signed-in beta testers can report snags and
-use the tools. If you'd like to help test, ask the WHG team for beta access (it's granted against your
-existing WHG/ORCiD account — no new account needed).
+use the tools. If you'd like to help test, see **Getting access** below (sign in with ORCiD, then ask
+the WHG team to switch on beta access for your account).
 ```
 
 ## How testing is tracked, and how issues get resolved
@@ -49,10 +49,30 @@ work on (those are already saved on the server, so we can reproduce issues witho
 tracker). See the WHG [Privacy Policy](/privacy_policy/).
 ```
 
+## Getting access
+
+**For testers** — two steps:
+
+1. **Sign in with ORCiD.** WHG uses ORCiD for sign-in: click *Log in* and authorise with your ORCiD iD.
+   No ORCiD yet? It's free at [orcid.org/register](https://orcid.org/register) and takes a minute — then
+   sign in to WHG once with it and your WHG account is created.
+2. **Ask the WHG team to switch on beta access** for your account (see the staff note below). Once it's
+   on, the burnt-orange **Workbench BETA** menu appears and you can use the tools and report snags.
+
+```{admonition} For staff — granting beta access (including a whole cohort)
+:class: tip
+Beta access is a user's **Role** set to **"beta tester"** (WHG staff and superusers already qualify). To
+grant it, open **Django admin → Users**, find the person (search by name/username), and set **Role → beta
+tester**. It's gated by `User.can_access_beta` (staff, superuser, or the `beta_tester` role), so nothing
+else is needed. For a class, a WHG admin/developer can set the role across a list of accounts in one go
+rather than editing each by hand — hand over the students' usernames (or the ORCiD emails they signed up
+with) and ask for a bulk grant.
+```
+
 ## Before you start
 
-- **Get beta access** from the WHG team (granted to your WHG/ORCiD account). You'll then see the
-  burnt-orange **Workbench BETA** menu.
+- **Get beta access first** (see *Getting access* above) — you'll then see the burnt-orange
+  **Workbench BETA** menu.
 - **Test on real-ish material you don't mind touching.** Publishing from the Workbench writes to the
   live site; prefer sandbox/test collections and gazetteers you own, and avoid publishing throwaway test
   artefacts publicly. If you do, delete them or tell us.
