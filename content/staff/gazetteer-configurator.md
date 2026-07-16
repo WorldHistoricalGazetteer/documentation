@@ -37,9 +37,9 @@ The columns are:
 | **id** | Stable identifier — usually the WHG namespace (`gn`, `wd`, `osm`, `ohm`, …). |
 | **name** | Display name shown in the Atlas UI. |
 | **namespace** | The WHG namespace — for external authorities, the same as `id`. |
-| **core** | When ticked, the gazetteer is **pre-selected** in the Atlas Gazetteers offcanvas (Filter mode) and gets a small "core" badge. Use sparingly — currently only GeoNames, Wikidata, and TGN are core. |
-| **region_source** | When ticked, the gazetteer appears as a selectable Source in the Atlas **Regions** offcanvas — the panel users open from the "Regions" button on the Atlas page. The default-True set is OSM, OHM, OSM/OHM (Miscellaneous), PeriodO, Cliopatria, NativeLand. |
-| **no_explore** | When ticked, the gazetteer is **disabled in Explore mode** of the Atlas Gazetteers offcanvas (Filter mode is unaffected). Use for gazetteers whose tilesets are polygon-only — the Explorer view depends on point/marker rendering, so polygon-only sources show a tooltip instead of being selectable in Explore. Independent of `region_source`. |
+| **core** | When ticked, the gazetteer is **pre-selected** in the Atlas Gazetteers panel (Filter mode) and gets a small "core" badge. Use sparingly — currently only GeoNames, Wikidata, and TGN are core. |
+| **region_source** | When ticked, the gazetteer appears as a selectable Source in the Atlas **Regions** panel — opened from the "Regions" button on the Atlas page. The default-True set is OSM, OHM, OSM/OHM (Miscellaneous), PeriodO, Cliopatria, NativeLand. |
+| **no_explore** | When ticked, the gazetteer is **disabled in Explore mode** of the Atlas Gazetteers panel (Filter mode is unaffected). Use for gazetteers whose tilesets are polygon-only — the Explorer view depends on point/marker rendering, so polygon-only sources show a tooltip instead of being selectable in Explore. Independent of `region_source`. |
 | **gazetteer_type** | Sketch field — `Standard`, `Itinerary`, or `Network`. Currently informational only; back-end semantics for itinerary and network gazetteers are not yet wired. |
 | **status** | Read-only. `published` for live gazetteers; the other states (`draft`, `submitted`, `pending`, `rejected`) only apply to WHG-namespaced datasets and don't appear here. |
 | **record_count** | Read-only. Updated by the indexing pipeline on each inventory push. |
@@ -60,29 +60,56 @@ across re-pushes. If you ever notice a curatorial setting reverting, that
 is a bug — please report it.
 ```
 
+## Attribution, licence & rights
+
+Open a row (click its **id**) to reach the detail page. Below the curatorial
+flags, an **Attribution / licence / rights** fieldset records the gazetteer's
+citation and licensing metadata:
+
+| Field | Meaning |
+|---|---|
+| **citation_text** | A ready-to-use citation string for the source. |
+| **license** | The licence, chosen from WHG's controlled licence vocabulary. |
+| **license_url** | Link to the licence deed or terms. |
+| **rights_holder** | The organisation or person holding rights in the data. |
+| **source_url** | The gazetteer's canonical home / download page. |
+| **contributors_csl** | Structured contributor list (CSL-JSON) for richer citations. |
+
+These feed WHG's citation and licensing displays — for example the licence and
+attribution shown against a source.
+
+```{warning}
+Unlike the four curatorial flags, these attribution/licence fields are **not
+yet protected** from the inventory push. Today the source of truth is the
+indexing **AUTHORITIES** config, and the push only writes the fields it
+currently sends — so anything you set here is a **safe interim**. Once the
+push is upgraded to carry attribution/licence, it becomes authoritative and
+may overwrite values entered here.
+```
+
 ## Common tasks
 
 ### Adding a "core" gazetteer
 
 If a new external authority should be selected by default in the Atlas
-Gazetteers offcanvas:
+Gazetteers panel:
 
 1. Open the row.
 2. Tick **Core**.
 3. Click **Save**.
 
-Users will see it pre-checked next time they open the offcanvas. Use
+Users will see it pre-checked next time they open the panel. Use
 sparingly — too many "core" gazetteers slows initial searches.
 
 ### Hiding a gazetteer from the Regions panel
 
 Untick **Region source** on the row. The next page load will omit that
-gazetteer from the Atlas Regions offcanvas Source list. The gazetteer
+gazetteer from the Atlas Regions panel Source list. The gazetteer
 remains fully searchable elsewhere; only its Region-panel entry is hidden.
 
 ### Disabling Explore mode for a polygon-only gazetteer
 
-Tick **No explore**. In the Atlas Gazetteers offcanvas, switching from
+Tick **No explore**. In the Atlas Gazetteers panel, switching from
 Filter to Explore mode will grey the entry out and show a tooltip
 explaining why. Filter mode keeps the entry selectable.
 
