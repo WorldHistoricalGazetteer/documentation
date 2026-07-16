@@ -6,6 +6,7 @@
 
 Gazetteer Configurator <./staff/gazetteer-configurator.md>
 User API Profiles <./staff/api-profiles.md>
+Site smoke test <./staff/smoke-test.md>
 Atlas v3.5 (forthcoming) <./staff/atlas-v3-5.md>
 ```
 
