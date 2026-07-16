@@ -131,7 +131,25 @@ Treat these as a well-informed first guess: continue to
 ambiguous names (a *Springfield* far from the rest of your places) may need a manual
 choice, and misspelled names won't be found automatically.
 
+```{figure} ../images/workbench-03-reconcile-pipeline.jpg
+:alt: Extracted place names as a reconcilable table, with the numbered workflow steps
+:width: 100%
+
+Place names extracted from a passage — *Boston, Lincoln, Sleaford, Grantham*… —
+arrive as a table, already located and provisionally matched, ready to move down
+the numbered steps: reconcile, review, map, and export.
+```
+
 ## 2 · Confirm column roles
+
+```{figure} ../images/workbench-02-mapdata-columns.jpg
+:alt: The Confirm column roles step in Map your Data
+:width: 100%
+
+*Confirm column roles* — the tool guesses a **role** for each column (place name,
+country, latitude, longitude…), which you adjust from a dropdown, with a sample
+value shown for each. A banner confirms the data stays in your browser.
+```
 
 The tool shows a preview of your table and its best guess at what each column
 is for. You assign each column a **role** from a dropdown:
@@ -382,6 +400,15 @@ table, the review queue, *and* the map together, so you can zero in on — say �
 the unmatched rows in one county and work only on those.
 
 ## 5 · Map
+
+```{figure} ../images/workbench-04-mapdata-map.jpg
+:alt: The Map step showing located places plotted on a clustering map
+:width: 100%
+
+*Map* — every located row on one clustering map; here the reconciled Lincolnshire
+places (*Boston, Lincoln, Sleaford, Stamford*…) plotted from their converted
+coordinates.
+```
 
 Every located row appears on a single map, built from the coordinates the tool
 converted (or a geometry you drew or cloned in review). **Hover** any point to see its

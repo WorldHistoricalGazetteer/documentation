@@ -47,6 +47,15 @@ page (see [Editing something already published](#editing-something-already-publi
 
 ## Finding your material — "Edit published…"
 
+```{figure} ../images/workbench-06-edit-published.jpg
+:alt: The Edit published hub listing everything you own or collaborate on
+:width: 100%
+
+*Edit published…* — one page listing everything you own or collaborate on (place
+collections and gazetteers), each with an **Edit in Workbench** button that checks
+it out into the right editor.
+```
+
 The Workbench menu also has an **Edit published…** entry: one page listing **everything you own or
 collaborate on** — place collections, gazetteer groups, and gazetteers — with a search box and a type
 filter. Each collection or group has an **Edit in Workbench** button that checks it out and opens the
@@ -68,6 +77,15 @@ A status badge shows whether your work is *saved in your browser*, *saved to you
 *syncing*. Nothing reaches WHG until you choose **Save to my account** or **Publish**.
 
 ## Building a Place Collection
+
+```{figure} ../images/workbench-05-place-collection.jpg
+:alt: The Place Collection editor, Places step
+:width: 100%
+
+Building a Place Collection — each member resolves to an indexed WHG place, carries
+an optional **note**, and can be reordered; places are added by search-as-you-type
+or extracted from a block of text.
+```
 
 A Place Collection is a **curation of places that exist in WHG**. Every member resolves to an
 indexed WHG place — that is what keeps a collection a layer of interpretation (your notes and

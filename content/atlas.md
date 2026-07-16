@@ -26,6 +26,15 @@ many sources**, instead of a pile of look-alikes.
 
 ## What Atlas does
 
+```{figure} images/atlas-03-index-villaris-explore.jpg
+:alt: The Atlas map showing many place records across Britain
+:width: 100%
+
+Atlas is map-first: explore the index on the map — here browsing a single source
+gazetteer, *Index Villaris* (1680), across Britain — then open any place to see
+its sources.
+```
+
 As you explore the map, Atlas **groups records that refer to the same place** and
 presents each group as a single result you can open up to see all its sources. Nothing
 is decided in advance and frozen — the grouping is worked out on the spot, live, from
@@ -36,6 +45,15 @@ different people in different languages, quietly sorts them into piles — one p
 real place — while you watch.
 
 ## How Atlas decides two records are the same place
+
+```{figure} images/atlas-02-place-detail.jpg
+:alt: A place record's full detail — dozens of names across scripts, dates, and links
+:width: 100%
+
+One source record opened in full: *Byzantion*, under dozens of names across scripts
+and centuries (*Constantinople, Qusṭanṭīniyya, Tsargrad, İstanbul*…). Atlas compares
+the **sound** of such names — not just their letters — when it weighs the evidence.
+```
 
 Atlas never relies on a single clue. Like a good detective, it weighs up **several
 kinds of evidence** and asks how strongly, taken together, they suggest that two
@@ -60,6 +78,15 @@ likely it is that two records are the same place.
 
 ## You are in control: the grouping dial
 
+```{figure} images/atlas-01-search-results.jpg
+:alt: Atlas search results with clustered places and the merge-sensitivity dial
+:width: 100%
+
+A toponym search for *Constantinople*: matching records are grouped into results
+(each openable to all its sources), while the **merge-sensitivity** dial and
+signal-weight controls re-group the map instantly.
+```
+
 Different questions call for different strictness. A quick overview might want places
 grouped generously; careful scholarship might want only near-certain matches merged.
 
@@ -81,6 +108,15 @@ it lines up with WHG. Because the matching runs in your browser, your unpublishe
 **never has to leave your computer** to be compared against the gazetteer.
 
 ## Confirmed links and your corrections
+
+```{figure} images/atlas-04-index-villaris-popup.jpg
+:alt: A place popup on the Atlas map showing a record's names, dates and relations
+:width: 100%
+
+Opening a place on the map shows its record — names, active dates, temporal
+validity, and stated relations — the raw material behind confirmed links and
+contributor corrections.
+```
 
 Some links are more than a good guess. When an authority or a WHG contributor states
 outright that two records are the same place — or deliberately that they are *not* —

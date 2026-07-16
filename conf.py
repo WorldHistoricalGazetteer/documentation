@@ -73,9 +73,11 @@ html_logo = "_static/whg_logo.png"
 html_css_files = [
     'css/custom.css',
     'css/mermaid-zoom.css',
+    'css/image-zoom.css',
 ]
 html_js_files = [
     'js/mermaid-zoom.js',
+    'js/image-zoom.js',
 ]
 
 # This will make {{ last_updated }} available
