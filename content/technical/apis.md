@@ -259,6 +259,7 @@ Each entry in a query's `result` array is an object with the following fields:
 | `description` | string | Short human-readable summary, typically of the form `"Country: XX"` for places, where `XX` is an ISO 3166-1 alpha-2 code. Useful as a post-hoc sanity check — see [Filter Behaviour](#filter-behaviour-and-common-pitfalls) below. |
 | `alt_names` | array | Variant toponyms in any language. |
 | `has_geom` | boolean | `true` if the matched place is backed by a full **polygon** geometry — i.e. it can itself serve as a `contained_in` region for a subsequent spatial query. Point/line-only places report `false`. Use this to pick valid parents when reconciling hierarchically (resolve a place, then scope its children with `contained_in: ["place:<id>"]`). |
+| `namespace` | string | The source gazetteer this candidate came from (e.g. `gn`, `tgn`, `whg`). Look it up in the response-root `attribution` object to get that source's licence — see [Source Terms and Attribution](#source-terms-and-attribution). |
 | `type` | array | LPF type objects. |
 
 ### Filter Behaviour and Common Pitfalls
@@ -404,6 +405,156 @@ After reconciliation, you can add properties from WHG to your dataset:
 For programmatic access or very large datasets, you can use the WHG Reconciliation API directly. See
 the [full API documentation](https://whgazetteer.org/api/schema/swagger-ui/) for details on query structure and response
 formats.
+
+## Source Terms and Attribution
+
+WHG aggregates place data from more than two dozen source gazetteers, and **they do not share a
+single licence**. GeoNames is CC-BY, Wikidata is CC0, OpenStreetMap is ODbL, Getty TGN is ODC-By,
+several contributed gazetteers are non-commercial, and a few carry one institution's bespoke terms.
+There is deliberately **no blanket licence over the aggregate**: each source carries its own, and
+WHG's curation licence is asserted *alongside* those terms, never instead of them.
+
+A single API response can therefore span several licences at once. So that you can comply with each
+one without a second lookup, **every multi-record response carries an `attribution` object at its
+root**.
+
+### Where it appears
+
+| Endpoint | Attribution |
+|---|---|
+| `/reconcile` | `attribution` at the response root; every candidate also carries a `namespace` |
+| `/api/index/`, `/api/db/`, `/api/spatial/` | `attribution` at the response root |
+| `/api/place/…` (single record) | an `attribution` object on the record itself |
+| `/api/attribution/` | standalone resolver — query terms for arbitrary namespaces or ids |
+
+### Shape
+
+```jsonrelaxed
+{
+  "attribution": {
+    "sources": {                      // keyed by authority namespace
+      "gn": {
+        "name": "GeoNames",
+        "citation": "GeoNames geographical database. https://www.geonames.org/",
+        "record_count": 13378039,
+        "rights_holder": "",
+        "source_url": "https://www.geonames.org/",
+        "license": {
+          "spdx_id": "CC-BY-4.0",
+          "label": "Creative Commons Attribution 4.0 International",
+          "url": "https://creativecommons.org/licenses/by/4.0/",
+          "permits_commercial": true,
+          "share_alike": false,
+          "attribution_required": true,
+          "no_derivatives": false,
+          "custom": false
+        }
+      }
+    },
+    "datasets": { /* keyed by dataset label, same shape; present only when the */
+                  /* response contains contributor-uploaded WHG data          */ },
+    "whg": {                          // WHG's own curation/aggregation licence
+      "spdx_id": "CC-BY-NC-4.0",
+      "label": "Creative Commons Attribution-NonCommercial 4.0 International",
+      "url": "https://creativecommons.org/licenses/by-nc/4.0/"
+    }
+  },
+  "features": [ /* … */ ]
+}
+```
+
+Records served from WHG's own database use the pseudo-namespace `whg`; their rights live on the
+contributing **dataset**, so they appear under `datasets` (keyed by dataset label) rather than
+`sources`. The `datasets` key is omitted entirely when a response contains no such records.
+
+### Mapping a result to its terms
+
+Each reconciliation candidate carries a `namespace` field naming the source it came from:
+
+```jsonrelaxed
+{ "id": "place:gn:745044", "name": "Abergavenny", "score": 91.2,
+  "match": true, "namespace": "gn", "…": "…" }
+```
+
+Look that up in `attribution.sources[namespace]` — or, when `namespace` is `whg`, in
+`attribution.datasets`. For the other endpoints, the namespace is the prefix of each record's id
+(see [Source Namespaces](#source-namespaces)).
+
+### `namespaces_searched`
+
+Reconciliation responses also report which sources were *searched*, not merely which returned hits:
+
+```jsonrelaxed
+{ "q0": { "result": [ /* … */ ], "namespaces_searched": ["gn", "chgis", "whg"] },
+  "attribution": { /* … */ } }
+```
+
+This matters for compliance. A source can be searched, match nothing on that particular query, and
+still be one whose terms govern your workflow — so `attribution.sources` is built from the searched
+set, not from the candidates that happen to come back. An empty result set is not evidence that a
+source was not consulted.
+
+### The tri-state flags — `null` does not mean `false`
+
+```{warning}
+`permits_commercial` and `no_derivatives` are **`true`, `false`, or `null`**. Do not coerce them to
+booleans: in most languages `null` is falsy, so a naive test silently converts *"the rights holder
+has said nothing"* into *"the rights holder forbids it"*.
+```
+
+| Value | Meaning |
+|---|---|
+| `true` | The licence grants this. |
+| `false` | The licence withholds this. |
+| `null` | **The rights holder states no position either way.** |
+
+`null` means *unstated by the rights holder*, not *unknown to WHG*. The distinction is actionable:
+the first is a question you can put to the rights holder, whereas the second would be a defect in
+WHG's metadata and worth reporting to us.
+
+The live example is UN Geospatial boundary data (`un`), which is published with a
+boundary-designation disclaimer and **no grant of rights at all**. Reporting
+`permits_commercial: false` there would assert a restriction that the UN has not made, exactly as
+`true` would assert a permission it has not given.
+
+Test for `null` **before** treating either flag as a boolean:
+
+```python
+lic = attribution["sources"]["un"]["license"]
+
+if lic["permits_commercial"] is True:
+    ...   # cleared for commercial use
+elif lic["permits_commercial"] is False:
+    ...   # excluded from commercial use
+else:
+    ...   # no grant either way — ask the rights holder before relying on it
+```
+
+### The flags that carry obligations
+
+- **`share_alike`** is the one most likely to affect your own work. ODbL (OpenStreetMap,
+  OpenHistoricalMap) and CC-BY-SA (GB1900, Index Villaris, Trismegistos and others) permit
+  commercial use but attach a copyleft obligation: broadly, a *derivative database* you distribute
+  must be offered under the same terms. ODbL's copyleft attaches to the database rather than
+  necessarily to an application that merely displays the data; CC-BY-SA reaches adaptations of the
+  content itself. Roughly 43% of WHG's indexed records are share-alike.
+- **`attribution_required`** records a *legal condition*, not a courtesy. A source that would merely
+  appreciate credit reports `false`; WHG still attributes it, but you are not obliged to.
+- **`custom`** marks bespoke, non-SPDX terms. Read `license.url` and the source's `rights_holder`
+  before relying on such data — some forbid redistribution entirely, which is stricter than any
+  Creative Commons licence.
+
+### The WHG overlay
+
+`attribution.whg` is WHG's own licence over its curation, linkage and aggregation work. It is
+asserted **in addition to** each source's terms and never replaces them: it grants you nothing over
+the source records themselves, and it does not restrict data whose own licence is more permissive.
+
+```{note}
+Licence metadata is verified against each upstream source and corrected at ingest, but WHG is an
+aggregator rather than the rights holder for most of this data. For anything consequential, follow
+`license.url` and `source_url` to the source's own terms.
+```
 
 ## API Tokens
 
