@@ -25,6 +25,12 @@ snag**. A short form opens; it already knows the page you were on, your browser,
 diagnostic session id, so you only describe *what happened*, *what you expected*, and (if you can) the
 *steps*. You don't need a GitHub account — submitting files the report to our tracker for you.
 
+**If you do have one**, add your GitHub username to your [Profile](https://whgazetteer.org/profile/)
+(under *Preferences* — the field is offered to beta testers only). Reports are then credited to
+`@your-handle` instead of your name, which keeps your name off the public tracker and lets us mention
+you on the issue when we need to ask a follow-up question — GitHub notifies you if your notification
+settings allow it. Leave it blank and nothing changes: reports are filed under your account name.
+
 **3. Resolution.** Each report becomes a tracked item. A developer picks it up, uses the session id to
 pull the exact technical trace behind it, reproduces it (the Workbench keeps a full version history of
 every working copy, so we can replay the state you saw), fixes it, deploys, and verifies — then marks
