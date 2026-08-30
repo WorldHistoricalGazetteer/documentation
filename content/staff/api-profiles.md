@@ -21,7 +21,7 @@ won't appear.) Columns:
 | Column | Meaning |
 |---|---|
 | **user** | The Django user the profile belongs to. Click the username to open the user's profile in the auth admin. |
-| **daily_count** | Read-only. Number of API calls made today. Resets automatically at midnight UTC. |
+| **daily_count** | Read-only. Number of API calls made today. Rolls over automatically at midnight UTC, on the user's first call of the new day. |
 | **daily_limit** | Editable. Maximum API calls per day for this user. Default is 5,000. |
 | **total_count** | Read-only. Lifetime API call count for this user. |
 
@@ -40,10 +40,37 @@ reconciliation:
    default is reasonable.
 4. Click **Save**.
 
-The new limit takes effect immediately on the user's next API call.
-Counters do not reset when the limit changes — if the user has already
-hit today's old limit, they'll need to wait until the daily reset (UTC
-midnight) before any new calls go through, even with a raised ceiling.
+```{important}
+**Check first whether the client is batching.** `POST /reconcile` accepts
+50 queries per request and the quota is charged *per request*, so a
+client sending one name per request burns fifty times the allowance it
+needs. A job that looks like it needs 50,000 calls a day usually needs
+1,000 and a fixed client.
+
+The reconciliation log records the full payload of every call, so you
+can see the shape of a user's requests directly: on the prod web
+container, look for `POST /reconcile payload:` lines in
+`/app/whg/logs/reconciliation.log`. If every request carries a single
+query key, point the user at
+[Batching, Quotas and Retries](../technical/apis.md#batching-quotas-and-retries)
+before raising anything.
+```
+
+The new limit takes effect immediately on the user's next API call, and
+that includes a user who has already hit the old ceiling: the check is
+`daily_count` against the *current* `daily_limit`, so raising the limit
+above the count restores access straight away. Changing the limit does
+not reset `daily_count` — the user gets the difference, not a fresh
+allowance.
+
+```{note}
+Before 30 August 2026 an account that reached its ceiling stayed locked
+out indefinitely: the daily rollover only ran on a call that passed the
+limit check, so `daily_count` was never cleared and the "daily" cap
+became permanent. That is fixed. If you are looking at a profile whose
+`daily_reset` predates that date, the stale counter is a leftover of the
+bug and can simply be cleared.
+```
 
 ### Resetting a user's counter
 

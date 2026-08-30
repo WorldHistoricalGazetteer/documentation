@@ -169,6 +169,75 @@ The `whg:` namespace prefix is registered at `http://prefix.cc/whg` and expands 
 | `/suggest/entity` | GET | Typeahead entity suggestions by prefix |
 | `/suggest/property` | GET | Typeahead property suggestions by prefix |
 
+### Batching, Quotas and Retries
+
+`POST /reconcile` is a **batch** endpoint, and this matters a great deal for anyone running a bulk
+job. Read the numbers off the service manifest rather than hard-coding them:
+
+```bash
+curl https://whgazetteer.org/reconcile        # no token needed for the manifest
+```
+
+| What | Value | Notes |
+|---|---|---|
+| Queries per request | **50** (`batch_size` in the manifest) | A request carrying more is *sliced* to the first 50, not rejected. The response carries a note saying so — check for it. |
+| Daily quota | **5,000 requests** by default | Charged **per request, not per query**. Staff can raise it; see below. |
+| Concurrency | 1 request in flight is plenty | We already fan each batch out across up to 8 workers internally. |
+
+```{important}
+Because quota is charged per request, a client that sends one name per request spends **fifty
+times** more of its allowance than it needs to. Reconciling 54,000 names one-at-a-time costs 54,000
+calls and will exhaust any plausible ceiling; batched at 50, the same work costs 1,080 calls and
+fits inside the default allowance with room to spare.
+
+If you are about to ask us for a higher limit, batch first — it is usually the whole answer.
+```
+
+Fill the `queries` object with as many keys as you have names, up to 50. The keys are yours to
+choose, and results come back under the same keys, so you can map them straight onto your own
+record identifiers:
+
+```json
+{"queries": {
+  "rec-1041": {"query": "Rio Mantaro", "limit": 3, "countries": ["PE"], "fclasses": ["H"]},
+  "rec-1042": {"query": "Spednic Lake", "limit": 3, "countries": ["CA","US"], "fclasses": ["H"]},
+  "rec-1043": {"query": "Volcan Tacana", "limit": 3, "countries": ["GT","MX"], "fclasses": ["T"]}
+}}
+```
+
+#### Handling errors
+
+```{warning}
+**A `4xx` response is terminal. Do not retry it.** In particular, `401` with
+`{"detail":"Daily API limit (5000 calls) exceeded"}` means you are out of allowance until the
+counter rolls over at midnight UTC — retrying will not change that, and a tight retry loop against
+a `401` is the fastest way to get a client blocked at the network layer.
+
+Stop the run, log the response body (we say exactly what is wrong), and alert a human. Reserve
+retries for `429`, `502`, `503`, `504` and connection errors, with exponential backoff, jitter, and
+a cap on attempts. A circuit breaker that halts the job after N consecutive failures is worth the
+few lines it costs.
+```
+
+Your remaining allowance for the day is shown on your Profile page.
+
+#### Getting better matches
+
+A few habits make a large difference to how much of a bulk run reconciles cleanly:
+
+- **Send the context you already have.** `countries`, `fclasses`, `types`, `namespaces`,
+  `contained_in` and the spatial parameters are *hard filters*, not hints, and they collapse the
+  candidate space dramatically. An unqualified single word will match something almost everywhere.
+- **Send names as people write them.** Many national gazetteer feeds store inverted index forms —
+  `Mantaro, Rio`; `Tacana, Volcan`; `Rizeh, Kuh-e`. We match against natural-order name strings, so
+  rewrite these before sending (or send both forms as two keys in the same batch and keep the
+  better score).
+- **Threshold on `confidence`, not `score`.** `score` is normalised against the best candidate *in
+  that response*, so the top hit reads near 100 even when it is the best of a bad lot. `confidence`
+  is the absolute measure, and it is the one that should drive your accept/review cut-off.
+- **Deduplicate and cache locally.** Results are stable between runs; a cache keyed on the
+  normalised name saves real volume across a large backlog.
+
 ### Query Parameters
 
 The following parameters can be included in each query object within a reconciliation request, or as query-string parameters for the suggest endpoint.
@@ -406,6 +475,10 @@ For programmatic access or very large datasets, you can use the WHG Reconciliati
 the [full API documentation](https://whgazetteer.org/api/schema/swagger-ui/) for details on query structure and response
 formats.
 
+Before writing a bulk client, read [Batching, Quotas and Retries](#batching-quotas-and-retries)
+above — it covers how many queries fit in one request, how the daily quota is counted, and how to
+handle errors without hammering the service.
+
 ## Source Terms and Attribution
 
 WHG aggregates place data from more than two dozen source gazetteers, and **they do not share a
@@ -573,15 +646,27 @@ The simplest way to use an API token is to include it as a query parameter in th
 https://whgazetteer.org/reconcile?token=<token>
 ```
 
-Otherwise, it may be included in the `Authorization` header, using the `Bearer` schema. Requests **must** also include a
-suitable
-`User-Agent` to avoid bot-filters. For example:
+Otherwise, it may be included in the `Authorization` header, using the `Bearer` schema.
+
+Requests **must** also include a `User-Agent` header, or our bot-filters will reject them. Make it
+one that identifies *your* client — a name, a version, and a way to reach you:
+
+```{important}
+Do not send a literal placeholder such as `bot`, `notbot`, `client` or `test`. Earlier versions of
+this page used `notbot` in the example below, and clients understandably copied it verbatim. A
+generic value tells us nothing, and when a bulk job starts misbehaving it leaves us no way to warn
+you before we throttle it. A good header looks like:
+
+    User-Agent: my-project-enrichment/1.2 (+https://example.org; ops@example.org)
+```
+
+For example:
 
 ```bash
 curl -X POST https://whgazetteer.org/reconcile \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer <token>" \
-  -H "User-Agent: notbot" \
+  -H "User-Agent: my-project-enrichment/1.2 (+https://example.org; ops@example.org)" \
   -d '{
     "queries": {
       "q1": {
