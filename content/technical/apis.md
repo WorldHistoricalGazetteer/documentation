@@ -689,9 +689,21 @@ curl -X POST https://whgazetteer.org/reconcile \
           ]]
         },
         "limit": 5
+      },
+      "q2": {
+        "query": "Rio Mantaro",
+        "countries": ["PE"],
+        "fclasses": ["H"],
+        "limit": 3
       }
     }
   }'
+```
+
+```{note}
+Send as many queries in one request as you have names, up to the manifest's
+`batch_size` of 50 — the quota is charged per request, not per query. See
+[Batching, Quotas and Retries](#batching-quotas-and-retries).
 ```
 
 ### Suggest Endpoint Example
