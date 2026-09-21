@@ -123,7 +123,7 @@ Place identifiers include a **namespace prefix** that indicates the originating 
 - `place:gn:745044` — a GeoNames place
 - `place:tgn:7010731` — a Getty TGN place
 
-Places served by the `/api` endpoint are returned in **Linked Places Format (LPF) v1.1**, with a standard structure including `@context`, `type: "Feature"`, `@id`, `geometry`, `names`, `types`, `links`, `when`, and an `attribution` block carrying the source's terms. ⚠️ **Not every indexed place is served by this endpoint:** records whose source terms forbid WHG redistributing them answer [`451`](#when-a-source-does-not-permit-redistribution) instead. They remain fully searchable and reconcilable.
+Places served by the `/api` endpoint are returned in **Linked Places Format (LPF) v1.1**. Measured top-level keys, in order: `@context`, `type`, `properties`, `@id`, `names`, `types`, `geometry`, `links`, `descriptions`, `depictions`, `relations`, `when`, `attribution`. The examples below are abridged; `attribution` is always last. ⚠️ **Not every indexed place is served by this endpoint:** records whose source terms forbid WHG redistributing them answer [`451`](#when-a-source-does-not-permit-redistribution) instead. They remain fully searchable and reconcilable.
 
 You can use the `namespaces` parameter on Reconciliation and Suggest endpoints to restrict which sources are searched (see [Source Namespaces](#source-namespaces)).
 
@@ -155,8 +155,45 @@ curl "https://whgazetteer.org/entity/place:gn:745044/api?token=<token>"
   "types": [{"identifier": "PPLA", "label": "P", "sourceLabel": "P.PPLA"}],
   "links": [],
   "when": {},
-  "attribution": { /* the source's licence and rights terms — see Source Terms and Attribution */ }
+  "attribution": {
+    "id": "gn",
+    "name": "GeoNames",
+    "description": "GeoNames geographical database. https://www.geonames.org/",
+    "citation_text": "GeoNames geographical database, Unxos GmbH.",
+    "rights_holder": "Unxos GmbH",
+    "source_url": "https://www.geonames.org/",
+    "license_url": "https://creativecommons.org/licenses/by/4.0/",
+    "license__spdx_id": "CC-BY-4.0",
+    "license__label": "Creative Commons Attribution 4.0 International",
+    "license__url": "https://creativecommons.org/licenses/by/4.0/",
+    "license__permits_commercial": true,
+    "license__share_alike": false,
+    "license__attribution_required": true,
+    "license__custom": false,
+    "downloadable": false,
+    "redistributable": true,
+    "download_blocked_reason": "volume-exceeds-cap"
+  }
 }
+```
+
+```{important}
+**The Entity API's `attribution` block is a different shape from the one on multi-record responses,
+despite the shared key name.** Here it is **flat**, describes **one** source, and prefixes licence
+fields with `license__`. On `/reconcile` and the bulk endpoints it is **nested** —
+`attribution.sources.<namespace>.license.spdx_id` — and keyed by namespace because those responses can
+span several licences at once. Code written against one will not read the other. See
+[Source Terms and Attribution](#source-terms-and-attribution) for the multi-record shape.
+
+Two fields here are routinely misread:
+
+- **`license_url` and `license__url` are both present and duplicate each other.** Prefer
+  `license__url`, which sits with the rest of the licence fields.
+- **`downloadable: false` alongside `redistributable: true` is normal and not a contradiction.** They
+  answer different questions: *may you redistribute this?* and *will WHG serve you a bulk download of
+  it?* Above, GeoNames permits redistribution while WHG declines to serve it in bulk, with the reason
+  in `download_blocked_reason`. Only `redistributable: false` produces a
+  [`451`](#when-a-source-does-not-permit-redistribution).
 ```
 
 **Example: Fetching a WHG place**
@@ -182,7 +219,8 @@ curl "https://whgazetteer.org/entity/place:169687/api?token=<token>"
   "types": [{"label": "inhabited places", "identifier": "aat:300008347"}],
   "links": [{"type": "closeMatch", "identifier": "tgn:7011781"}],
   "when": {"timespans": [{"start": {"earliest": "43"}, "end": {"latest": ""}}]},
-  "attribution": { /* the source's licence and rights terms — see Source Terms and Attribution */ }
+  "attribution": { /* as above; for WHG-native records the terms come from the */
+                   /* contributing dataset rather than a source gazetteer       */ }
 }
 ```
 
@@ -190,6 +228,17 @@ curl "https://whgazetteer.org/entity/place:169687/api?token=<token>"
 
 WHG entities now have permanent identifiers under the `https://w3id.org/whg/` namespace. These identifiers resolve via
 HTTP 303 redirects to the WHG Entity API and are intended to be stable, citable URIs.
+
+```{important}
+**Send an explicit `Accept` header.** These identifiers redirect according to the content type you ask
+for, and a request that does not state one may not resolve at all. Every example below carries one; a
+bare `curl https://w3id.org/whg/id/…` is not a fair test of whether an identifier works.
+
+```bash
+curl -L -H 'Accept: application/ld+json' https://w3id.org/whg/id/place:gn:745044   # → LPF JSON
+curl -L -H 'Accept: text/html'           https://w3id.org/whg/id/place:gn:745044   # → detail page
+```
+```
 
 **Canonical identifier pattern**
 
@@ -216,6 +265,24 @@ HTTP 303 redirects to the WHG Entity API and are intended to be stable, citable 
 >Upon publication, **Datasets** and **Collections** are also assigned DOIs. WHG DOIs use the prefix `10.83427` and
 follow a hyphenated pattern (for example, `10.60681/whg-dataset-1234`), which differs from the colon-separated
 w3id.org identifiers. WHG DOIs are provided through [DataCite](https://datacite.org/) with support from the University of Pittsburgh Library System.
+
+```{warning}
+**A w3id identifier for a non-redistributable source stays valid, but dereferencing it returns
+[`451`](#when-a-source-does-not-permit-redistribution).** Measured 2026-09-21:
+
+```text
+Accept: application/ld+json
+  https://w3id.org/whg/id/place:kain_par:100  → 303 → /entity/place:kain_par:100/api → 451
+  https://w3id.org/whg/id/place:chgis:…       → 451
+  https://w3id.org/whg/id/place:gn:13274771   → 200   (control)
+```
+
+The distinction matters for citation. **The identifier has not broken and has not been withdrawn** —
+it still names the same place, still resolves, and remains correct in a bibliography. What changed is
+that the thing it resolves to is a refusal rather than a record, for the licence reasons described
+above. Anyone who cited one of these URIs still holds a working citation whose dereference no longer
+yields the data; they will need to obtain it from the source named in the `451` body.
+```
 
 ### Namespace Prefix (prefix.cc)
 
