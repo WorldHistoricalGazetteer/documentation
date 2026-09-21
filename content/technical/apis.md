@@ -192,6 +192,18 @@ The `whg:` namespace prefix is registered at `http://prefix.cc/whg` and expands 
 - Results can be **filtered** by source namespace, country code, GeoNames feature class, and AAT place type.
 - **Data Extension** is supported, allowing users to enrich their tables with properties like **Geometry**, **Alternative Names**, **Temporal Range**, and **Country Codes** after reconciliation.
 
+### What This Service Is For
+
+```{important}
+WHG reconciliation is a candidate **suggester for human review** — especially on phonetic matches —
+not an **adjudicator**.
+
+It answers *"which places in our indices could this string be?"*, not *"which place is this?"*. A
+`score` of 100 is not an assertion that the candidate is correct; it means only that nothing else in
+that response matched the name better. Everything below follows from that distinction, and a client
+that treats a top hit as a decision will be wrong at a rate no threshold can fix.
+```
+
 ### Reconciliation Endpoints
 
 | Endpoint | Method | Description |
@@ -201,6 +213,148 @@ The `whg:` namespace prefix is registered at `http://prefix.cc/whg` and expands 
 | `/reconcile/properties` | GET | Discover extensible properties |
 | `/suggest/entity` | GET | Typeahead entity suggestions by prefix |
 | `/suggest/property` | GET | Typeahead property suggestions by prefix |
+
+### The Query Model
+
+```{important}
+**Hierarchy is passed as a reconciled identifier in `contained_in` — never as commas inside the
+query string.** This is the single thing most likely to spoil a bulk run, and nothing about the
+shape of the request will tell you.
+```
+
+`query` is matched against **name strings only**. Anything you put in it — a country, a county, a
+region — is treated as *more name to match against*, not as a place to search inside. Geographic
+scope is a **separate, hard filter** taking a namespaced place identifier that WHG resolves
+server-side.
+
+So this, which looks entirely reasonable, does not search Syria:
+
+```json
+{"query": "Bego, Beriut, Syria", "mode": "fuzzy", "limit": 3}
+```
+
+It searches every index for a name resembling the whole string, and returns three places called
+*Bego* — in the Democratic Republic of the Congo, Turkey and Indonesia. All three are correct
+answers to the question that was actually asked. What the model wants is a resolved container and a
+bare name:
+
+```json
+{"query": "Bego", "contained_in": ["un:syr"]}
+```
+
+```{note}
+**Scoped properly, that query returns nothing — and that is the right answer.** We hold no *Bego* in
+Syria. The unscoped version returned three candidates at `score: 100`, none of them the place the
+reporter was looking for.
+
+Expect correct scoping to *reduce* your match rate, sometimes sharply. It is trading confident wrong
+answers for honest empty ones, which is the trade you want: an empty result you can requeue for human
+attention, whereas a wrong result at `score: 100` enters your data and stays there.
+```
+
+#### The two-pass pattern
+
+`contained_in` takes an **identifier**; your data almost certainly holds a **string**. Bridging that
+gap means reconciling twice, and there is no way around it:
+
+1. **Resolve your containers once.** Collect the distinct container values in your data — the set of
+   countries, counties or regions, not the rows — reconcile them as ordinary queries, review what
+   comes back, and cache the identifier you accept for each. There are usually very few of these
+   relative to your row count, they rarely change, and reviewing them by hand is affordable
+   precisely because there are so few.
+2. **Reconcile the place names with the cached identifier**, sending the bare toponym as `query`.
+
+Pass 1 is the pass people skip, and skipping it produces exactly the run described above.
+
+```{warning}
+**In pass 1, do not take the top-ranked candidate as your container. Take the first candidate with
+`has_geom: true`.**
+
+A container needs a usable polygon, and the best *name* match very often has none. Reconciling
+`"Syria"` ranks a GeoNames record first — and GeoNames records carry no polygons at all, so that
+candidate cannot scope anything. The usable container is further down the list.
+
+This matters because an unresolvable container does **not** fall back to an unscoped search. It
+**fails closed**: no results, `scope.applied: false`, and the offending id in
+`scope.containers_unresolved`. A caller who picked the top hit and does not read `scope` sees an
+empty `result` and records it as *"nothing is there"*, when it actually means *"we could not apply
+your region"*. That is
+[place#259](https://github.com/WorldHistoricalGazetteer/place/issues/259), reported by a beta tester
+whose hierarchy broke silently on a Getty TGN container.
+```
+
+**Polygon coverage by namespace**, measured 2026-09-21 — the proportion of each source's records
+that can serve as a container:
+
+| Namespace | With polygon | Records | Share | |
+|---|---:|---:|---:|---|
+| `un` | 247 | 247 | 100% | Countries and territories only — nothing sub-national |
+| `ukhc` | 92 | 92 | 100% | UK historic counties |
+| `clio` | 15,690 | 15,690 | 100% | Historical polities — **date-bounded**, see below |
+| `ohm` | 755,653 | 945,156 | 79.9% | OpenHistoricalMap |
+| `osm` | 10,871,752 | 20,622,228 | 52.7% | **The workhorse for sub-national containers** |
+| `pl` | 5,469 | 25,561 | 21.4% | Pleiades |
+| `whg` | 9,849 | 228,918 | 4.3% | Contributed data |
+| `wd` | 58,610 | 11,459,393 | 0.5% | Wikidata |
+| `gn` | **0** | 13,454,817 | **0%** | GeoNames — *no containers* |
+| `tgn` | **0** | 2,991,143 | **0%** | Getty TGN — *no containers* |
+| `tm` | 0 | 64,196 | 0% | Trismegistos |
+
+`gn` and `tgn` together hold over 16 million records and not one usable container, yet a GeoNames
+record is frequently the top-ranked answer to a place name. That is precisely why the rule above is
+`has_geom`, not rank. (Namespaces not listed were not measured.)
+
+```{warning}
+**Check the name and namespace of the container you pick, not only the flag.** `has_geom: true` says
+a polygon exists, not that it is the polygon you meant. Reconciling `"Syria"` resolves best to a
+Cliopatria polity `clio:syria_1976_1982` — a real, correctly-flagged polygon, but one scoped to
+1976–1982 rather than modern Syria. Historical-polity namespaces such as `clio` are 100%
+polygon-bearing precisely because that is what they are, so they surface readily in pass 1. Read what
+you are about to adopt.
+```
+
+#### Worked example
+
+Reconciling `Ballymena, County Antrim`. Measured end to end, 2026-09-21.
+
+**Pass 1 — resolve the container.** Reconcile the container string on its own:
+
+```json
+{"queries": {"c1": {"query": "County Antrim"}}}
+```
+
+Three candidates come back. Take the first with `has_geom: true`:
+
+| `id` | `has_geom` | |
+|---|---|---|
+| `place:osm:r1119534` | `true` | ← adopt this one |
+| `place:gn:2657254` | `false` | GeoNames carries no polygons |
+| `place:ukhc:ANM` | `true` | also usable — a historic-county polygon |
+
+Cache `osm:r1119534` against the string `"County Antrim"`. You will not need to do this again for any
+other row in the same county.
+
+**Pass 2 — reconcile the name inside it.** Send the bare toponym with the cached id:
+
+```json
+{"queries": {"r1": {"query": "Ballymena", "contained_in": ["osm:r1119534"]}}}
+```
+
+This returns five candidates with `scope.applied: true` and `scope.mode: "polygon"` — confirmation
+that the region really was applied. **Always check `scope.applied`**, because an empty result without
+that check is indistinguishable from a container that failed to resolve.
+
+Note what pass 2 does *not* contain: the words "County Antrim". The container is expressed entirely by
+its identifier.
+
+```{note}
+**If you genuinely cannot supply a scope**, we make a limited attempt to cope with a comma-bearing
+string by searching head-word sub-forms of it
+([place#205](https://github.com/WorldHistoricalGazetteer/place/issues/205)). That is a concession to
+input nobody controls — scanned registers, legacy databases, free-text fields — and not a feature to
+design against. It cannot disambiguate same-named places, because it has nothing to disambiguate
+them *with*: the sub-forms are still only names. Where you can resolve a container, resolve it.
+```
 
 ### Batching, Quotas and Retries
 
@@ -290,9 +444,13 @@ A few habits make a large difference to how much of a bulk run reconciles cleanl
   `Mantaro, Rio`; `Tacana, Volcan`; `Rizeh, Kuh-e`. We match against natural-order name strings, so
   rewrite these before sending (or send both forms as two keys in the same batch and keep the
   better score).
-- **Threshold on `confidence`, not `score`.** `score` is normalised against the best candidate *in
-  that response*, so the top hit reads near 100 even when it is the best of a bad lot. `confidence`
-  is the absolute measure, and it is the one that should drive your accept/review cut-off.
+- **Scope the query; do not try to threshold your way to the right place.** `score` is normalised
+  **per query** against the best candidate for *that* query, so the top hit reads near 100 even when
+  it is the best of a bad lot — and because normalisation is per query, scores from two different
+  keys in the same batch are on two different scales and cannot be compared. `confidence` is an
+  absolute measure and is the right cut-off for **name quality**. Neither field can tell you the
+  candidate is the right *place*: see [The Query Model](#the-query-model) for the constraint that
+  can.
 - **Deduplicate and cache locally.** Results are stable between runs; a cache keyed on the
   normalised name saves real volume across a large backlog.
 
@@ -373,26 +531,62 @@ for instance) to be rejected at this step.
 
 ### Source Namespaces
 
-WHG searches across multiple place indices. Each source is identified by a **namespace prefix**:
+WHG searches across many place indices. Each source is identified by a **namespace prefix**, which
+appears in every candidate `id` and keys the response-root `attribution` object.
 
-| Namespace | Source | ID Example |
+```{important}
+**`GET /api/sources/` is the authoritative list — read it rather than hard-coding this table.**
+Sources are added and retired, and the endpoint carries each one's licence and provenance. The table
+below was generated from it on **2026-09-21** and is a convenience, not a contract.
+```
+
+| Namespace | Source | Core |
 |---|---|---|
-| `whg` | WHG places | `place:169687` |
-| `gn` | GeoNames | `place:gn:745044` |
-| `tgn` | Getty TGN | `place:tgn:7010731` |
-| `wd` | Wikidata | `place:wd:Q84` |
-| `osm` | OpenStreetMap | `place:osm:n123456` |
-| `ohm` | OpenHistoricalMap | `place:ohm:w789012` |
-| `pl` | Pleiades | `place:pl:423025` |
+| `gn` | [GeoNames](https://www.geonames.org) | ✅ |
+| `tgn` | [Getty TGN](https://www.getty.edu/research/tools/vocabularies/tgn) | ✅ |
+| `wd` | [Wikidata](https://www.wikidata.org) | ✅ |
+| `alc` | Alcedo |  |
+| `chgis` | [China Historical GIS (CHGIS)](https://sites.fas.harvard.edu/~chgis) |  |
+| `clio` | [Cliopatria](https://github.com/Seshat-Global-History-Databank/cliopatria) |  |
+| `dgsd` | Digital Gazetteer of the Song Dynasty |  |
+| `dp` | [D-PLACE](https://d-place.org) |  |
+| `gb` | [GB1900](https://www.pastplace.org/data/#tabgb1900) |  |
+| `hgis` | HGIS de las Indias |  |
+| `iv` | Index Villaris |  |
+| `kain_par` | Ancient Parishes & Places of England & Wales (pre-1850) |  |
+| `nl` | [Native Land](https://native-land.ca) |  |
+| `ofs` | [Ottoman NFS Gazetteer](https://doi.org/10.5281/zenodo.7351936) |  |
+| `og` | Ottoman Gazetteer (ottgaz) |  |
+| `ohm` | [OpenHistoricalMap](https://www.openhistoricalmap.org) |  |
+| `osm` | [OpenStreetMap](https://www.openstreetmap.org) |  |
+| `osm_misc` | OSM/OHM (Miscellaneous) |  |
+| `pl` | [Pleiades](https://pleiades.stoa.org) |  |
+| `po` | [PeriodO](https://perio.do) |  |
+| `tm` | [Trismegistos](https://www.trismegistos.org) |  |
+| `ukhc` | [UK Historic Counties](https://county-borders.co.uk) |  |
+| `un` | [UN Countries](https://geoportal.un.org) |  |
+| `vob_cty` | GBHGIS Administrative Counties of England & Wales, 1911–1971 |  |
+| `vob_lgd` | GBHGIS Local Government Districts of England & Wales, 1911–1971 |  |
+| `vob_rc` | GBHGIS Registration Counties of England & Wales, 1851–1911 |  |
+| `vob_rd` | GBHGIS Registration Districts of England & Wales, 1851–1911 |  |
+| `whg` | Specialist Gazetteers |  |
 
-> **Note:** The `gb` namespace (Ordnance Survey) is excluded from results by default to reduce noise. To include it, pass an empty `exclude_namespaces` list via the gateway API.
+Candidate identifiers take the form `place:<namespace>:<local-id>` — for example
+`place:whg:1319:277`, `place:gn:1004740`. The `place:` prefix is the OpenRefine entity-type marker;
+everything after it is the gazetteer's own identifier. See
+[Result Format](#result-format) for how to feed one back as a `contained_in` container.
 
-When `namespaces` is omitted, all available sources are searched (except those in the default exclusion list). When specified, only the listed sources are queried — this can improve performance and relevance.
+When `namespaces` is omitted, all available sources are searched except those on the default
+exclusion list. When specified, only the listed sources are queried, which can improve both
+performance and relevance.
 
 **Examples:**
-- `"namespaces": "whg"` — search only WHG places
+- `"namespaces": "whg"` — search WHG specialist gazetteers only
 - `"namespaces": "gn,tgn"` — search GeoNames and Getty TGN
 - `"namespaces": "whg,gn"` — search WHG and GeoNames
+
+> **Note:** The `gb` namespace (GB1900) is excluded from results by default to reduce noise. To
+> include it, pass an empty `exclude_namespaces` list via the gateway API.
 
 ### Result Format
 
@@ -402,7 +596,7 @@ Each entry in a query's `result` array is an object with the following fields:
 |---|---|---|
 | `id` | string | Entity ID (e.g. `place:169687`, `place:gn:745044`). The namespace prefix identifies the source — see [Source Namespaces](#source-namespaces). |
 | `name` | string | Canonical name of the matched entity. |
-| `score` | number | Match score on a **0–100** scale (note: not the 0–1 range some Reconciliation API examples imply). |
+| `score` | number | Match score on a **0–100** scale (note: not the 0–1 range some Reconciliation API examples imply). ⚠️ **Relative, not absolute: normalised per query against the best candidate for that query, so the top hit is always ~100** — including when it is the best of a bad lot. Scores from different keys in one batch are on different scales and must not be compared. Use `confidence` for an absolute measure. |
 | `match` | boolean | `true` if WHG considers this the best confident match for the query. When no result is flagged, treat the highest-scoring entry as the best candidate. |
 | `description` | string | Short human-readable summary, typically of the form `"Country: XX"` for places, where `XX` is an ISO 3166-1 alpha-2 code. Useful as a post-hoc sanity check — see [Filter Behaviour](#filter-behaviour-and-common-pitfalls) below. |
 | `alt_names` | array | Variant toponyms in any language. |
@@ -472,6 +666,166 @@ A scoped query that the service could not constrain **fails closed**: it returns
 `scope.applied: false` with the container in `containers_unresolved`, rather than answering with
 unscoped results. An empty `result` with `scope.applied: false` therefore means *"we could not apply
 your region"*, not *"nothing is there"*.
+```
+
+### Interpreting `confidence`
+
+`confidence` is the gateway's **absolute** assessment of match quality on a 0–100 scale. Unlike
+`score` it is comparable between queries, which is what makes it usable as an accept/review
+cut-off.
+
+Measured bands ([place#206](https://github.com/WorldHistoricalGazetteer/place/issues/206),
+re-measured against the live gateway):
+
+| What matched | `confidence` |
+|---|---|
+| Exactly as spelled | 100 (an exact match on a *variant* name: 90) |
+| A derived head-word match (`Bury St. Edmunds, Suffolk`) | 87–91 |
+| Lexically near (`Broxbourn (St. Augustine)` → Broxbourne) | ~32 |
+| **Noise — and phonetic-only matches, correct or not** | 22–26 |
+
+```{warning}
+**A phonetic-only match scores in the noise band.** Where there is no lexical evidence either way,
+a correct phonetic match and a meaningless one are not distinguishable by this number. That is a
+property of the measure, not a fault in it — and it is why WHG's own interface refuses to
+auto-confirm on phonetic evidence alone.
+```
+
+WHG's Map your Data uses a floor of **30**, sending everything below it to human review. That is the
+gateway's recommended line, and it sits in an observed gap between **25.7 and 32.1** — real, but
+narrow on the near-miss side. Treat 30 as a floor to build on rather than a setting that will sort
+your data for you, and re-check it against your own corpus rather than assuming it is fundamental.
+
+```{warning}
+**`confidence` measures name-match quality only. It carries no geographic term, and it cannot
+distinguish two places that share a name.**
+
+Containment is applied upstream as a filter on which places are *eligible*; it never enters the
+score. So identically-named places are separated by `contained_in` or not at all — `confidence` has
+nothing to separate them with, and is **not** degraded when it cannot.
+
+Measured on the run that prompted this page: all three US candidates for `Ireland` scored **91.7**;
+all three `Bego` candidates — in DR Congo, Turkey and Indonesia — scored **80.0**. A high confidence
+on a wrong-country result is not a malfunction. The name did match. The remedy for wrong-country
+results is [The Query Model](#the-query-model), not a higher threshold.
+```
+
+```{important}
+**Test for presence before thresholding.** `confidence` is **omitted entirely** when it was not
+measured — deliberately, so that *"not measured"* stays distinguishable from *"measured badly"*.
+Absence never means zero.
+
+It is currently absent on legacy-path candidates and outside `fuzzy` and `phonetic` modes, so **a
+single unscoped query can return a mix** of candidates with and without it. Code that reads a
+missing `confidence` as `0` will silently discard the legacy candidates; code that reads it as `100`
+will auto-accept them. Branch on presence explicitly.
+
+Making that behaviour predictable is tracked as
+[place#214](https://github.com/WorldHistoricalGazetteer/place/issues/214), which has **not** landed —
+so the mix described here is the current state, not a settled contract.
+```
+
+### Deciding Whether a Result Is Ambiguous
+
+The hard question is not *"did anything match?"* but **"can I accept this without looking at it?"**
+Neither ranking field will answer it on its own: `score` saturates at ~100 for the best candidate in
+every query, and `confidence` speaks only to the name.
+
+You do not need anything we have not already sent you — the fields WHG's own Map your Data interface
+uses to decide whether a match can be auto-confirmed are all present in the reconcile response.
+
+#### The rule WHG's own interface applies
+
+Map your Data auto-confirms a row only if it passes **all four** tests below, in order. Failing any
+one sends the row to **human review** — it never rejects the candidate outright. Every field it
+consults is in the reconcile response, so you can implement the same rule today.
+
+Let `top` be the first candidate and `cands` the full list for that query.
+
+**1. Is it a candidate at all?** `top.match === true` — the service matched the name exactly — **or**
+`top.score` clears whatever threshold you have set.
+
+**2. Is there evidence in the spelling?** This is the primary gate, and it branches on whether
+`confidence` is present:
+
+- **`confidence` present** (a finite number): require **`confidence >= 30`**. Nothing else is
+  consulted.
+- **`confidence` absent** (legacy path, or a mode other than `fuzzy`/`phonetic`): fall back to a
+  lexical similarity of at least **0.45** between your row's own name forms — the cell value plus any
+  variants you derived — and the candidate's `name` together with its first 20 `alt_names`.
+
+  ```{note}
+  Two sub-rules make that fallback more forgiving than it looks, and the second is the opposite of
+  what most readers assume:
+
+  - If `candidate.match === true`, it passes immediately. The service matched the name exactly;
+    there is nothing to second-guess.
+  - If **none** of your name forms shares a comparable script with **any** candidate name, it also
+    passes. The guard **abstains** when it has no basis to judge rather than withholding — the
+    reasoning being that there is no value to compare against, so inventing a reason to withhold
+    would be arbitrary.
+  ```
+
+  The purpose of this test is to require evidence in the **spelling**. Because a phonetic-only match
+  scores in the noise band (see [Interpreting `confidence`](#interpreting-confidence)), it cannot
+  clear 30, and so goes to review. That is deliberate: it is a tightening for cross-script matching,
+  where the lexical guard stands aside and such matches previously auto-confirmed unchecked.
+
+**3. Does a rival tie it?** Walk the candidates from index 1 for as long as
+`candidate.score >= cands[0].score`:
+
+- **An inexact name is no rival to an exact one, however the scores tie.** If `top.match` is true and
+  the rival's is not, skip it. Searching *Sherborne* turns up *Sherborne railway station* at the same
+  score, and relevance scoring alone cannot separate them.
+- Otherwise, if the rival's **`name` differs or its `description` differs** → **ambiguous; withhold.**
+  Note that a second *exact* candidate does count: two different places genuinely called Sherborne is
+  real ambiguity.
+- **Identical `name` and identical `description` is the same place from two sources** — deduplication,
+  not ambiguity. The comparison is exact string equality on both fields, with a missing `description`
+  treated as `""`.
+
+**4.** Otherwise, auto-confirm.
+
+```{note}
+This rule compares **names**. It will not catch the failure described next, in which the names agree
+perfectly and the places do not.
+```
+
+#### Same name, different place
+
+This is the failure that costs whole runs, and it is invisible to both ranking fields **because the
+names genuinely agree**. Two response fields settle it:
+
+- **`ccodes`** — candidates sharing a name but sitting in different countries are alternatives, not
+  corroboration.
+- **`repr_point`** — candidates hundreds of kilometres apart are alternatives even within one
+  country.
+
+The query `"Bego, Beriut, Syria"` returned three candidates:
+
+| `name` | `ccodes` | `score` | `confidence` |
+|---|---|---|---|
+| Bego | `["CD"]` | 100 | 80.0 |
+| Bego | `["TR"]` | 100 | 80.0 |
+| Bego | `["ID"]` | 100 | 80.0 |
+
+Nothing in `score` or `confidence` marks this as a problem, and nothing should: every one of those
+numbers is honest. Three different places really are called *Bego*, and the name really did match
+all three equally well. The disagreement lives in `ccodes`, and only `ccodes` shows it.
+
+```{warning}
+**A tie across candidates in different countries is the signature of a query that was never scoped.**
+Treat it as a prompt to go back and supply `contained_in` — see
+[The Query Model](#the-query-model) — rather than as a result to threshold. No cut-off on `score` or
+`confidence` will separate these three, because there is nothing in either field to separate them
+with.
+```
+
+```{note}
+Deduplication is not ambiguity. The same physical place reached through several gazetteers will
+appear as several candidates; candidates agreeing on both `name` and `description` are usually one
+place described more than once, not competing answers. Compare `ccodes` and `repr_point` before
+treating a cluster as a conflict.
 ```
 
 ### Filter Behaviour and Common Pitfalls
@@ -570,6 +924,30 @@ The WHG Reconciliation Service allows you to match place names in your spreadshe
 collection of historical places. This is particularly useful for disambiguating place names and enriching your data with
 standardised identifiers, coordinates, and temporal information.
 
+```{warning}
+**Through OpenRefine you cannot currently reach the containment model described in
+[The Query Model](#the-query-model), and this is the most important limitation on this page.**
+
+A reconciliation client passes per-query filters through the protocol's `properties` array, and WHG
+accepts only four properties there: `whg:namespaces`, `whg:countries_codes`, `whg:classes_codes` and
+`whg:types_objects`. There is **no `contained_in` property and no spatial property at all** — so
+`contained_in`, `bounds` and the circular `lat`/`lng`/`radius` search are unreachable from a standard
+reconciliation client, however they are configured in the interface.
+
+The practical consequences:
+
+- `whg:countries_codes` is the only geographic constraint available to you. It is a country-level
+  filter on upstream country tagging, not true containment — it will not scope to a county, a region
+  or a historical polygon, and it inherits the tagging problems described under
+  [Filter Behaviour](#filter-behaviour-and-common-pitfalls).
+- For anything finer, **call `POST /reconcile` directly** with the two-pass pattern, and bring the
+  results back into OpenRefine afterwards.
+
+Adding containment and spatial keys to the `properties` array is tracked as part of
+[place#217](https://github.com/WorldHistoricalGazetteer/place/issues/217) and has **not** shipped.
+This note describes the service as it behaves today.
+```
+
 #### Prerequisites
 
 1. Install [OpenRefine](https://openrefine.org/download) (version 3.0 or later recommended)
@@ -636,14 +1014,24 @@ After reconciliation, you can add properties from WHG to your dataset:
 
 #### Tips for Better Results
 
-- **Pre-process your data**: Clean up obvious typos and normalise formatting
-- **Use temporal filters**: Historical place names are often ambiguous without temporal context
-- **Leverage additional columns**: Include date ranges, broader geographic context, or place types in separate columns
-  and reference them during reconciliation
-- **Filter by namespace**: If you know your places are in a specific source (e.g. GeoNames), use `namespaces` to restrict the search for faster, more relevant results
-- **Filter by country**: Use `countries` to narrow results for common place names. Note that `fclasses` is unevenly populated across upstream sources and `start`/`end` will hard-exclude any record with a modern date — see [Filter Behaviour and Common Pitfalls](#filter-behaviour-and-common-pitfalls).
-- **Start with a sample**: Test reconciliation on a small subset before processing large datasets
-- **Review auto-matches**: Even high-confidence matches should be spot-checked, especially for common place names
+- **Pre-process your data**: clean up obvious typos, normalise formatting, and rewrite inverted index
+  forms (`Mantaro, Rio` → `Rio Mantaro`) into natural order.
+- **Put the place name alone in the reconciled column.** A cell reading `Bego, Beriut, Syria` is
+  matched as one long name — see [The Query Model](#the-query-model). Split the container out into
+  its own column.
+- **Filter by country**: `whg:countries_codes` is the one geographic constraint available through
+  OpenRefine, and it is worth using for common toponyms.
+- **Filter by namespace**: if you know your places come from one source, restricting to it is faster
+  and more relevant.
+- **Be careful with temporal filters.** `start`/`end` are **hard** filters, and `undated=true` only
+  admits records carrying *no* dates — it does not widen the window. Because most modern GeoNames and
+  OSM records do carry dates, a medieval-only window can drop nearly every valid hit. Prefer treating
+  period as a post-hoc disambiguator; see
+  [Filter Behaviour and Common Pitfalls](#filter-behaviour-and-common-pitfalls).
+- **Start with a sample**: test on a small subset before processing a large dataset.
+- **Review auto-matches**: `score` saturates at ~100 for the best candidate in every query, so a
+  column full of 100s says nothing about quality. Spot-check common place names in particular, and
+  see [Deciding Whether a Result Is Ambiguous](#deciding-whether-a-result-is-ambiguous).
 
 #### Batch Reconciliation via API
 
