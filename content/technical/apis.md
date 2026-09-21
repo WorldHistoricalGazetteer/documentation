@@ -24,6 +24,39 @@ The World Historical Gazetteer (WHG) provides two complementary APIs:
 
 Valid entity types: `place`, `dataset`, `collection`, `area`, `period`.
 
+#### Distinguishing "does not exist" from "we could not ask"
+
+```{versionadded} 2026-09-21
+`/entity/{type}:{id}/api` now answers **`503 Service Unavailable`** when the upstream gazetteer service
+does not respond, instead of `404`. `404` means the record genuinely is not there.
+```
+
+This matters for anyone harvesting metadata at volume. Until now both cases returned a `404` that was
+byte-identical but for the echoed id, so **a transient upstream failure was indistinguishable from a
+definitive "no such record"** — and because the failures cluster when the service is busy, a client
+sampling quickly banked absences biased toward exactly when it was going fastest, producing a silently
+thinner dataset with nothing in the output to reveal it.
+
+A `503` carries `Retry-After` and a `gateway` object:
+
+```jsonrelaxed
+{
+  "detail": "The gazetteer service did not answer, so this identifier could not be resolved. ...",
+  "gateway": { "answered": false, "error": "timeout" },   // error: timeout | connection | http | unexpected
+  "place_id": "gn:13274771"
+}
+```
+
+```{important}
+**Test for the presence of `gateway`, and treat `503` as "ask again later" — never as absence.**
+The condition is recoverable by waiting: over one measured set of ids, a third attempt minutes later
+answered 30 of the 36 that had failed twice back to back. If you cache negative results, do **not**
+cache a `503`.
+```
+
+`gateway.answered` is a JSON boolean (`false`), not the string `"false"` — so `if (!body.gateway.answered)`
+is safe.
+
 ### Place Identifiers and Source Namespaces
 
 Place identifiers include a **namespace prefix** that indicates the originating source. For example:
@@ -180,9 +213,18 @@ curl https://whgazetteer.org/reconcile        # no token needed for the manifest
 
 | What | Value | Notes |
 |---|---|---|
-| Queries per request | **50** (`batch_size` in the manifest) | A request carrying more is *sliced* to the first 50, not rejected. The response carries a note saying so — check for it. |
+| Queries per request | **50** (`batch_size` in the manifest) | A request carrying more is **rejected with `400`**, naming the limit and the count received. Nothing is processed — the batch does not partially succeed. |
+| Query rate | **600 queries per minute** | Counts **queries, not requests**. Exceeding it returns `429` with `Retry-After`. |
 | Daily quota | **5,000 requests** by default | Charged **per request, not per query**. Staff can raise it; see below. |
 | Concurrency | 1 request in flight is plenty | We already fan each batch out across up to 8 workers internally. |
+
+```{versionchanged} 2026-09-21
+An over-sized batch used to be **silently truncated** to the first 50 behind a `200`, with a note in a
+`messages` field. That field was unusable as a contract — omitted when empty, sitting in the same
+namespace as your query ids, and appended by only one of the two code paths — so a client could lose half
+its rows with nothing in the status to say so. A request above the limit is now **rejected with `400`**
+and no queries are processed. Split the batch and resend.
+```
 
 ```{important}
 Because quota is charged per request, a client that sends one name per request spends **fifty
@@ -217,6 +259,22 @@ Stop the run, log the response body (we say exactly what is wrong), and alert a 
 retries for `429`, `502`, `503`, `504` and connection errors, with exponential backoff, jitter, and
 a cap on attempts. A circuit breaker that halts the job after N consecutive failures is worth the
 few lines it costs.
+```
+
+```{note}
+**`429` is now a real response**, and `400` is the one `4xx` worth acting on rather than escalating.
+
+`429 Too Many Requests` means you have spent the query-rate budget. It carries `Retry-After` in
+seconds — wait that long and carry on. Nothing was lost and the run does not need restarting.
+
+`400` from an over-sized batch is terminal for *that request* and trivially fixable: split it to 50
+queries or fewer and resend. Nothing was processed, so there is no partial state to reconcile.
+```
+
+```{warning}
+**Do not answer a `429` by shrinking your batches.** The budget counts **queries**, so twenty requests
+of one query cost exactly what one request of twenty costs — while burning your daily *request* quota
+twenty times faster for no gain. Keep batching at 50 and slow the **rate** of requests instead.
 ```
 
 Your remaining allowance for the day is shown on your Profile page.
@@ -254,7 +312,7 @@ The following parameters can be included in each query object within a reconcili
 | Parameter | Type | Reconcile | Suggest | Description |
 |---|---|---|---|---|
 | `countries` | array or string | ✅ | ✅ | ISO 3166-1 alpha-2 country codes. Format: `["US","GB"]` or `"US,GB"`. |
-| `fclasses` | array or string | ✅ | ✅ | GeoNames feature classes: `A` (Administrative), `H` (Hydrographic), `L` (Landscape), `P` (Populated places), `R` (Roads/routes), `S` (Sites), `T` (Topographic). |
+| `fclasses` | array or string | ✅ | ✅ | GeoNames feature classes: `A` (administrative), `H` (hydrographic), `L` (parks/areas), `P` (populated places), `R` (roads/railroads), `S` (spots/buildings), `T` (hypsographic), `U` (undersea), `V` (vegetation). Case-insensitive. ⚠️ **In practice this also restricts results to GeoNames** — see the pitfalls below. |
 | `types` | array or string | ✅ | ✅ | AAT place type identifiers (e.g. `"aat:300008347"`). Matched against the `types.identifier` field. |
 | `namespaces` | string | ✅ | ✅ | Comma-separated source namespace codes. `whg` = WHG, `gn` = GeoNames, `tgn` = Getty TGN. Omit for all sources. |
 
@@ -331,11 +389,58 @@ Each entry in a query's `result` array is an object with the following fields:
 | `namespace` | string | The source gazetteer this candidate came from (e.g. `gn`, `tgn`, `whg`). Look it up in the response-root `attribution` object to get that source's licence — see [Source Terms and Attribution](#source-terms-and-attribution). |
 | `type` | array | LPF type objects. |
 
+#### Response-root keys
+
+Alongside your query ids, a reconcile response may carry these at the top level. ⚠️ **A client iterating
+response keys as query ids must skip them.**
+
+| Key | When present | Meaning |
+|---|---|---|
+| `attribution` | always | Licence and rights terms for the sources searched — see [Source Terms and Attribution](#source-terms-and-attribution). |
+| `gateway` | **only on failure** | The upstream gazetteer service did not answer this query. |
+| `scope` | when `contained_in`/`bounds` was requested | Whether the containment scope was applied, and how. |
+| `variants_used`, `derived_forms` | when the gateway expanded your query | Name forms searched in addition to the one you sent. |
+
+```{important}
+**`gateway` is a presence-means-failure key: an empty `result` beside it is not evidence of absence.**
+
+```jsonrelaxed
+{ "gateway": { "answered": false, "error": "timeout" } }   // timeout | connection | http | unexpected
+```
+
+Before this existed, a query whose upstream call failed came back as an ordinary empty result — so
+callers recorded outages as honest misses, hardest on the largest runs, which are the ones nobody
+re-checks by hand. One external client banked **78% of a 2,494-query run as misses** during a single
+saturation episode.
+
+**Retry on `gateway`; never cache that query as unmatched.** Do not use the absence of
+`variants_used`/`derived_forms` as a liveness test — that worked by accident and is not a defended
+invariant.
+```
+
 ### Filter Behaviour and Common Pitfalls
 
 Because WHG aggregates several upstream sources (GeoNames, Wikidata, OSM/OHM, Getty TGN, Pleiades, contributor datasets) that differ in how completely they populate metadata, three of the filters can be unexpectedly aggressive. Understanding when each one bites makes reconciliation results far more useful, especially for historical-place workflows.
 
-- **`fclasses` is sparsely populated upstream.** Many ingested records — OSM relations, Wikidata items, contributor datasets — carry no GeoNames feature class at all. Applying `fclasses=["P"]` or `fclasses=["A"]` will exclude them entirely, even when the named entity is clearly a populated place or admin area. Empirical example: `query="Sardinia", fclasses=["A"]` returns 0 results; the same query without `fclasses` returns three valid matches. For exploratory reconciliation, prefer omitting `fclasses` and disambiguating by `countries` or post-hoc result ranking.
+- **`fclasses` currently restricts results to GeoNames — and this is a defect, not a design.** Measured on the live index (2026-09-21): 99.96% of `gn` records carry a feature-class letter, and **0%** of `whg`, `osm`, `wd`, `tgn` and `ohm` records do. Those namespaces populate the same field with AAT type labels (`"bay"`, `"mountain"`) instead, so no feature-class letter can ever match them. Applying `fclasses=["P"]` therefore silently narrows your search to one source: `query="Venice", fclasses=["P","S"]` returns 62 hits, **all of them `gn`**.
+
+  ```{warning}
+  Contributors who supply an `fclasses` column in LP-TSV **cannot filter their own published records by
+  it** — the values are stored but do not reach the search index. Tracked as
+  [place#286](https://github.com/WorldHistoricalGazetteer/place/issues/286).
+  ```
+
+  Until that is fixed: use `fclasses` when you *want* GeoNames records and a feature-class cut; use the
+  `types` facet (AAT identifiers) when you want to filter by place type across all sources.
+
+  ```{versionchanged} 2026-09-21
+  An earlier version of this page said `fclasses` was "sparsely populated upstream" and advised omitting
+  it, citing `query="Sardinia", fclasses=["A"]` returning 0 results. **That example no longer holds — it
+  now returns hits.** The zeroes were caused by a query bug ([place#267](https://github.com/WorldHistoricalGazetteer/place/issues/267),
+  fixed 2026-09-21): the filter was matched against an analysed field without lower-casing, so the
+  documented upper-case letters never matched anything, for anyone, ever. The old advice described a code
+  defect as a property of the data.
+  ```
 
 - **`start` and `end` are hard filters; `undated=true` is not a window-widener.** The `undated=true` flag only includes records that carry *no* temporal metadata. Records that *do* carry dates (which is the case for nearly every modern GeoNames or OSM ingestion) are still hard-excluded when those dates sit outside `[start, end]`. The practical consequence: probing a medieval-only window can silently drop the majority of valid hits. Empirical example: `query="Portofino", start=1350, end=1500, undated=true, countries=["IT"]` returns 0 results; the same query without `start`/`end` returns three valid matches. For reconciling historical names against the modern index, consider treating temporal context as a post-hoc disambiguator rather than a pre-filter.
 

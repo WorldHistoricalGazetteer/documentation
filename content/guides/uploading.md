@@ -141,6 +141,17 @@ with what it derived — the column adds to the result, it never replaces it. Su
 want to be sure of a particular class, and leave it empty when you are content with what the AAT concepts
 imply.
 
+```{warning}
+**Your feature classes are stored but are not currently searchable.** They are derived and merged as
+described above and held against your records, but they do not reach the search index: measured on
+2026-09-21, **0 of 228,918** published `whg` records carry a feature class there, against 99.96% of
+GeoNames records. So neither you nor anyone else can filter your published dataset with the API's
+`fclasses` parameter yet.
+
+Filtering by **`aat_types`** does work across all sources, and is the one to rely on meanwhile. Tracked as
+[place#286](https://github.com/WorldHistoricalGazetteer/place/issues/286); this note will go when it does.
+```
+
 ```{note}
 A single AAT concept can carry more than one feature class. *Cities* and *quilombos* each carry both `A`
 and `P`, so a place typed with either is both an administrative division and a populated place, and will
