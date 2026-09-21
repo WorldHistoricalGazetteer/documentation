@@ -1,5 +1,14 @@
 # Reconciliation & Accessioning
 
+```{note}
+**This page is about reviewing matches inside WHG**, in the dataset reconciliation and accessioning
+screens. If you are looking for the **Reconciliation Service API** — the OpenRefine-compatible
+`/reconcile` endpoint you call from your own code — see
+[Reconciliation Service API](../technical/apis.md#reconciliation-service-api) instead. The two share
+a name and very little else: this page describes decisions a human makes in our interface, that one
+describes a request format and the response it returns.
+```
+
 After a reconciliation task is run, the prospective matches to your records are presented for review. For each of your
 records that had one or more "hits," those hit records from Wikidata and/or GeoNames are presented in a list on the
 right of the screen, with your record on the left. The dataset owner and any designated collaborators decide, for each

@@ -340,6 +340,27 @@ The `bounds` parameter accepts two formats:
 - **Plain GeoJSON geometry** (preferred): `{"type": "Polygon", "coordinates": [[[...]]]}` — any `Polygon` or `MultiPolygon` geometry.
 - **GeometryCollection wrapper**: `{"geometries": [{"type": "Polygon", "coordinates": [[[...]]]}]}` — legacy format, still supported for backward compatibility.
 
+```{note}
+**`contained_in` accepts a container id with or without the `place:` prefix — both work identically.**
+Measured 2026-09-21: `["un:gbr"]` and `["place:un:gbr"]` returned byte-identical result sets and the same
+`scope` report (`applied: true, mode: polygon`). So you can feed a candidate's `id` straight back in as a
+container without stripping anything.
+
+This page previously described both forms in different sections without saying they were equivalent,
+which read as a contradiction.
+```
+
+```{important}
+**A container that cannot be resolved does not silently widen your search — the query fails closed.**
+It returns no results and reports the container in `scope.containers_unresolved` with
+`scope.applied: false`, rather than answering with unscoped results. So an empty `result` beside
+`scope.applied: false` means *"we could not apply your region"*, not *"nothing is there"*.
+
+⚠️ Not every place can serve as a container. A candidate needs a usable polygon — check `has_geom` on
+the candidate before adopting it as a parent, and expect point-only records (many Getty TGN concepts,
+for instance) to be rejected at this step.
+```
+
 **Filtering by place ID (`contained_in`)** is the most convenient way to scope results to a region you can already name — a country (`un:ita`), an administrative area (`osm:r365331`), or any other place with a polygon. For example, `{"contained_in": ["un:ita"], "containment": "exact", "relation": "within"}` (no `query`) returns the places whose geometry lies entirely within Italy. With `relation: "intersects"` (the default) a feature need only overlap the region, so large/historical polygons that straddle the border are included.
 
 #### Other
@@ -388,24 +409,52 @@ Each entry in a query's `result` array is an object with the following fields:
 | `has_geom` | boolean | `true` if the matched place is backed by a full **polygon** geometry — i.e. it can itself serve as a `contained_in` region for a subsequent spatial query. Point/line-only places report `false`. Use this to pick valid parents when reconciling hierarchically (resolve a place, then scope its children with `contained_in: ["place:<id>"]`). |
 | `namespace` | string | The source gazetteer this candidate came from (e.g. `gn`, `tgn`, `whg`). Look it up in the response-root `attribution` object to get that source's licence — see [Source Terms and Attribution](#source-terms-and-attribution). |
 | `type` | array | LPF type objects. |
+| `confidence` | number | **Absolute** match quality, 0–100, unlike `score` which is relative to the response. ⚠️ **Measures name match only and carries no geographic term** — it cannot tell you the candidate is the right *place*. Omitted entirely when unmeasured, so "not measured" stays distinguishable from "measured badly"; test for presence before thresholding. |
+| `repr_point` | array | `[lon, lat]` representative point, guaranteed to lie within the candidate's own geometry. Useful as a cheap post-filter when a containment scope is coarser than you want. |
+| `ccodes` | array | ISO 3166-1 alpha-2 country codes as the source recorded them. |
+| `place_types` | array | Source-vocabulary place types, where the source supplies them. Frequently `[]`. |
+| `wikipedia` | array | Wikipedia links, where known. Frequently `[]`. |
 
-#### Response-root keys
+```{note}
+The five rows above were absent from this table until 2026-09-21, though all five have been emitted for
+some time. Verified against a live response rather than read off a specification.
 
-Alongside your query ids, a reconcile response may carry these at the top level. ⚠️ **A client iterating
-response keys as query ids must skip them.**
+⚠️ `id` carries a **`place:` prefix** — `"place:whg:1319:277"`, `"place:gn:1004740"`. See the note under
+[Spatial Filtering](#spatial-filtering) on feeding one back as a container.
+```
+
+#### Keys beside `result`, and keys at the response root
+
+Measured from a live response, 2026-09-21. **Most of these sit inside each query's object, next to
+`result` — not at the top level.** Getting that wrong is the difference between reading a per-query
+failure marker and never finding it.
+
+**At the response root**, alongside your query ids:
 
 | Key | When present | Meaning |
 |---|---|---|
-| `attribution` | always | Licence and rights terms for the sources searched — see [Source Terms and Attribution](#source-terms-and-attribution). |
+| `attribution` | always | Licence and rights terms for the sources searched, keyed by namespace — see [Source Terms and Attribution](#source-terms-and-attribution). |
+| `messages` | rarely | Service-level notes. ⚠️ Omitted entirely when empty, so its absence is the normal case and presence cannot be tested for. Do not build a contract on it. |
+
+⚠️ **A client iterating response keys as query ids must skip both.**
+
+**Inside each query's object**, alongside `result`:
+
+| Key | When present | Meaning |
+|---|---|---|
+| `namespaces_searched` | always | Which sources were actually searched for *this* query. The root `attribution` is built from this rather than from the ids returned, because a source can be searched, match nothing, and still be one whose terms you need. |
+| `variants_used` | always (may be `[]`) | Name forms **you** supplied that were searched. |
+| `derived_forms` | always (may be `[]`) | Name forms the service derived **on your behalf** — e.g. de-bracketing `Broxbourn (St. Augustine)`. Reported separately from `variants_used` so you can tell what you asked for from what was done for you. |
+| `scope` | when `contained_in`/`bounds`/radius was requested | Whether the containment scope was applied, and how: `applied`, `mode` (`polygon` / `linked-polygon` / `none`), `approximate`, and four `containers_*` lists including `containers_unresolved`. |
+| `geojson` | on an empty result | Always `null`. **Not a failure marker** — it is what the empty-result path emits. |
 | `gateway` | **only on failure** | The upstream gazetteer service did not answer this query. |
-| `scope` | when `contained_in`/`bounds` was requested | Whether the containment scope was applied, and how. |
-| `variants_used`, `derived_forms` | when the gateway expanded your query | Name forms searched in addition to the one you sent. |
 
 ```{important}
-**`gateway` is a presence-means-failure key: an empty `result` beside it is not evidence of absence.**
+**`gateway` is a presence-means-failure key, and an empty `result` beside it is not evidence of absence.**
 
 ```jsonrelaxed
-{ "gateway": { "answered": false, "error": "timeout" } }   // timeout | connection | http | unexpected
+{ "q1": { "result": [],
+          "gateway": { "answered": false, "error": "timeout" } } }  // timeout|connection|http|unexpected
 ```
 
 Before this existed, a query whose upstream call failed came back as an ordinary empty result — so
@@ -413,9 +462,16 @@ callers recorded outages as honest misses, hardest on the largest runs, which ar
 re-checks by hand. One external client banked **78% of a 2,494-query run as misses** during a single
 saturation episode.
 
-**Retry on `gateway`; never cache that query as unmatched.** Do not use the absence of
+**Retry that query; never cache it as unmatched.** And do not use the absence of
 `variants_used`/`derived_forms` as a liveness test — that worked by accident and is not a defended
 invariant.
+```
+
+```{note}
+A scoped query that the service could not constrain **fails closed**: it returns no results and reports
+`scope.applied: false` with the container in `containers_unresolved`, rather than answering with
+unscoped results. An empty `result` with `scope.applied: false` therefore means *"we could not apply
+your region"*, not *"nothing is there"*.
 ```
 
 ### Filter Behaviour and Common Pitfalls
