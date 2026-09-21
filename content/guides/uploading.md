@@ -148,8 +148,14 @@ described above and held against your records, but they do not reach the search 
 GeoNames records. So neither you nor anyone else can filter your published dataset with the API's
 `fclasses` parameter yet.
 
-Filtering by **`aat_types`** does work across all sources, and is the one to rely on meanwhile. Tracked as
-[place#286](https://github.com/WorldHistoricalGazetteer/place/issues/286); this note will go when it does.
+**`aat_types` is the direction of travel** — the Atlas interface is moving to AAT type filtering, and AAT
+is hierarchical, so it can express far more than seven single letters. Supplying good `aat_types` is the
+most useful thing you can do for your dataset's findability.
+
+⚠️ Be aware that AAT matching is currently **exact** rather than hierarchical, so a search for a broad
+concept does not yet return everything beneath it. Tracked as
+[place#286](https://github.com/WorldHistoricalGazetteer/place/issues/286) and
+[place#142](https://github.com/WorldHistoricalGazetteer/place/issues/142); these notes will go when they do.
 ```
 
 ```{note}

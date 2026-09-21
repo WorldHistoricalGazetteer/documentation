@@ -430,8 +430,23 @@ Because WHG aggregates several upstream sources (GeoNames, Wikidata, OSM/OHM, Ge
   [place#286](https://github.com/WorldHistoricalGazetteer/place/issues/286).
   ```
 
-  Until that is fixed: use `fclasses` when you *want* GeoNames records and a feature-class cut; use the
-  `types` facet (AAT identifiers) when you want to filter by place type across all sources.
+  **Direction of travel:** the Atlas interface is retiring feature-class filtering in favour of **AAT
+  types**, which are hierarchical and can therefore be far more precise than seven single letters. Whether
+  the reconciliation API follows is not yet decided ([place#286](https://github.com/WorldHistoricalGazetteer/place/issues/286)).
+  Treat `fclasses` as stable for now, but prefer `types` for new integrations.
+
+  ```{note}
+  **One caveat if you are migrating today: AAT matching is currently exact, not hierarchical.** The
+  `types` facet matches `types.identifier`, and the field that would carry ancestors (`types.aat_paths`)
+  is present in the index but **not yet populated**. So asking for a broad concept does *not* return
+  everything beneath it — you must name the specific concepts you want. Coverage is also uneven: AAT
+  identifiers are mapped for some sources and not others
+  ([place#142](https://github.com/WorldHistoricalGazetteer/place/issues/142),
+  [place#273](https://github.com/WorldHistoricalGazetteer/place/issues/273)).
+
+  Until those land, `fclasses` remains the only way to make a *coarse* feature cut — over GeoNames
+  records only.
+  ```
 
   ```{versionchanged} 2026-09-21
   An earlier version of this page said `fclasses` was "sparsely populated upstream" and advised omitting
