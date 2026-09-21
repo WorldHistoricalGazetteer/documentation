@@ -57,6 +57,64 @@ cache a `503`.
 `gateway.answered` is a JSON boolean (`false`), not the string `"false"` — so `if (!body.gateway.answered)`
 is safe.
 
+#### When a source does not permit redistribution
+
+```{versionadded} 2026-09-21
+`/entity/{type}:{id}/api` now answers **`451 Unavailable For Legal Reasons`** for places whose source
+authority is held under terms that do not permit WHG to redistribute its records. This applies to the
+default LPF form and to `?variant=popup` alike
+([place#269](https://github.com/WorldHistoricalGazetteer/place/issues/269)).
+```
+
+```{important}
+**`451`, not `403` — and the difference is substantive.** The constraint is on the **content**, not on
+your permissions. No API token, account, tier or affiliation changes the answer.
+
+**Do not retry with credentials**, and do not treat it as an authentication problem. A client that
+escalates a `451` to its own support desk as a token failure will be chasing something that cannot be
+fixed on this side.
+```
+
+The response identifies the source and where to obtain the data under its own terms:
+
+```json
+{
+  "detail": "<Source name> is indexed and searchable through WHG, but its terms do not permit WHG to redistribute its records. Obtain the data from the source under its own terms.",
+  "namespace": "kain_par",
+  "source": {
+    "name": "...",
+    "rights_holder": "...",
+    "source_url": "...",
+    "license": "<SPDX id or label>",
+    "license_url": "..."
+  }
+}
+```
+
+**Three namespaces are affected on production today**, so a bulk harvester will meet this rather than
+merely needing to handle it: `kain_par` (Ancient Parishes & Places of England & Wales), `nl`
+(Native Land) and `chgis` (China Historical GIS). A further 73 registry entries are marked
+redistributable and are unaffected.
+
+```{warning}
+**A `451` is not an embargo, a takedown, or a sign that the data has gone.** These namespaces remain
+**fully searchable and reconcilable**, and are intended to stay that way. Search and reconciliation run
+server-side and never hand a source's own records to a third party; only the record-handover surface is
+closed. Do not remove these namespaces from your `namespaces` filters, and do not record their places
+as absent.
+
+This is also a different mechanism from a gazetteer **embargo**, which hides a source from discovery
+surfaces entirely. The two share a word and nothing else; an embargoed source would not appear in
+search results at all, whereas these do.
+```
+
+```{note}
+`451` is **terminal for that identifier** — a permanent property of the record's licence, not a
+transient condition. Unlike `503` it will not succeed on retry, and unlike `404` it is not evidence
+that the record does not exist. If you cache API outcomes, `451` is safe to cache; follow
+`source.source_url` to obtain the data under the source's own terms instead.
+```
+
 ### Place Identifiers and Source Namespaces
 
 Place identifiers include a **namespace prefix** that indicates the originating source. For example:
@@ -65,7 +123,7 @@ Place identifiers include a **namespace prefix** that indicates the originating 
 - `place:gn:745044` — a GeoNames place
 - `place:tgn:7010731` — a Getty TGN place
 
-All places are returned in **Linked Places Format (LPF) v1.1** from the `/api` endpoint, regardless of source, with a standard structure including `@context`, `type: "Feature"`, `@id`, `geometry`, `names`, `types`, `links`, and `when`.
+Places served by the `/api` endpoint are returned in **Linked Places Format (LPF) v1.1**, with a standard structure including `@context`, `type: "Feature"`, `@id`, `geometry`, `names`, `types`, `links`, `when`, and an `attribution` block carrying the source's terms. ⚠️ **Not every indexed place is served by this endpoint:** records whose source terms forbid WHG redistributing them answer [`451`](#when-a-source-does-not-permit-redistribution) instead. They remain fully searchable and reconcilable.
 
 You can use the `namespaces` parameter on Reconciliation and Suggest endpoints to restrict which sources are searched (see [Source Namespaces](#source-namespaces)).
 
@@ -75,7 +133,7 @@ You can use the `namespaces` parameter on Reconciliation and Suggest endpoints t
 curl "https://whgazetteer.org/entity/place:gn:745044/api?token=<token>"
 ```
 
-```json
+```jsonrelaxed
 {
   "@context": "https://raw.githubusercontent.com/LinkedPasts/linked-places/master/linkedplaces-context-v1.1.jsonld",
   "type": "Feature",
@@ -96,7 +154,8 @@ curl "https://whgazetteer.org/entity/place:gn:745044/api?token=<token>"
   ],
   "types": [{"identifier": "PPLA", "label": "P", "sourceLabel": "P.PPLA"}],
   "links": [],
-  "when": {}
+  "when": {},
+  "attribution": { /* the source's licence and rights terms — see Source Terms and Attribution */ }
 }
 ```
 
@@ -106,7 +165,7 @@ curl "https://whgazetteer.org/entity/place:gn:745044/api?token=<token>"
 curl "https://whgazetteer.org/entity/place:169687/api?token=<token>"
 ```
 
-```json
+```jsonrelaxed
 {
   "@context": "https://raw.githubusercontent.com/LinkedPasts/linked-places/master/linkedplaces-context-v1.1.jsonld",
   "type": "Feature",
@@ -122,7 +181,8 @@ curl "https://whgazetteer.org/entity/place:169687/api?token=<token>"
   "names": [{"toponym": "London", "citations": [{"id": "...", "label": "Getty TGN"}]}],
   "types": [{"label": "inhabited places", "identifier": "aat:300008347"}],
   "links": [{"type": "closeMatch", "identifier": "tgn:7011781"}],
-  "when": {"timespans": [{"start": {"earliest": "43"}, "end": {"latest": ""}}]}
+  "when": {"timespans": [{"start": {"earliest": "43"}, "end": {"latest": ""}}]},
+  "attribution": { /* the source's licence and rights terms — see Source Terms and Attribution */ }
 }
 ```
 
@@ -1062,6 +1122,7 @@ root**.
 | `/reconcile` | `attribution` at the response root; every candidate also carries a `namespace` |
 | `/api/index/`, `/api/db/`, `/api/spatial/` | `attribution` at the response root |
 | `/api/place/…` (single record) | an `attribution` object on the record itself |
+| `/entity/{type}:{id}/api` | an `attribution` object in the LPF body (**new, 2026-09-21** — this representation previously carried none) |
 | `/api/attribution/` | standalone resolver — query terms for arbitrary namespaces or ids |
 
 ### Shape
@@ -1179,7 +1240,8 @@ else:
   appreciate credit reports `false`; WHG still attributes it, but you are not obliged to.
 - **`custom`** marks bespoke, non-SPDX terms. Read `license.url` and the source's `rights_holder`
   before relying on such data — some forbid redistribution entirely, which is stricter than any
-  Creative Commons licence.
+  Creative Commons licence. Where a source's terms forbid **WHG** redistributing its records, the
+  Entity API answers [`451`](#when-a-source-does-not-permit-redistribution) rather than serving them.
 
 ### The WHG overlay
 
