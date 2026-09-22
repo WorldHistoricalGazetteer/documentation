@@ -185,6 +185,10 @@ fields with `license__`. On `/reconcile` and the bulk endpoints it is **nested**
 span several licences at once. Code written against one will not read the other. See
 [Source Terms and Attribution](#source-terms-and-attribution) for the multi-record shape.
 
+`redistributable` is the one field carried by **both** shapes, at the top level of each source — so
+whichever endpoint you are working against, it is the field that tells you in advance whether a
+record can be dereferenced at all.
+
 Two fields here are routinely misread:
 
 - **`license_url` and `license__url` are both present and duplicate each other.** Prefer
@@ -754,7 +758,7 @@ failure marker and never finding it.
 
 | Key | When present | Meaning |
 |---|---|---|
-| `attribution` | always | Licence and rights terms for the sources searched, keyed by namespace — see [Source Terms and Attribution](#source-terms-and-attribution). |
+| `attribution` | always | Licence and rights terms for the sources searched, keyed by namespace — including [`redistributable`](#redistributable-which-matches-you-will-be-able-to-fetch), which tells you in advance whether you will be allowed to fetch a source's records. See [Source Terms and Attribution](#source-terms-and-attribution). |
 | `messages` | rarely | Service-level notes. ⚠️ Omitted entirely when empty, so its absence is the normal case and presence cannot be tested for. Do not build a contract on it. |
 
 ⚠️ **A client iterating response keys as query ids must skip both.**
@@ -1213,7 +1217,8 @@ root**.
           "attribution_required": true,
           "no_derivatives": false,
           "custom": false
-        }
+        },
+        "redistributable": true       // may WHG hand you this source's records?
       }
     },
     "datasets": { /* keyed by dataset label, same shape; present only when the */
@@ -1231,6 +1236,32 @@ root**.
 Records served from WHG's own database use the pseudo-namespace `whg`; their rights live on the
 contributing **dataset**, so they appear under `datasets` (keyed by dataset label) rather than
 `sources`. The `datasets` key is omitted entirely when a response contains no such records.
+
+### `redistributable` — which matches you will be able to fetch
+
+`redistributable` answers a narrower question than the licence does: **may WHG hand you this
+source's own records?** For three sources on production today — `kain_par`, `nl` and `chgis` — the
+answer is `false`, and
+[`/entity/{type}:{id}/api` refuses them with `451`](#when-a-source-does-not-permit-redistribution).
+
+Check it *before* you fetch. The usual shape of a reconciliation workflow is **match, then retrieve
+the matches**, so without this flag you would discover the refusal only after committing to a batch
+of matches — one request per candidate, all of them failing.
+
+```{note}
+The licence does not tell you this. `custom-ukds-eul` describes the rights holder's terms; it does
+not say that **WHG specifically** may not re-serve the record. Only `redistributable` does.
+```
+
+Two things it is *not*:
+
+- **Not a statement that the source is unsearchable.** These sources remain fully searchable and
+  reconcilable, and always will be — reconciliation runs server-side and never hands you the
+  source's own content. Do not drop them from your `namespaces` filter, and do not read an absent
+  candidate as evidence of anything.
+- **Not the same as `downloadable`.** That governs the bulk-download affordance and is frequently
+  `false` for reasons of volume alone. It is not reported here and predicts nothing about whether an
+  individual record can be dereferenced.
 
 ### Mapping a result to its terms
 
