@@ -1,5 +1,9 @@
 # Open Educational Resources (OER)
 
+```{note}
+Planned for **v4.1**, if not ready in time for v4.0.
+```
+
 ## Vision
 
 WHG aims to elevate its educational resources from internal Lesson Plans to formal **Open Educational Resources (OER) Publications**, enhancing visibility and accessibility while participating in the broader open educational materials ecosystem.

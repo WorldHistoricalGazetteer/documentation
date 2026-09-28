@@ -1,5 +1,12 @@
 # Service Configuration
 
+```{admonition} Archived: the 2025 v4 design
+:class: warning
+This page belongs to the **2025 design** for WHG v4, which was superseded in 2026. It describes
+features and an architecture that WHG v4 does not have. For the current guide, see the
+[User Guide](../userguide_index.md).
+```
+
 This document outlines the proposed mapping between public-facing subdomains and internal Kubernetes Services for the
 World Historical Gazetteer (WHG) deployment on the Pitt University CRC-managed VM.
 

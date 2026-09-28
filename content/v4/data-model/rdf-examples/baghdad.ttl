@@ -15,7 +15,7 @@
 # This RDF representation mirrors the internal graph database structure:
 # - Attestations are resources (nodes), not reified statements
 # - All relationships are expressed via predicates (equivalent to edges)
-# - Attestations bundle claims about Things with their provenance
+# - Attestations bundle claims about SpatialEntities with their provenance
 #
 # Internal structure:
 # - Attestations: documents in attestations collection (metadata only)
@@ -29,8 +29,8 @@
 # CORE ONTOLOGY DEFINITIONS
 # ============================================
 
-whg:Thing a owl:Class ;
-          rdfs:label "Thing" ;
+whg:SpatialEntity a owl:Class ;
+          rdfs:label "SpatialEntity" ;
           rdfs:comment "Any entity that can be attested in historical sources (places, periods, people, events, etc.)" .
 
 whg:Name a owl:Class ;
@@ -53,11 +53,11 @@ whg:Attestation a owl:Class ;
                 rdfs:comment "A statement asserting a relationship between entities, grounded in sources" .
 
 # ============================================
-# EXAMPLE: Medieval Baghdad (Place Thing)
+# EXAMPLE: Medieval Baghdad (Place SpatialEntity)
 # ============================================
 
-# The Place Thing
-ex:baghdad a whg:Thing ;
+# The Place SpatialEntity
+ex:baghdad a whg:SpatialEntity ;
            dcterms:identifier "whg:12345" ;
            dcterms:description "Historic city on the Tigris River, capital of the Abbasid Caliphate" ;
            dcterms:type "place" .
@@ -220,7 +220,7 @@ ex:att_005 a whg:Attestation ;
            dcterms:contributor "researcher@example.edu" .
 
 # Attestation 6: Baghdad was capital of Abbasid Caliphate
-ex:abbasid_caliphate a whg:Thing ;
+ex:abbasid_caliphate a whg:SpatialEntity ;
                      dcterms:identifier "whg:67890" ;
                      dcterms:description "Islamic caliphate, 750-1258 CE" ;
                      dcterms:type "polity" .
@@ -247,7 +247,7 @@ ex:att_006 a whg:Attestation ;
            dcterms:contributor "historian@institute.org" .
 
 # Attestation 7: Baghdad connected to Basra via trade route
-ex:basra a whg:Thing ;
+ex:basra a whg:SpatialEntity ;
          dcterms:identifier "whg:54321" ;
          dcterms:description "Port city in southern Iraq" ;
          dcterms:type "place" .

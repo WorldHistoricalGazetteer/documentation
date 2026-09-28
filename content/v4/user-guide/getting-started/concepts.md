@@ -1,5 +1,12 @@
 # Understanding WHG Concepts
 
+```{admonition} Archived: the 2025 v4 design
+:class: warning
+This page belongs to the **2025 design** for WHG v4, which was superseded in 2026. It describes
+features and an architecture that WHG v4 does not have. For the current guide, see the
+[User Guide](../../userguide_index.md).
+```
+
 A comprehensive introduction to the key concepts underlying the World Historical Gazetteer.
 
 ## Note to Documentation Team

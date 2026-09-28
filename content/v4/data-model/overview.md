@@ -1,7 +1,7 @@
 # Overview
 
 This overview introduces how the WHG v4 data model uses Attestations as the cornerstone of its design. The sections that
-follow detail the core entities (Things, Names, Geometries, Timespans) and how they interact through the attestation
+follow detail the core entities (SpatialEntities, Names, Geometries, Timespans) and how they interact through the attestation
 pattern to create a rich, provenance-tracked knowledge graph capable of representing the full complexity of historical
 geographic information.
 
@@ -20,9 +20,9 @@ geographic information.
 
 The WHG data model is built around a **property graph** structure where information is represented as:
 
-- **Things**: Primary entities (locations, historical entities, collections, periods, routes, itineraries, networks)
-- **Attributes**: Descriptions of Things (Names, Geometries, Timespans)
-- **Attestations**: Source-backed claims connecting Things to attributes or other Things
+- **SpatialEntities**: Primary entities (locations, historical entities, collections, periods, routes, itineraries, networks)
+- **Attributes**: Descriptions of SpatialEntities (Names, Geometries, Timespans)
+- **Attestations**: Source-backed claims connecting SpatialEntities to attributes or other SpatialEntities
 
 This approach enables WHG to:
 
@@ -32,31 +32,31 @@ This approach enables WHG to:
 - Track temporal change
 - Represent complex networks of relationships
 
-## The Thing Entity
+## The SpatialEntity Entity
 
-### What is a Thing?
+### What is a SpatialEntity?
 
-A **Thing** is the primary entity in WHG - any object of scholarly interest that can be described and related to other
-entities. The term "Thing" is borrowed from schema.org's root type, chosen for its generality and future-extensibility.
+A **SpatialEntity** is the primary entity in WHG - any object of scholarly interest that can be described and related to other
+entities. The term "SpatialEntity" is borrowed from schema.org's root type, chosen for its generality and future-extensibility.
 
-**Types of Things in WHG**:
+**Types of SpatialEntities in WHG**:
 
 - **Locations**: Geographic places (cities, regions, landmarks, etc.)
 - **Historical entities**: Political entities, empires, states
-- **Collections**: Curated sets of related Things
+- **Collections**: Curated sets of related SpatialEntities
 - **Periods**: Temporal spans with cultural/historical significance
 - **Routes**: Ordered sequences of locations representing journeys
 - **Itineraries**: Specific instances of travel along routes
-- **Networks**: Systems of interconnected Things
+- **Networks**: Systems of interconnected SpatialEntities
 
-### Why "Thing"?
+### Why "SpatialEntity"?
 
 The term may seem informal, but it offers crucial advantages:
 
 **Generality**: Accommodates any type of entity without forcing artificial classifications. A medieval monastery might
-be simultaneously a location, a religious institution, and a network node - "Thing" encompasses all these facets.
+be simultaneously a location, a religious institution, and a network node - "SpatialEntity" encompasses all these facets.
 
-**Extensibility**: As WHG could eventually evolve to include new place-linked entity types (people, events, documents), "Thing" remains applicable
+**Extensibility**: As WHG could eventually evolve to include new place-linked entity types (people, events, documents), "SpatialEntity" remains applicable
 without terminology shifts.
 
 **Interoperability**: Aligns with schema.org's vocabulary, facilitating linked data integration and semantic web
@@ -65,9 +65,9 @@ compatibility.
 **Philosophical honesty**: Acknowledges that historical entities resist rigid categorization. What we call "Byzantium"
 refers to a complex, evolving reality that was simultaneously a place, an empire, an idea, and a cultural sphere.
 
-### Thing Structure
+### SpatialEntity Structure
 
-A Thing in WHG consists of:
+A SpatialEntity in WHG consists of:
 
 ```json
 {
@@ -87,14 +87,14 @@ A Thing in WHG consists of:
 - `created`, `modified`: Temporal metadata for curation
 
 **Notably absent**: Names, coordinates, dates, types, relations. These are all **asserted through Attestations**, not
-intrinsic to the Thing itself.
+intrinsic to the SpatialEntity itself.
 
 ### The Separation Principle
 
-WHG separates **the Thing itself** from **descriptions of the Thing**. This distinction is crucial:
+WHG separates **the SpatialEntity itself** from **descriptions of the SpatialEntity**. This distinction is crucial:
 
-**The Thing**: The abstract entity that existed/exists in reality
-**Descriptions**: Claims about that Thing from various sources at various times
+**The SpatialEntity**: The abstract entity that existed/exists in reality
+**Descriptions**: Claims about that SpatialEntity from various sources at various times
 
 This enables WHG to:
 
@@ -105,7 +105,7 @@ This enables WHG to:
 
 **Example**:
 
-- Thing ID `whg:12345` represents the conceptual city
+- SpatialEntity ID `whg:12345` represents the conceptual city
 - One attestation claims it was called "Byzantion" (-650 to 330 CE)
 - Another attestation claims it was called "Constantinople" (330 to 1453 CE)
 - Another attestation claims it was called "Istanbul" (1453 to present)
@@ -113,7 +113,7 @@ This enables WHG to:
 
 ## Name Entity
 
-A **Name** represents a linguistic form by which a Thing is known.
+A **Name** represents a linguistic form by which a SpatialEntity is known.
 
 ### Structure
 
@@ -161,7 +161,7 @@ See [Vocabularies](vocabularies.md) for complete name type taxonomy.
 
 ## Geometry Entity
 
-A **Geometry** represents a spatial location or extent of a Thing at a particular time.
+A **Geometry** represents a spatial location or extent of a SpatialEntity at a particular time.
 
 ### Structure
 
@@ -246,7 +246,7 @@ This dual format support ensures:
 
 ### Why Multiple Geometries?
 
-A single Thing may have multiple Geometries because:
+A single SpatialEntity may have multiple Geometries because:
 
 - **Temporal change**: Borders expand, cities relocate
 - **Uncertainty**: Multiple proposed locations
@@ -255,7 +255,7 @@ A single Thing may have multiple Geometries because:
 
 Each Geometry is connected via an Attestation with temporal bounds and source citation.
 
-**Important Note on GeometryCollection:** ArangoDB does not support the GeoJSON `GeometryCollection` type. For places with heterogeneous geometry sets (e.g., both point and polygon), store multiple geometry attestations—one per geometry type. This aligns naturally with the attestation model where each geometry claim is a separate evidential statement.
+**Several geometries:** where sources differ, or one source gives different geometries for different dates, record each as its own geometry attestation, so each keeps its source, dates and certainty. Where one source asserts a single heterogeneous shape, a `GeometryCollection` is fine.
 
 ## Timespan Entity
 
@@ -307,8 +307,8 @@ handling.
 
 ## Attestation Entity
 
-An **Attestation** is a source-backed claim connecting a Thing to an attribute (Name, Geometry, Timespan) or to another
-Thing (relationship).
+An **Attestation** is a source-backed claim connecting a SpatialEntity to an attribute (Name, Geometry, Timespan) or to another
+SpatialEntity (relationship).
 
 ### Critical Clarification: Attestations as Document Collection
 
@@ -382,13 +382,13 @@ These relationships are all expressed through **edges** in the EDGE collection:
 
 ### Attestation Types via Edge Patterns
 
-Attestations connect Things to different entity types through different edge patterns:
+Attestations connect SpatialEntities to different entity types through different edge patterns:
 
-1. **Names**: Thing → Attestation (subject_of), Attestation → Name (attests_name)
-2. **Geometries**: Thing → Attestation (subject_of), Attestation → Geometry (attests_geometry)
-3. **Timespans**: Thing → Attestation (subject_of), Attestation → Timespan (attests_timespan)
-4. **Classifications**: Thing → Attestation (subject_of), Attestation → Authority (typed_by with classification)
-5. **Other Things**: Thing → Attestation (subject_of), Attestation → Authority (typed_by with relation_type), Attestation → Thing (relates_to)
+1. **Names**: SpatialEntity → Attestation (subject_of), Attestation → Name (attests_name)
+2. **Geometries**: SpatialEntity → Attestation (subject_of), Attestation → Geometry (attests_geometry)
+3. **Timespans**: SpatialEntity → Attestation (subject_of), Attestation → Timespan (attests_timespan)
+4. **Classifications**: SpatialEntity → Attestation (subject_of), Attestation → Authority (typed_by with classification)
+5. **Other SpatialEntities**: SpatialEntity → Attestation (subject_of), Attestation → Authority (typed_by with relation_type), Attestation → SpatialEntity (relates_to)
 
 ### Special Attestation Features
 
@@ -410,11 +410,11 @@ Attestations connect Things to different entity types through different edge pat
 Entities relate through **Attestations** and **Edges** (see [Attestations & Relations](attestations.md)):
 
 ```
-Thing --[edge: subject_of]--> Attestation
+SpatialEntity --[edge: subject_of]--> Attestation
 Attestation --[edge: attests_name]--> Name
 Attestation --[edge: attests_geometry]--> Geometry
 Attestation --[edge: attests_timespan]--> Timespan
-Attestation --[edge: relates_to]--> Thing (relationships)
+Attestation --[edge: relates_to]--> SpatialEntity (relationships)
 Attestation --[edge: meta_attestation]--> Attestation (meta-attestations)
 Attestation --[edge: sourced_by]--> Authority
 ```
@@ -431,7 +431,7 @@ This creates a rich, provenance-tracked knowledge graph.
 
 ### Creation
 
-- Thing created with minimal information (ID, type, description)
+- SpatialEntity created with minimal information (ID, type, description)
 - Attestations added to build out the entity
 - Multiple contributors can add Attestations
 
@@ -444,7 +444,7 @@ This creates a rich, provenance-tracked knowledge graph.
 
 ### Persistence
 
-- Things are never deleted (only deprecated with explanation)
+- SpatialEntities are never deleted (only deprecated with explanation)
 - Attestations are versioned
 - Full provenance maintained
 - Changes auditable

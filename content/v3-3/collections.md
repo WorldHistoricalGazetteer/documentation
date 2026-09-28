@@ -1,14 +1,5 @@
 # Collaborative Collections
 
-```{admonition} Coming soon — preview feature
-:class: important
-
-The **Collaborative Workbench** doc-types described here are **not yet generally
-available**. They are in beta behind the **beta** menu tab, open to WHG staff and
-invited **beta testers**, and are documented in advance so the design can be
-reviewed and refined before release. Screens, labels, and behaviour may still
-change. When the feature is released this notice will be removed.
-```
 
 ## What it is
 
@@ -26,9 +17,9 @@ places (*Map your Data*) is simply the first doc-type; the others let you build 
   analysis. *("Gazetteer" is the new name for what was called a "Dataset"; a "Gazetteer Group"
   was a "Dataset Collection" — see [A note on names](#a-note-on-names).)*
 
-Two further doc-types — **Routes** and **Networks** — are signposted in the tool as *"Coming
-with v4"*. They are first-class historical entities in their own right (a route or a network is
-more than a list of places), and arrive with WHG's next-generation data model.
+Two further doc-types, **Routes** and **Networks**, are signposted in the tool as *"Planned"*.
+They are first-class historical entities in their own right (a route or a network is more than a
+list of places), and are planned for a later release.
 
 ## Starting a new document
 
@@ -40,7 +31,7 @@ Open the Workbench and choose **New…**. You are offered a tile for each doc-ty
 | **Itinerary** | An ordered Place Collection (a journey) |
 | **Gazetteer Group** | Group published gazetteers together |
 | **Map your Data** | The reconciliation workflow for a table of places |
-| **Route** / **Network** *(disabled)* | *Coming with v4* |
+| **Route** / **Network** *(disabled)* | *Planned* |
 
 Published items you have permission to edit also carry an **Edit in Workbench** button on their own
 page (see [Editing something already published](#editing-something-already-published)).
@@ -178,7 +169,7 @@ appears on the record itself so everyone can see it is under discussion.
 
 This is intentionally scoped to **fixing genuine errors** — a wrong coordinate, a mis-spelled name, a
 missing Wikidata link. Recording *competing* claims from different sources (where two gazetteers
-legitimately disagree) is a richer idea that belongs to the forthcoming graph data model; every
+legitimately disagree) is a richer idea handled by WHG's attestation model (see the [Data Model](../v4/data-model.md)); every
 suggestion is preserved as a provenance record so it can feed that later work.
 
 *While in beta, suggesting and reviewing corrections is limited to WHG beta testers and staff.*
@@ -205,7 +196,7 @@ out, that one is skipped and reported (never silently overwritten) while your ot
 through. You can re-reconcile any record in place, exactly as in the single-record editor.
 
 *While in beta this whole-/subset-gazetteer editing is limited to WHG staff; it opens to gazetteer
-owners and their team members when v3.3 is released. Very large gazetteers are edited a filtered subset
+owners and their team members at the v4.0 release. Very large gazetteers are edited a filtered subset
 at a time; fully streamed check-out of enormous gazetteers is a later enhancement.*
 
 ## Collaborating

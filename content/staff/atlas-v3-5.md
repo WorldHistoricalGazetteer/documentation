@@ -1,13 +1,13 @@
-# Atlas v3.5 (forthcoming)
+# Atlas (staff notes)
 
 ```{warning}
-**This page is a placeholder.** The v3.5 Atlas UI is in active
+**This page is a placeholder.** The v4.0 Atlas UI is in active
 development. Once it ships, this page will need significant augmentation
 covering the staff-facing affordances listed below. Treat the content
 here as a forward-looking outline, not authoritative documentation.
 ```
 
-The v3.5 release reframes the WHG platform around an **Atlas** UI as the
+The v4.0 release reframes the WHG platform around an **Atlas** UI as the
 default site interface, with the v3.2 distinctions between Authorities,
 Datasets, and Collections collapsed into a unified concept of
 **Gazetteers**. Several pieces of that release introduce new staff
@@ -62,7 +62,7 @@ contributor work.
 
 ### Volunteering, API, and Admin Dashboard relocations
 
-The v3.2 site navigation's "Data" entry will be removed in v3.5. Some of
+The v3.2 site navigation's "Data" entry will be removed in v4.0. Some of
 its sub-functions move to the Atlas UI itself; others move to the admin
 or to dropdowns. This page will list where to find:
 
@@ -96,13 +96,13 @@ affordance and the keyboard shortcuts (if any) that surface it.
 
 ## Cross-references
 
-When the v3.5 documentation is filled in, expect cross-links to:
+When the v4.0 documentation is filled in, expect cross-links to:
 
 * The {doc}`./gazetteer-configurator` page (re-ingestion, curatorial
   flags) — the Atlas Gazetteers offcanvas reads the same registry rows
   curated there.
 * The {doc}`../guides` section — many user-facing v3.2 guides
   (Workbench, Reconciliation, Publishing) will be superseded or
-  rewritten for v3.5.
+  rewritten for v4.0.
 * The Master Plan document in the `whg3` repo at
   `developer/plan-Atlas-DynamicClustering.prompt.md`.

@@ -2,7 +2,7 @@
 
 ## The Attestation as Graph Node
 
-In WHG v4, **Attestations are nodes** (vertices) in the graph, not records with embedded relationship fields. They serve as **junction points** that bundle together claims about a Thing with its attributes (Names, Geometries, Timespans) and provenance (Sources).
+In WHG v4, **Attestations are nodes** (vertices) in the graph, not records with embedded relationship fields. They serve as **junction points** that bundle together claims about a SpatialEntity with its attributes (Names, Geometries, Timespans) and provenance (Sources).
 
 ### Attestation Node Structure
 
@@ -24,7 +24,7 @@ An Attestation node contains only metadata:
 ```
 
 **Key Properties:**
-- `_key`, `_id`: ArangoDB identifiers
+- `@id`: the attestation's identifier (an IRI)
 - `sequence`: Integer for ordering waypoints in routes/itineraries
 - `connection_metadata`: JSON for network connection details (trade goods, flow direction, etc.)
 - `certainty`: Confidence value (0.0-1.0)
@@ -63,12 +63,12 @@ All relationships are expressed through the unified **EDGE** collection. Each ed
 
 | Edge Type | Direction | Meaning |
 |-----------|-----------|---------|
-| `subject_of` | Thing → Attestation | This attestation is about this Thing |
+| `subject_of` | SpatialEntity → Attestation | This attestation is about this SpatialEntity |
 | `attests_name` | Attestation → Name | This attestation claims this Name |
 | `attests_geometry` | Attestation → Geometry | This attestation claims this Geometry |
 | `attests_timespan` | Attestation → Timespan | This attestation claims this Timespan |
 | `sourced_by` | Attestation → Authority | This attestation is backed by this Source |
-| `relates_to` | Attestation → Thing | This attestation connects to another Thing |
+| `relates_to` | Attestation → SpatialEntity | This attestation connects to another SpatialEntity |
 | `typed_by` | Attestation → Authority | This attestation uses this Relation Type |
 | `meta_attestation` | Attestation → Attestation | This attestation comments on another |
 | `part_of` | Authority → Authority | This Source is part of this Dataset |
@@ -77,7 +77,7 @@ All relationships are expressed through the unified **EDGE** collection. Each ed
 
 ## Relation Types via AUTHORITY Collection
 
-For Thing-to-Thing relationships (when `edge_type: "relates_to"`), the semantic meaning is specified through an AUTHORITY document with `authority_type: "relation_type"`.
+For SpatialEntity-to-SpatialEntity relationships (when `edge_type: "relates_to"`), the semantic meaning is specified through an AUTHORITY document with `authority_type: "relation_type"`.
 
 ### Core Relation Types
 
@@ -85,15 +85,15 @@ These align with **CIDOC-CRM** predicates where possible:
 
 | Relation Type Label | CIDOC-CRM | Definition |
 |---------------------|-----------|------------|
-| `has_name` | P1_is_identified_by | Thing is identified by Name (system edge) |
-| `has_geometry` | P53_has_former_or_current_location | Thing has spatial location (system edge) |
-| `has_timespan` | P4_has_time-span | Thing exists during Timespan (system edge) |
-| `member_of` | P46_is_composed_of (inverse) | Thing is part of another Thing |
-| `contains` | P46_is_composed_of | Thing contains another Thing |
-| `same_as` | P130_shows_features_of | Equivalence between Things |
-| `succeeds` | P134_continued | Thing succeeded another Thing |
-| `connected_to` | P122_borders_with (extended) | Thing connected to another Thing |
-| `coextensive_with` | P121_overlaps_with | Thing spatially coextensive with another |
+| `has_name` | P1_is_identified_by | SpatialEntity is identified by Name (system edge) |
+| `has_geometry` | P53_has_former_or_current_location | SpatialEntity has spatial location (system edge) |
+| `has_timespan` | P4_has_time-span | SpatialEntity exists during Timespan (system edge) |
+| `member_of` | P46_is_composed_of (inverse) | SpatialEntity is part of another SpatialEntity |
+| `contains` | P46_is_composed_of | SpatialEntity contains another SpatialEntity |
+| `same_as` | P130_shows_features_of | Equivalence between SpatialEntities |
+| `succeeds` | P134_continued | SpatialEntity succeeded another SpatialEntity |
+| `connected_to` | P122_borders_with (extended) | SpatialEntity connected to another SpatialEntity |
+| `coextensive_with` | P121_overlaps_with | SpatialEntity spatially coextensive with another |
 
 **Note:** `has_name`, `has_geometry`, and `has_timespan` are implemented as system edge types (`attests_name`, `attests_geometry`, `attests_timespan`), not via AUTHORITY lookups.
 
@@ -119,11 +119,11 @@ Users can define domain-specific relation types through AUTHORITY documents:
 
 **Understanding the Star-Schema Pattern:**
 
-In all examples below, the **Attestation acts as the central hub** (star-schema), not a linear chain. All attributes (Names, Geometries, Timespans) and relationships (to Things, Sources, Relation Types) connect **directly and independently** to the Attestation node.
+In all examples below, the **Attestation acts as the central hub** (star-schema), not a linear chain. All attributes (Names, Geometries, Timespans) and relationships (to SpatialEntities, Sources, Relation Types) connect **directly and independently** to the Attestation node.
 
 **Incorrect interpretation (Chain):**
 ```
-Thing → Attestation → Name → Timespan → Authority
+SpatialEntity → Attestation → Name → Timespan → Authority
 ```
 
 **Correct interpretation (Star):**
@@ -132,7 +132,7 @@ Thing → Attestation → Name → Timespan → Authority
              ↑
         [edge_type]
              |
-Thing ← Attestation → Timespan
+SpatialEntity ← Attestation → Timespan
              |
         [edge_type]
              ↓
@@ -143,7 +143,7 @@ Each edge represents an independent relationship with the Attestation as the hub
 
 ---
 
-### Example 1: Thing with Name and Timespan
+### Example 1: SpatialEntity with Name and Timespan
 
 **Scenario:** "The city was called 'Tenochtitlan' during 1325-1521 CE"
 
@@ -153,7 +153,7 @@ Each edge represents an independent relationship with the Attestation as the hub
                            ↑
                     [attests_name]
                            |
-Thing(mexico-city) →[subject_of]→ Attestation(att-001) ─[attests_timespan]→ Timespan(1325-1521)
+SpatialEntity(mexico-city) →[subject_of]→ Attestation(att-001) ─[attests_timespan]→ Timespan(1325-1521)
                            |
                     [sourced_by]
                            ↓
@@ -164,7 +164,7 @@ Thing(mexico-city) →[subject_of]→ Attestation(att-001) ─[attests_timespan]
 
 **Documents:**
 
-Thing:
+SpatialEntity:
 ```javascript
 {
   "_id": "things/mexico-city",
@@ -216,7 +216,7 @@ Authority (Source):
 
 **Edges:**
 ```javascript
-// Thing to Attestation
+// SpatialEntity to Attestation
 {
   "_from": "things/mexico-city",
   "_to": "attestations/att-001",
@@ -249,7 +249,7 @@ Authority (Source):
 
 ---
 
-### Example 2: Thing with Geometry and Different Timespan
+### Example 2: SpatialEntity with Geometry and Different Timespan
 
 **Scenario:** "The Tang Dynasty capital had these boundaries during 618-907 CE"
 
@@ -259,7 +259,7 @@ Authority (Source):
                            ↑
                     [attests_geometry]
                            |
-Thing(changan) ←[subject_of]← Attestation(att-002) ─[attests_timespan]→ Timespan(tang-dynasty)
+SpatialEntity(changan) ←[subject_of]← Attestation(att-002) ─[attests_timespan]→ Timespan(tang-dynasty)
                            |
                     [sourced_by]
                            ↓
@@ -295,7 +295,7 @@ Thing(changan) ←[subject_of]← Attestation(att-002) ─[attests_timespan]→ 
 
 ---
 
-### Example 3: Thing-to-Thing Relationship
+### Example 3: SpatialEntity-to-SpatialEntity Relationship
 
 **Scenario:** "Alexandria was the capital of Ptolemaic Egypt"
 
@@ -305,7 +305,7 @@ Thing(changan) ←[subject_of]← Attestation(att-002) ─[attests_timespan]→ 
                            ↑
                        [typed_by]
                            |
-Thing(alexandria) ←[subject_of]← Attestation(att-003) ─[relates_to]→ Thing(ptolemaic-egypt)
+SpatialEntity(alexandria) ←[subject_of]← Attestation(att-003) ─[relates_to]→ SpatialEntity(ptolemaic-egypt)
                            |
                       [sourced_by]
                            ↓
@@ -314,7 +314,7 @@ Thing(alexandria) ←[subject_of]← Attestation(att-003) ─[relates_to]→ Thi
 
 **Edges:**
 ```javascript
-// Thing to Attestation
+// SpatialEntity to Attestation
 {
   "_from": "things/alexandria",
   "_to": "attestations/att-003",
@@ -328,7 +328,7 @@ Thing(alexandria) ←[subject_of]← Attestation(att-003) ─[relates_to]→ Thi
   "edge_type": "typed_by"
 }
 
-// Attestation to Related Thing
+// Attestation to Related SpatialEntity
 {
   "_from": "attestations/att-003",
   "_to": "things/ptolemaic-egypt",
@@ -355,7 +355,7 @@ Thing(alexandria) ←[subject_of]← Attestation(att-003) ─[relates_to]→ Thi
                            ↑
                        [typed_by]
                            |
-Thing(samarkand) ←[subject_of]← Attestation(att-005) ─[relates_to]→ Thing(silk-road)
+SpatialEntity(samarkand) ←[subject_of]← Attestation(att-005) ─[relates_to]→ SpatialEntity(silk-road)
                            |
                       [sourced_by]
                            ↓
@@ -410,7 +410,7 @@ Thing(samarkand) ←[subject_of]← Attestation(att-005) ─[relates_to]→ Thin
                            ↑
                        [typed_by]
                            |
-Thing(constantinople) ←[subject_of]← Attestation(att-007) ─[relates_to]→ Thing(venice)
+SpatialEntity(constantinople) ←[subject_of]← Attestation(att-007) ─[relates_to]→ SpatialEntity(venice)
                            |
                     [attests_timespan]
                            ↓
@@ -498,13 +498,13 @@ Attestation(att-001) ←[meta_attestation]← Attestation(att-meta)
 }
 ```
 
-**Note on Meta-Attestation Edge Type:** The edge connecting meta-attestations uses `edge_type: "meta_attestation"` with an optional `meta_type` property in the edge's properties field to specify the nature of the relationship (contradicts, supports, supersedes, etc.). This is distinct from the `typed_by` edge pattern used for Thing-to-Thing relationships.
+**Note on Meta-Attestation Edge Type:** The edge connecting meta-attestations uses `edge_type: "meta_attestation"` with an optional `meta_type` property in the edge's properties field to specify the nature of the relationship (contradicts, supports, supersedes, etc.). This is distinct from the `typed_by` edge pattern used for SpatialEntity-to-SpatialEntity relationships.
 
 ---
 
-## Multiple Attestations for Same Thing
+## Multiple Attestations for Same SpatialEntity
 
-A single Thing can have multiple Attestations with different:
+A single SpatialEntity can have multiple Attestations with different:
 - Names at different times
 - Geometries at different times
 - Conflicting claims from different sources
@@ -512,19 +512,19 @@ A single Thing can have multiple Attestations with different:
 **Example: Constantinople through time**
 
 ```
-Thing(constantinople) ←[subject_of]← Attestation(att-ancient)
+SpatialEntity(constantinople) ←[subject_of]← Attestation(att-ancient)
                                            ↓ [attests_name]
                                         Name(byzantion)
                                            ↓ [attests_timespan]
                                         Timespan(667-BCE-330-CE)
 
-Thing(constantinople) ←[subject_of]← Attestation(att-byzantine)
+SpatialEntity(constantinople) ←[subject_of]← Attestation(att-byzantine)
                                            ↓ [attests_name]
                                         Name(konstantinoupolis)
                                            ↓ [attests_timespan]
                                         Timespan(330-1453-CE)
 
-Thing(constantinople) ←[subject_of]← Attestation(att-ottoman)
+SpatialEntity(constantinople) ←[subject_of]← Attestation(att-ottoman)
                                            ↓ [attests_name]
                                         Name(istanbul)
                                            ↓ [attests_timespan]
@@ -542,7 +542,7 @@ Each attestation is independent, with its own:
 
 ## Querying Patterns
 
-### Find all names for a Thing at a specific time
+### Find all names for a SpatialEntity at a specific time
 
 ```aql
 // Find names for Constantinople in year 800 CE
@@ -581,7 +581,7 @@ FOR thing IN things
 
 **Note:** This query uses `end_latest` in the filter. Remember that internally WHG stores this as `stop_latest`, so adjust field names based on your implementation context.
 
-### Find all Things connected via a specific relation type
+### Find all SpatialEntities connected via a specific relation type
 
 ```aql
 // Find all capitals of empires
@@ -593,13 +593,13 @@ FOR att IN attestations
     LET relationType = DOCUMENT(e1._to)
     FILTER relationType.label == "capital_of"
     
-    // Get subject Thing
+    // Get subject SpatialEntity
     FOR e2 IN edges
       FILTER e2._to == att._id
       FILTER e2.edge_type == "subject_of"
       LET subject = DOCUMENT(e2._from)
       
-      // Get object Thing
+      // Get object SpatialEntity
       FOR e3 IN edges
         FILTER e3._from == att._id
         FILTER e3.edge_type == "relates_to"
@@ -617,13 +617,13 @@ FOR att IN attestations
 ## Design Benefits
 
 **Flexibility:** Each attestation is independent, allowing:
-- Multiple names/geometries per Thing across time
+- Multiple names/geometries per SpatialEntity across time
 - Conflicting claims to coexist
 - Rich provenance tracking
 
 **Reusability:** Entities are shared:
-- Same Name can apply to multiple Things
-- Same Geometry can represent different Things at different times
+- Same Name can apply to multiple SpatialEntities
+- Same Geometry can represent different SpatialEntities at different times
 - Same Timespan can be referenced by many Attestations
 
 **Provenance:** Every claim is traceable:
@@ -656,7 +656,7 @@ The v3 attestation model embedded relationships within attestation records. The 
 **v4 Pattern:**
 ```
 Attestation node (metadata only)
-  + Edge to Thing (subject_of)
+  + Edge to SpatialEntity (subject_of)
   + Edge to Name (attests_name)
   + Edge to Timespan (attests_timespan)
   + Edge to Authority (sourced_by)

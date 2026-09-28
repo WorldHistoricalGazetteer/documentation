@@ -12,7 +12,7 @@ a user interface for uploading, reconciling, and publishing historical gazetteer
 This repository contains the codebase for generation and serving of map tiles for the WHG application. **Its
 functionality will soon be integrated into the WHG PLACE repository.**
 
-* [WHG PLACE (v4)](https://github.com/WorldHistoricalGazetteer/place) (Place Linkage, Alignment, and Concordance Engine)
+* [WHG PLACE](https://github.com/WorldHistoricalGazetteer/place)
 
-This repository contains the Kubernetes server configuration files for deploying and managing the World Historical
-Gazetteer (WHG) application in the forthcoming Version 4. It provides a dedicated space for configuring and orchestrating the server environment.
+WHG's issue tracker and discussion forum, for all WHG repositories. It also holds, read-only, the Kubernetes
+configuration from an abandoned 2025 plan to migrate hosting to Pitt CRC.

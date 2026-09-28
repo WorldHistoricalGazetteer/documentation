@@ -1,5 +1,12 @@
 # Kubernetes Configuration
 
+```{admonition} Archived: the 2025 v4 design
+:class: warning
+This page belongs to the **2025 design** for WHG v4, which was superseded in 2026. It describes
+features and an architecture that WHG v4 does not have. For the current guide, see the
+[User Guide](../userguide_index.md).
+```
+
 The **[WHG PLACE](../../technical/repositories.md)** (Place Linkage, Alignment, and Concordance Engine) repository
 contains the Kubernetes server configuration files for deploying and managing the World Historical Gazetteer (WHG)
 application. This repository is separate from the main Django application

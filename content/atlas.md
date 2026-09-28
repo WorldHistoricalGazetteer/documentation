@@ -1,12 +1,5 @@
 # Atlas: Discovering Linked Places
 
-```{admonition} Forthcoming feature (beta)
-:class: important
-**Atlas** is the new map-first way of exploring the World Historical Gazetteer. It is
-in active development and currently available to WHG staff and invited beta testers
-only, behind a beta toggle. These pages describe how it works in plain language; when
-Atlas ships they will move into **Guides & Tutorials**.
-```
 
 ## The problem Atlas solves
 
@@ -103,7 +96,7 @@ second. That is what makes the live dial feel instant — there is no round-trip
 server each time you nudge it.
 
 It also has an important privacy benefit. In the companion
-[Collaborative Workbench](./v3-3.md), you can bring your **own** place data and see how
+[Map your Data](./v3-3/map-your-data.md) tool, you can bring your **own** place data and see how
 it lines up with WHG. Because the matching runs in your browser, your unpublished data
 **never has to leave your computer** to be compared against the gazetteer.
 
@@ -140,11 +133,10 @@ Atlas embraces that. Instead of one fixed set of groups, it gives you a transpar
 adjustable view you can tune to your own needs — and it improves continuously as
 authorities publish new links and contributors share their expertise.
 
-## What's coming
+## What's next
 
-- The map-first Atlas interface, with live grouping and the strictness dial.
+% TODO(release): keep this item only if the contributor link tools have not shipped by launch.
+
 - Contributor tools to confirm or reject links, shared with the
-  [Collaborative Workbench](./v3-3.md).
-- Grouping that draws on WHG's full range of evidence — name sound, location, time,
-  place type, and stated links — all combined in your browser.
+  [Collaborative Workbench](./v3-3/collections.md).
 ```

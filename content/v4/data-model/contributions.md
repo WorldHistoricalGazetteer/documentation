@@ -2,7 +2,7 @@
 
 ## Overview
 
-WHG accepts contributions representing different types of historical datasets. All contribution types are mapped to the internal graph data model upon ingestion using the Thing-Attestation-Timespan-Name-Geometry architecture with edges connecting these entities.
+WHG accepts contributions representing different types of historical datasets. All contribution types are mapped to the internal graph data model upon ingestion using the SpatialEntity-Attestation-Timespan-Name-Geometry architecture with edges connecting these entities.
 
 ---
 
@@ -13,9 +13,9 @@ WHG accepts contributions representing different types of historical datasets. A
 A dataset of places sourced from a common historical or geographical context.
 
 **Characteristics in the model:**
-- Each place becomes a Thing
+- Each place becomes a SpatialEntity
 - Places may have classification via `typed_by` edges to AUTHORITY documents with GeoNames feature classes or custom classifications
-- Places may be grouped under a parent Thing representing the gazetteer dataset itself via `member_of` relationships
+- Places may be grouped under a parent SpatialEntity representing the gazetteer dataset itself via `member_of` relationships
 - Dataset-level metadata (DOI, title, description) stored in AUTHORITY documents with `authority_type: "dataset"`
 - Names, Geometries, and Timespans linked via Attestation nodes and edges
 
@@ -32,7 +32,7 @@ A dataset of places sourced from a common historical or geographical context.
 
 **Mapping to model:**
 ```
-LPF place → Thing
+LPF place → SpatialEntity
   ├─ properties.title → Name (via Attestation + attests_name edge)
   ├─ names[] → Multiple Name entities (via separate Attestations)
   ├─ geometry/geometries[] → Geometry entities (via Attestations + attests_geometry edges)
@@ -48,10 +48,10 @@ LPF place → Thing
 A sequentially-ordered set of places, typically without specific temporal traversal information.
 
 **Characteristics in the model:**
-- Container Thing classified via `typed_by` edge to AUTHORITY(classification: "route")
-- Member Things (waypoints/segments) linked via Attestations with `sequence` field and `member_of` relation type
+- Container SpatialEntity classified via `typed_by` edge to AUTHORITY(classification: "route")
+- Member SpatialEntities (waypoints/segments) linked via Attestations with `sequence` field and `member_of` relation type
 - Timespan attestations optional or represent when route existed (not traversal)
-- May include path Geometries as separate Things with LineString geometries
+- May include path Geometries as separate SpatialEntities with LineString geometries
 
 **Examples:**
 - **Silk Road Dataset**: Ancient trade route locations across Central Asia
@@ -68,10 +68,10 @@ A sequentially-ordered set of places, typically without specific temporal traver
 
 **Mapping to model:**
 ```
-Route contribution → Thing (typed_by AUTHORITY[classification: "route"])
+Route contribution → SpatialEntity (typed_by AUTHORITY[classification: "route"])
   ├─ Route name → Name (via Attestation + edges)
-  ├─ Waypoint 1 → Thing with Attestation(sequence: 1) + typed_by(member_of) + relates_to(Route)
-  ├─ Waypoint 2 → Thing with Attestation(sequence: 2) + typed_by(member_of) + relates_to(Route)
+  ├─ Waypoint 1 → SpatialEntity with Attestation(sequence: 1) + typed_by(member_of) + relates_to(Route)
+  ├─ Waypoint 2 → SpatialEntity with Attestation(sequence: 2) + typed_by(member_of) + relates_to(Route)
   ├─ Path geometry (optional) → Geometry (LineString via Attestation)
   └─ Route existence period (optional) → Timespan (via Attestation)
 ```
@@ -83,8 +83,8 @@ Route contribution → Thing (typed_by AUTHORITY[classification: "route"])
 A route with temporal dimensions indicating when segments were traversed.
 
 **Characteristics in the model:**
-- Container Thing classified via `typed_by` edge to AUTHORITY(classification: "itinerary")
-- Member Things linked via Attestations with `sequence` field and `member_of` relation type
+- Container SpatialEntity classified via `typed_by` edge to AUTHORITY(classification: "itinerary")
+- Member SpatialEntities linked via Attestations with `sequence` field and `member_of` relation type
 - **Each segment Attestation has its own Timespan attestation** (via attests_timespan edge)
 - Overall itinerary Timespan computed from segment bounds (or explicitly overridden)
 
@@ -103,15 +103,15 @@ A route with temporal dimensions indicating when segments were traversed.
 
 **Mapping to model:**
 ```
-Itinerary contribution → Thing (typed_by AUTHORITY[classification: "itinerary"])
+Itinerary contribution → SpatialEntity (typed_by AUTHORITY[classification: "itinerary"])
 ├─ Itinerary name → Name (via Attestation + edges)
-├─ Segment 1 → Thing
+├─ Segment 1 → SpatialEntity
 │   ├─ Attestation document (sequence: 1, certainty: ...) in attestations collection
 │   ├─ Edge: things/segment-1 → attestations/att-seg-1 (subject_of)
 │   ├─ Edge: attestations/att-seg-1 → authorities/member-of (typed_by)
 │   ├─ Edge: attestations/att-seg-1 → things/itinerary (relates_to)
 │   └─ Edge: attestations/att-seg-1 → timespans/seg-1-dates (attests_timespan)
-├─ Segment 2 → Thing (similar structure with sequence: 2)
+├─ Segment 2 → SpatialEntity (similar structure with sequence: 2)
 └─ Overall timespan (computed or explicit via Attestation + edges)
 ```
 
@@ -122,8 +122,8 @@ Itinerary contribution → Thing (typed_by AUTHORITY[classification: "itinerary"
 A dataset indicating geospatial connections between places that may not follow a sequence.
 
 **Characteristics in the model:**
-- Container Thing classified via `typed_by` edge to AUTHORITY(classification: "network")
-- Connections between member Things via Attestations with `connection_metadata` field and `connected_to` relation type
+- Container SpatialEntity classified via `typed_by` edge to AUTHORITY(classification: "network")
+- Connections between member SpatialEntities via Attestations with `connection_metadata` field and `connected_to` relation type
 - Connection metadata specifies type, directionality, and domain-specific attributes
 - Multiple instances of same connection over time represented by multiple Attestations with different Timespan attestations
 - Can reference route Geometries if available, but not required
@@ -144,12 +144,12 @@ A dataset indicating geospatial connections between places that may not follow a
 
 **Mapping to model:**
 ```
-Network contribution → Thing (typed_by AUTHORITY[classification: "network"])
+Network contribution → SpatialEntity (typed_by AUTHORITY[classification: "network"])
   ├─ Network name → Name (via Attestation)
   ├─ Connection 1:
-  │   ├─ Thing A ←[subject_of]← Attestation(connection_metadata: {...})
+  │   ├─ SpatialEntity A ←[subject_of]← Attestation(connection_metadata: {...})
   │   │                                   ├─[typed_by]→ AUTHORITY(connected_to)
-  │   │                                   └─[relates_to]→ Thing B
+  │   │                                   └─[relates_to]→ SpatialEntity B
   │   └─ Timespan via attests_timespan edge (when connection existed)
   ├─ Connection 2:
   │   └─ ...
@@ -163,8 +163,8 @@ Network contribution → Thing (typed_by AUTHORITY[classification: "network"])
 A thematic collection of gazetteers sharing common characteristics.
 
 **Characteristics in the model:**
-- Container Thing classified via `typed_by` edge to AUTHORITY(classification: "gazetteer_group")
-- Member Things (which are themselves gazetteers) linked via Attestations with `member_of` relation type
+- Container SpatialEntity classified via `typed_by` edge to AUTHORITY(classification: "gazetteer_group")
+- Member SpatialEntities (which are themselves gazetteers) linked via Attestations with `member_of` relation type
 - Group-level Names and descriptions
 - May have Timespan attestations representing the collection's temporal scope
 
@@ -183,12 +183,12 @@ A thematic collection of gazetteers sharing common characteristics.
 
 **Mapping to model:**
 ```
-Gazetteer Group → Thing (typed_by AUTHORITY[classification: "gazetteer_group"])
+Gazetteer Group → SpatialEntity (typed_by AUTHORITY[classification: "gazetteer_group"])
   ├─ Group name → Name (via Attestation)
   ├─ Member gazetteer 1 → via Attestation + typed_by(member_of) + relates_to(Group)
   ├─ Member gazetteer 2 → via Attestation + typed_by(member_of) + relates_to(Group)
   ├─ Group timespan → Timespan (via Attestation for collection scope)
-  └─ Group description → description field in Thing
+  └─ Group description → description field in SpatialEntity
 ```
 
 ---
@@ -207,14 +207,14 @@ Gazetteer Group → Thing (typed_by AUTHORITY[classification: "gazetteer_group"]
 - Detailed provenance and source citations
 
 **LPF to Model Mapping:**
-- `@id` → Thing `_id`
+- `@id` → SpatialEntity `_id`
 - `properties.title` → Primary Name entity + Attestation
 - `names[]` → Multiple Name entities + Attestations with Timespan linkages
 - `geometry` / `geometries[]` → Geometry entities + Attestations
 - `types[]` → Classifications via typed_by edges to AUTHORITY
 - `when` → Timespan entities + attests_timespan edges
 - `relations[]` → Attestations with typed_by + relates_to edges
-- `descriptions[]` → Thing `description` field
+- `descriptions[]` → SpatialEntity `description` field
 
 ---
 
@@ -275,8 +275,8 @@ WHG may in future accept contributions in Turtle (`.ttl`) format. See the comple
 - Modern field-collected data
 
 **Mapping:**
-- Track/path → Route Thing with LineString Geometry
-- Waypoints → Member Things with Point Geometries
+- Track/path → Route SpatialEntity with LineString Geometry
+- Waypoints → Member SpatialEntities with Point Geometries
 - Timestamps → Timespan attestations (for itineraries)
 - Metadata → Attestation fields and connection_metadata
 
@@ -329,27 +329,27 @@ WHG may in future accept contributions in Turtle (`.ttl`) format. See the comple
 | Aspect | LPF | Internal Data Model |
 |--------|-----|---------------------|
 | Purpose | Data contribution, exchange, export | Internal storage and querying |
-| Structure | Document-oriented (places as standalone objects) | Graph-oriented (Things linked via Attestations and edges) |
+| Structure | Document-oriented (places as standalone objects) | Graph-oriented (SpatialEntities linked via Attestations and edges) |
 | Temporality | Embedded in feature properties | Separate Timespan entities connected via edges |
 | Optimization | Human readability, ease of contribution | Query performance, analytical capabilities |
-| Format | GeoJSON-LD | ArangoDB graph structure |
+| Format | GeoJSON-LD | PLATO (JSON or RDF); held in PostgreSQL |
 
 ---
 
 ### Bidirectional Transformation
 
 **Ingestion (LPF/CSV → Internal Model):**
-- LPF `properties.title` → Name entity + Attestation document + edges (subject_of from Thing to Attestation, attests_name from Attestation to Name)
+- LPF `properties.title` → Name entity + Attestation document + edges (subject_of from SpatialEntity to Attestation, attests_name from Attestation to Name)
 - LPF `names[]` array → Multiple Name entities + Attestation documents + edges for each name
 - LPF `geometry` or `geometries[]` → Geometry entities + Attestations with attests_geometry edges
 - LPF `types[]` → Attestations with typed_by edges to AUTHORITY documents
 - LPF `when` → Timespan entities + Attestations with attests_timespan edges
 - LPF `relations[]` → Attestations with typed_by + relates_to edges (member_of, same_as, connected_to)
-- CSV rows → Things with derived Attestations from column values
+- CSV rows → SpatialEntities with derived Attestations from column values
 - Network edge lists → Attestations with connection_metadata and connected_to relation
 
 **Export (Internal Model → LPF):**
-- Thing + Attestations + edges → Reconstructed LPF place document
+- SpatialEntity + Attestations + edges → Reconstructed LPF place document
 - Timespan Attestations → LPF `when` timespan arrays
 - Name Attestations → LPF `names[]` with temporal qualification
 - Classification Attestations → LPF `types[]`
@@ -365,14 +365,14 @@ WHG may in future accept contributions in Turtle (`.ttl`) format. See the comple
 The WHG application includes a **transformation layer** that:
 - Validates incoming LPF/CSV/GPX against schemas
 - Normalizes names, dates, and geographic coordinates
-- Creates Thing, Name, Geometry, and Timespan documents
+- Creates SpatialEntity, Name, Geometry, and Timespan documents
 - Generates Attestation nodes and Edge documents connecting them
 - Creates AUTHORITY documents for sources and datasets
 - Assigns DOIs to contributed datasets (format: `doi:10.83427/whg-{type}-{id}`)
 - Stores DOIs in AUTHORITY documents referenced by attestations
 - Handles updates and conflicts with existing data
 - Provides audit trails in the Django changelog
-- Maps contribution types to appropriate Thing classifications via AUTHORITY
+- Maps contribution types to appropriate SpatialEntity classifications via AUTHORITY
 - Extracts sequence information for routes/itineraries into Attestation nodes
 - Parses connection metadata for networks into Attestation nodes
 - Computes vector embeddings for Name entities
@@ -385,7 +385,7 @@ This layer is distinct from the core data model and handles the complexity of ma
 The transformation from contribution formats to internal graph structure creates three types of documents:
 
 1. **Entity documents** (in entity collections):
-   - Things, Names, Geometries, Timespans, Authorities
+   - SpatialEntities, Names, Geometries, Timespans, Authorities
 
 2. **Attestation documents** (in attestations collection):
    - Contain only metadata: certainty, notes, sequence, connection_metadata, timestamps
@@ -409,7 +409,7 @@ The transformation from contribution formats to internal graph structure creates
 
 // Creates in graph database:
 
-// 1. Thing document
+// 1. SpatialEntity document
 { "_id": "things/constantinople", "thing_type": "location" }
 
 // 2. Name document
@@ -449,16 +449,16 @@ Contributors and staff can manually create individual Attestation nodes and thei
 - Adding missing source attributions
 
 **Workflow:**
-1. Navigate to Thing record in web interface
+1. Navigate to SpatialEntity record in web interface
 2. Click "Add Attestation" button
 3. Select relation type from AUTHORITY(relation_type) vocabulary
-4. Select or create target entity (Name, Geometry, Timespan, or Thing)
+4. Select or create target entity (Name, Geometry, Timespan, or SpatialEntity)
 5. Fill in source, certainty, notes
 6. Save - creates:
    - Attestation document in attestations collection
-   - Edge document from Thing to Attestation (subject_of)
+   - Edge document from SpatialEntity to Attestation (subject_of)
    - Edge document from Attestation to target entity (attests_name/geometry/timespan or relates_to)
-   - Edge document from Attestation to relation type Authority (typed_by, if Thing-to-Thing relationship)
+   - Edge document from Attestation to relation type Authority (typed_by, if SpatialEntity-to-SpatialEntity relationship)
    - Edge document from Attestation to Source Authority (sourced_by)
 7. All documents immediately indexed for querying
 
@@ -512,7 +512,7 @@ Contributors and staff can manually create individual Attestation nodes and thei
 **New in V4**: Contributors can edit their own contributions directly (not possible in V3).
 
 **Editable elements:**
-- Thing descriptions
+- SpatialEntity descriptions
 - Name metadata (language, script, transliteration) in Name documents
 - Geometry precision assessments in Geometry documents
 - Source citations via AUTHORITY references in attestations
@@ -545,8 +545,8 @@ Using the same dataset format as their original contribution, contributors can p
 
 **Delete records:**
 - Submit CSV/JSON with record IDs to delete
-- Thing documents removed (archived in changelog)
-- Attestations and edges referencing deleted Things handled appropriately
+- SpatialEntity documents removed (archived in changelog)
+- Attestations and edges referencing deleted SpatialEntities handled appropriately
 
 **Add new records:**
 - Submit file with new records (must have unique IDs)
@@ -595,8 +595,8 @@ Assessment and selection of potential matches to other indexed places.
 
 **Graph operations created:**
 ```
-Thing A ←[subject_of]← Attestation ─[typed_by]→ AUTHORITY(same_as)
-                                   ├─[relates_to]→ Thing B
+SpatialEntity A ←[subject_of]← Attestation ─[typed_by]→ AUTHORITY(same_as)
+                                   ├─[relates_to]→ SpatialEntity B
                                    └─[sourced_by]→ AUTHORITY(reconciliation_source)
 ```
 
@@ -672,7 +672,7 @@ When drawing manually, contributor prompted to specify:
 
 **All contributor capabilities plus:**
 - Edit any contributor's data (with attribution in changelog)
-- Merge duplicate Things (combining Attestations)
+- Merge duplicate SpatialEntities (combining Attestations)
 - Bulk operations across datasets
 - Create network/route/itinerary structures from existing places
 - Modify classification attestations (typed_by edges)
@@ -685,7 +685,7 @@ When drawing manually, contributor prompted to specify:
 - Standardize inconsistent metadata
 
 **Curation operations:**
-- Create period Things from PeriodO imports
+- Create period SpatialEntities from PeriodO imports
 - Build gazetteer group collections
 - Link major authority gazetteers
 - Maintain namespace mappings in AUTHORITY
@@ -700,7 +700,7 @@ When drawing manually, contributor prompted to specify:
 - Timestamp of change
 - User ID (contributor or staff)
 - Operation type (create, update, delete)
-- Entity affected (Thing, Name, Geometry, Timespan, Attestation, Edge, Authority)
+- Entity affected (SpatialEntity, Name, Geometry, Timespan, Attestation, Edge, Authority)
 - Collection affected (things, names, geometries, timespans, attestations, edges, authorities)
 - Old values (for updates/deletes)
 - New values (for creates/updates)

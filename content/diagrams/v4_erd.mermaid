@@ -3,8 +3,8 @@ erDiagram
     ATTESTATION }o--|| EDGE : "attests_name, attests_geometry, attests_timespan"
     ATTESTATION }o--|| EDGE : "typed_by, sourced_by, relates_to, meta_attestation"
     EDGE }o--|| ATTESTATION : "subject_of, meta_attestation"
-    THING }o--|| EDGE : "subject_of"
-    THING ||--}o EDGE : "relates_to"
+    SPATIAL_ENTITY }o--|| EDGE : "subject_of"
+    SPATIAL_ENTITY ||--}o EDGE : "relates_to"
     AUTHORITY }o--|| EDGE : "part_of"
     AUTHORITY ||--}o EDGE : "typed_by, sourced_by, part_of"
     EDGE }o--|| NAME : "attests_name"
@@ -25,7 +25,7 @@ erDiagram
 
 
 %% Core entity collections (document collections - vertices/nodes)
-    THING {
+    SPATIAL_ENTITY {
         string _key PK "ArangoDB key"
         string _id "things/xyz"
         text description

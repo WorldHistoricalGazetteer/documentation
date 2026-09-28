@@ -12,12 +12,12 @@ This vocabulary document describes controlled vocabularies used throughout WHG v
 
 This separation enables flexible vocabulary expansion without schema changes.
 
-## Thing Classification Vocabulary
+## SpatialEntity Classification Vocabulary
 
-Things are classified via attestations that connect to AUTHORITY documents with `authority_type: "classification"`. In the graph model, this is expressed through edges:
+SpatialEntities are classified via attestations that connect to AUTHORITY documents with `authority_type: "classification"`. In the graph model, this is expressed through edges:
 
 ```
-Thing ←[subject_of]← Attestation ─[typed_by]→ Authority(classification)
+SpatialEntity ←[subject_of]← Attestation ─[typed_by]→ Authority(classification)
 ```
 
 The following classification values are recognized for contribution types:
@@ -73,7 +73,7 @@ Names can serve multiple semantic functions. The `name_type` field is an array t
 **Notes:**
 - A single Name can have multiple types. For example, "Hellas" (Ἑλλάς) can be `["toponym", "ethnonym"]`
 - **Toponym** is the inclusive category for all geographic feature names
-- Specific feature types (rivers, mountains, seas) are indicated through Thing classification (`typed_by` edge to classification AUTHORITY) rather than as separate name types
+- Specific feature types (rivers, mountains, seas) are indicated through SpatialEntity classification (`typed_by` edge to classification AUTHORITY) rather than as separate name types
 - No combinations are forbidden; the model accommodates complex naming practices across cultures
 - This vocabulary is extensible; new name_types can be added as needed
 
@@ -227,7 +227,7 @@ The `certainty` field (0.0–1.0 float) in Attestation nodes and optional `certa
 
 ## Meta-Attestation Types
 
-The `meta_type` value in meta-attestation edges indicates the relationship between attestations. In the internal graph database (ArangoDB), this is stored in the edge's `properties.meta_type` field. In RDF, this is expressed through the `whg:typedBy` predicate linking to an Authority resource that defines the meta-relationship type.
+The `meta_type` value in meta-attestation edges indicates the relationship between attestations. In PLATO JSON it is the `meta.metaType` of the meta-attestation. In RDF, this is expressed through the `whg:typedBy` predicate linking to an Authority resource that defines the meta-relationship type.
 
 **Internal representation:**
 ```javascript

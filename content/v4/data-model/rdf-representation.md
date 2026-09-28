@@ -18,11 +18,11 @@ You can use WHG data without knowing RDF (JSON/LPF works fine), but RDF export p
 
 ## Core Ontology Classes
 
-### whg:Thing
+### whg:SpatialEntity
 
 Any entity that can be attested in historical sources. This includes places, periods, people, events, polities, and any other entities of historical interest.
 
-**Extends:** `owl:Thing`
+**Extends:** `owl:SpatialEntity`
 
 **Properties:**
 - `dcterms:identifier` - Unique identifier
@@ -78,7 +78,7 @@ A temporal extent with support for uncertainty bounds. Based on the W3C Time Ont
 
 ### whg:Attestation
 
-A node that bundles together claims about a Thing, linking it to Names, Geometries, Timespans, and other Things, all grounded in primary sources. This is the foundational unit of the WHG model, capturing not just facts but provenance, certainty, and temporal context.
+A node that bundles together claims about a SpatialEntity, linking it to Names, Geometries, Timespans, and other SpatialEntities, all grounded in primary sources. This is the foundational unit of the WHG model, capturing not just facts but provenance, certainty, and temporal context.
 
 **Extends:** `prov:Entity`
 
@@ -95,11 +95,11 @@ A node that bundles together claims about a Thing, linking it to Names, Geometri
 - `dcterms:contributor` - User or system that created attestation
 
 **Outgoing relationships** (expressed as predicates):
-- `whg:attests` - Links to the Thing being attested (subject_of in graph)
+- `whg:attests` - Links to the SpatialEntity being attested (subject_of in graph)
 - `whg:attestsName` - Links to Name entity (attests_name in graph)
 - `whg:attestsGeometry` - Links to Geometry entity (attests_geometry in graph)
 - `whg:attestsTimespan` - Links to Timespan entity (attests_timespan in graph)
-- `whg:relatesTo` - Links to another Thing via custom relation (relates_to in graph)
+- `whg:relatesTo` - Links to another SpatialEntity via custom relation (relates_to in graph)
 - `whg:typedBy` - Links to Authority defining relation type (typed_by in graph)
 - `prov:hadPrimarySource` - Links to Source Authority (sourced_by in graph)
 
@@ -126,9 +126,9 @@ Reference data for sources, datasets, relation types, periods, and certainty lev
 
 ## The Attestation Pattern in RDF
 
-The key innovation in WHG's RDF model is representing **Attestations as nodes** rather than as reified statements. This aligns with the internal graph database structure where Attestations are vertices connected via edges.
+The key innovation in WHG's RDF model is representing **Attestations as nodes** rather than as reified statements. This is the same structure PLATO defines: Attestations are resources linked to the entities, names, geometries and timespans they attest.
 
-**Architecture Note:** In the internal ArangoDB implementation, attestations are stored as documents in a standard document collection (not an edge collection), and all relationships are stored as edges in a separate edge collection. The RDF representation preserves this architecture by representing attestations as first-class resources (nodes) connected via RDF predicates (equivalent to edges).
+**Architecture note:** inside WHG, attestations are rows in PostgreSQL tables, not graph vertices. The RDF representation is generated from them, and it round-trips losslessly through PLATO.
 
 ### Graph-Based RDF Structure
 
@@ -145,7 +145,7 @@ ex:attestation_001 a whg:Attestation ;
 # Edges connecting attestation to other entities
 # (In RDF, these are predicates; in ArangoDB, these are edge documents)
 
-# Thing to Attestation
+# SpatialEntity to Attestation
 ex:baghdad whg:attestedBy ex:attestation_001 .
 # Or reverse direction:
 ex:attestation_001 whg:attests ex:baghdad .
@@ -173,7 +173,7 @@ This pattern allows WHG to:
 
 ### Relation Types via Authority
 
-For Thing-to-Thing relationships, the semantic meaning is expressed through Authority entities:
+For SpatialEntity-to-SpatialEntity relationships, the semantic meaning is expressed through Authority entities:
 
 ```turtle
 # Member-of relationship via Authority
@@ -186,8 +186,8 @@ ex:authority_member_of a whg:Authority ;
     whg:authorityType "relation_type" ;
     rdfs:label "member_of" ;
     owl:inverseOf ex:authority_contains ;
-    rdfs:domain whg:Thing ;
-    rdfs:range whg:Thing .
+    rdfs:domain whg:SpatialEntity ;
+    rdfs:range whg:SpatialEntity .
 ```
 
 ## Relation Type Vocabulary
@@ -204,12 +204,12 @@ Custom relation types (via Authority with `authorityType: "relation_type"`):
 
 | Authority Label | CIDOC-CRM | Description |
 |----------------|-----------|-------------|
-| `member_of` | P46_is_composed_of (inverse) | Thing is part of another Thing |
-| `contains` | P46_is_composed_of | Thing contains another Thing |
-| `same_as` | P130_shows_features_of | Equivalence between Things |
-| `succeeds` | P134_continued | Thing succeeded another Thing |
-| `connected_to` | P122_borders_with (extended) | Thing connected to another Thing |
-| `coextensive_with` | P121_overlaps_with | Thing spatially coextensive with another |
+| `member_of` | P46_is_composed_of (inverse) | SpatialEntity is part of another SpatialEntity |
+| `contains` | P46_is_composed_of | SpatialEntity contains another SpatialEntity |
+| `same_as` | P130_shows_features_of | Equivalence between SpatialEntities |
+| `succeeds` | P134_continued | SpatialEntity succeeded another SpatialEntity |
+| `connected_to` | P122_borders_with (extended) | SpatialEntity connected to another SpatialEntity |
+| `coextensive_with` | P121_overlaps_with | SpatialEntity spatially coextensive with another |
 
 ## Complete Example
 
@@ -231,8 +231,8 @@ The following example demonstrates the graph-based attestation model using Medie
 @prefix ext: <http://whgazetteer.org/timespan/> .
 @prefix exauth: <http://whgazetteer.org/authority/> .
 
-# Thing: Baghdad
-ex:baghdad a whg:Thing ;
+# SpatialEntity: Baghdad
+ex:baghdad a whg:SpatialEntity ;
     dcterms:identifier "whg:baghdad" ;
     whg:thingType "location" ;
     dcterms:description "Historical city, capital of Abbasid Caliphate" .
@@ -342,16 +342,16 @@ exa:att_004 a whg:Attestation ;
     prov:hadPrimarySource exauth:yaqut ;
     dcterms:created "2024-01-15T10:45:00Z"^^xsd:dateTime .
 
-# Thing-to-Thing relationship: Baghdad connected to Basra
-ex:basra a whg:Thing ;
+# SpatialEntity-to-SpatialEntity relationship: Baghdad connected to Basra
+ex:basra a whg:SpatialEntity ;
     dcterms:identifier "whg:basra" ;
     whg:thingType "location" .
 
 exauth:connected_to a whg:Authority ;
     whg:authorityType "relation_type" ;
     rdfs:label "connected_to" ;
-    rdfs:domain whg:Thing ;
-    rdfs:range whg:Thing ;
+    rdfs:domain whg:SpatialEntity ;
+    rdfs:range whg:SpatialEntity ;
     dcterms:description "Places connected by trade or communication" .
 
 exa:att_005 a whg:Attestation ;
@@ -405,7 +405,7 @@ ex:baghdad owl:sameAs <http://www.wikidata.org/entity/Q1530> ,
 3. **Changing geometries** - City extent in 762 CE vs. 1200 CE
 4. **Uncertainty modeling** - Varying certainty values with explanatory notes
 5. **Complex timespans** - Separate timespan entities
-6. **Thing-to-Thing relationships** - Via Authority-based relation types
+6. **SpatialEntity-to-SpatialEntity relationships** - Via Authority-based relation types
 7. **Meta-attestations** - Documenting contradictions between sources
 8. **External links** - Connections to Wikidata, Getty TGN, GeoNames
 
@@ -493,7 +493,7 @@ This ensures interoperability with existing linked data systems.
 
 WHG supports both WKT (Well-Known Text) and GeoJSON for geometry representation to ensure maximum interoperability with different tools and systems.
 
-**GeometryCollection Limitation:** ArangoDB (the internal storage system) does not support the GeoJSON `GeometryCollection` type. For entities with heterogeneous geometries, create multiple geometry attestations—one per geometry type. This limitation does not affect RDF exports, which can represent GeometryCollections if needed, but contributors should structure their data using separate geometry attestations to ensure compatibility with the internal graph database.
+**GeometryCollection:** supported. Where a geometry claim differs by source or date, prefer separate geometry attestations so each keeps its own provenance.
 
 ### Standard Prefixes and Context
 
@@ -693,13 +693,13 @@ SELECT ?member ?period WHERE {
 
 Our recommended architecture:
 
-1. **Store data internally** in ArangoDB using graph structure
+1. **Store data internally** in PostgreSQL/PostGIS, with Elasticsearch for search
 2. **Provide RDF export** in multiple serializations (JSON-LD, Turtle, RDF/XML)
 3. **Support SPARQL endpoint** for semantic web integration
 
 This gives you:
 
-✓ Performance benefits of native graph database  
+✓ Bounded graph traversal served efficiently by the relational store (measured)  
 ✓ Flexibility of property graph model  
 ✓ Interoperability through RDF export
 
@@ -723,7 +723,7 @@ WHG accepts contributions in multiple formats:
 1. Validate syntax using standard parsers (e.g., `rapper`, Apache Jena)
 2. Ensure compliance with WHG ontology (see validation section)
 3. Include proper provenance and source citations
-4. Provide at least one attestation per Thing
+4. Provide at least one attestation per SpatialEntity
 
 **Example Turtle submission:**
 
@@ -733,7 +733,7 @@ WHG accepts contributions in multiple formats:
 @prefix prov: <http://www.w3.org/ns/prov#> .
 @prefix ex: <http://your-project.org/data/> .
 
-ex:my_place a whg:Thing ;
+ex:my_place a whg:SpatialEntity ;
     dcterms:identifier "your-id" ;
     whg:thingType "location" ;
     dcterms:description "Historical site in Mesopotamia" .
@@ -764,11 +764,11 @@ Example SHACL constraint:
 
 ```turtle
 whg:ThingShape a sh:NodeShape ;
-               sh:targetClass whg:Thing ;
+               sh:targetClass whg:SpatialEntity ;
                sh:property [
                      sh:path [ sh:inversePath whg:attests ] ;
                      sh:minCount 1 ;
-                     sh:message "Every Thing must have at least one Attestation" ;
+                     sh:message "Every SpatialEntity must have at least one Attestation" ;
                  ] .
 ```
 

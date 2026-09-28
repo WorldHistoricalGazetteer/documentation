@@ -7,21 +7,23 @@
 :caption: Entity–relationship diagram for the WHG v4 data model.
 ```
 ```{note}
-**Single EDGE Collection:** The v4 model uses a unified edge collection with an `edge_type` field to distinguish between different relationship types ("subject_of", "attests_name", "attests_geometry", "attests_timespan", "relates_to", "meta_attestation", "typed_by", "sourced_by", "part_of"). This edge collection is separate from the attestations collection—attestations are nodes (documents) that serve as junction points, while edges connect them to other entities.
+**The model, its formal expression, and its storage.** This section describes the WHG v4 data model
+as a graph: SpatialEntities, Attestations, and the Names, Geometries, Timespans, Types and Authorities
+that attestations bundle together. The model is formalised as
+[PLATO](https://github.com/pelagios/place-attestation-ontology), the Place Attestation Ontology,
+which also defines its JSON and RDF serialisations. The Linked Places Format (LPF) is PLATO's
+single-object-attestation profile, and remains a supported input and output format.
 
-1. **Simplified schema management** - One collection to maintain rather than separate collections for each relationship type
-2. **Flexible relationship vocabulary** - New edge types can be added without schema changes
-3. **Efficient graph traversal** - Graph algorithms can traverse all relationships uniformly
-4. **Reduced operational overhead** - Fewer indexes, backups, and permissions to manage
+A graph *model* does not require a graph *database*. In WHG the attestation model is held in
+PostgreSQL/PostGIS, with Elasticsearch serving search. That choice was tested against ArangoDB and
+an RDF triplestore on real and production-scale data, as set out in the
+[database assessment addendum](./architecture/database.md#addendum-2026-reassessment).
 
-**AUTHORITY Collection (Single Table Inheritance):** Reference data (datasets, sources, relation_types, periods, certainty_levels) is unified in a single AUTHORITY collection using an `authority_type` discriminator field. This provides two key efficiencies:
-
-1. **Reduced operational overhead** - Managing one collection is simpler than maintaining five separate small collections (fewer indexes, backups, permissions to manage)
-2. **Eliminated redundancy** - Source metadata is stored once and referenced by multiple attestations through edges, rather than duplicated across millions of attestations that cite the same sources
-
-**ATTESTATIONS Collection (Document Collection):** Attestations are stored as documents in a standard document collection, not as edges. Each attestation is a node in the graph containing only metadata (certainty, notes, sequence, connection_metadata, timestamps). All relationships (subject_of, attests_name, attests_geometry, etc.) are expressed through edges in the EDGE collection that connect attestation nodes to other entities. This architecture enables attestations to serve as junction points that bundle multiple claims together while maintaining clean separation between entities and relationships.
-
-For Thing-to-Thing relationships using `edge_type: "relates_to"`, the edge references an AUTHORITY document where `authority_type: "relation_type"` to specify the semantic nature of the relationship (e.g., "capital_of", "successor_to"). This keeps the core model stable while allowing the vocabulary of historical relationships to grow organically as new use cases emerge.
+Where these pages speak of "collections", "edges" or "nodes", read them as describing the logical
+structure, not a storage layout. **AUTHORITY** reference data (datasets, sources, relation types,
+periods, certainty levels) is still unified behind one `authority_type` discriminator, and
+**Attestations** remain first-class: each has its own identifier, carries certainty, notes and
+provenance, and links a SpatialEntity to what it attests.
 ```
 <br>
 
@@ -36,6 +38,5 @@ For Thing-to-Thing relationships using `edge_type: "relates_to"`, the edge refer
 ./data-model/contributions.md
 ./data-model/rdf-representation.md
 ./data-model/usecases.md
-./data-model/implementation.md
 ./data-model/summary.md
 ```

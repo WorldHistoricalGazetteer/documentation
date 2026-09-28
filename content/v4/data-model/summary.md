@@ -5,7 +5,7 @@
 The WHG v4 data model achieves historical place representation through a graph-based attestation architecture:
 
 **Entity nodes** (documents in document collections):
-- **Things** - unified entities (places, periods, routes, networks)
+- **SpatialEntities** - unified entities (places, periods, routes, networks)
 - **Names** - multilingual labels with phonetic embeddings
 - **Geometries** - spatial representations with derived fields
 - **Timespans** - temporal bounds with PeriodO integration
@@ -31,7 +31,7 @@ This separation of **entities** from **evidence** enables:
 
 **Single table inheritance in AUTHORITY**: One collection with `authority_type` discriminator replaces separate tables for sources, datasets, relation types, and periods—simplifying queries and reducing joins.
 
-**Temporal reification**: Timespans as separate entities (not date fields) enable PeriodO integration, inheritance, and multiple temporal perspectives on the same Thing.
+**Temporal reification**: Timespans as separate entities (not date fields) enable PeriodO integration, inheritance, and multiple temporal perspectives on the same SpatialEntity.
 
 **Vector embeddings as requirement**: Name embeddings power cross-linguistic reconciliation and are mandatory (not optional) for toponymic matching.
 
@@ -63,22 +63,11 @@ Beyond traditional gazetteers:
 
 ---
 
-## Implementation Choice: ArangoDB
+## Implementation
 
-The graph model maps naturally to ArangoDB's multi-model architecture:
-
-- **Property graph** natively represents Attestations as nodes in a document collection with edges in a separate edge collection, perfectly matching the conceptual model
-- **GeoJSON support** handles complex historical geometries (6 types)
-- **Vector indexes** (FAISS-backed) enable phonetic similarity search
-- **Unified AQL** integrates graph traversal + spatial + temporal + vector queries
-- **Single system** eliminates synchronization complexity
-
-Key tradeoffs:
-- ⚠️ Enterprise Edition required for production scale (Community Edition limited to 100 GiB)
-- ⚠️ Vector search maturity requires early validation at 10M+ scale
-- ⚠️ No `GeometryCollection` support (workaround: multiple geometry attestations, which aligns with attestation model)
-- ✅ Operational simplicity for small team
-- ✅ Real-time consistency (no eventual consistency)
+The model is logical, not tied to a store. It is formalised as [PLATO](https://github.com/pelagios/place-attestation-ontology),
+the Place Attestation Ontology, which also serves as its interchange format (JSON and RDF). In WHG
+the store of record is PostgreSQL/PostGIS, with Elasticsearch for search (see the [database assessment addendum](../architecture/database.md#addendum-2026-reassessment)). An earlier plan to hold it in ArangoDB was retired in 2026 after testing.
 
 ---
 
@@ -94,7 +83,7 @@ Key tradeoffs:
 
 ### Advanced Analytics
 
-**Network analysis**: Centrality measures, community detection, flow analysis pre-computed as Thing attributes
+**Network analysis**: Centrality measures, community detection, flow analysis pre-computed as SpatialEntity attributes
 
 **Temporal evolution**: Track network emergence/dissolution, territorial changes, migration patterns
 
@@ -102,7 +91,7 @@ Key tradeoffs:
 
 ### Interoperability
 
-**IIIF integration**: Link Things to IIIF manifests for maps/manuscripts
+**IIIF integration**: Link SpatialEntities to IIIF manifests for maps/manuscripts
 
 **Wikidata sync**: Bidirectional linking with import/export of claims
 

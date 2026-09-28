@@ -1,5 +1,12 @@
 # Tutorial: Creating a Historical Route
 
+```{admonition} Archived: the 2025 v4 design
+:class: warning
+This page belongs to the **2025 design** for WHG v4, which was superseded in 2026. It describes
+features and an architecture that WHG v4 does not have. For the current guide, see the
+[User Guide](../../userguide_index.md).
+```
+
 Learn by doing: create and publish a historical route in WHG using Ibn Battuta's journey from Tangier to Cairo as an example.
 
 ## Note to Documentation Team

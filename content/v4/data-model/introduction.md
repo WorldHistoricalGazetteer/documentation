@@ -23,7 +23,7 @@ The Attestation acts as a bundle through the **EDGE collection**, not through fi
 
 ```{mermaid}
 graph TD
-    T[THING<br/>Constantinople]
+    T[SPATIAL_ENTITY<br/>Constantinople]
     N[NAME<br/>Konstantinoupolis]
     G[GEOMETRY<br/>Byzantine walls]
     TS[TIMESPAN<br/>330-1453 CE]
@@ -149,7 +149,7 @@ Here's how three different time periods would be modeled:
 
 **Attestation 1** (Byzantine period):
 
-- Links TO: Thing "Constantinople"
+- Links TO: SpatialEntity "Constantinople"
 - Links TO: Name "Konstantinoupolis"
 - Links TO: Geometry "Byzantine city walls"
 - Links TO: Timespan "330-1453 CE"
@@ -157,7 +157,7 @@ Here's how three different time periods would be modeled:
 
 **Attestation 2** (Ottoman period):
 
-- Links TO: Thing "Constantinople" (same place!)
+- Links TO: SpatialEntity "Constantinople" (same place!)
 - Links TO: Name "Istanbul"
 - Links TO: Geometry "Expanded Ottoman boundaries"
 - Links TO: Timespan "1453-1923 CE"
@@ -165,7 +165,7 @@ Here's how three different time periods would be modeled:
 
 **Attestation 3** (Ancient Greek period):
 
-- Links TO: Thing "Constantinople" (same place again!)
+- Links TO: SpatialEntity "Constantinople" (same place again!)
 - Links TO: Name "Byzantion"
 - Links TO: Geometry "Ancient settlement point"
 - Links TO: Timespan "667 BCE - 330 CE"
@@ -198,9 +198,9 @@ between different types of reference data: `"dataset"`, `"source"`, `"relation_t
 
 ### RELATION_TYPE (authority_type: "relation_type")
 
-RELATION_TYPE documents provide extensibility and semantic richness for Thing-to-Thing relationships. While
+RELATION_TYPE documents provide extensibility and semantic richness for SpatialEntity-to-SpatialEntity relationships. While
 system-defined edge types like "subject_of", "attests_name", and "attests_geometry" are hard-coded into the application,
-the "relates_to" edge type allows for custom, user-defined relationships between Things.
+the "relates_to" edge type allows for custom, user-defined relationships between SpatialEntities.
 
 For example, historians might need to model that:
 

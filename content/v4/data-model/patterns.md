@@ -1,37 +1,37 @@
-# Special Thing Patterns
+# Special SpatialEntity Patterns
 
-## Period Things
+## Period SpatialEntities
 
-A **period Thing** represents a span of time, often with associated geographic extent and cultural characteristics.
+A **period SpatialEntity** represents a span of time, often with associated geographic extent and cultural characteristics.
 
 **Characteristics:**
 - Has Name(s) with `name_type` including "chrononym"
 - Classified via attestation with `typed_by` edge to AUTHORITY document with classification "period"
 - Has Timespan attestations defining its temporal bounds
-- Members are Things that existed during that period
+- Members are SpatialEntities that existed during that period
 - Member temporalities can vary; the period's Timespan represents the outer bounds
 - May have explicit Geometry or inherit from members
 
 **Graph Structure:**
 ```
-Period Thing (e.g., "Tang Dynasty")
+Period SpatialEntity (e.g., "Tang Dynasty")
   ←[subject_of]← Attestation ─[attests_name]→ Name("Tang Dynasty", chrononym)
   ←[subject_of]← Attestation ─[attests_name]→ Name("唐朝", chrononym)
   ←[subject_of]← Attestation ─[typed_by]→ Authority(classification: "period")
   ←[subject_of]← Attestation ─[attests_timespan]→ Timespan(618-907 CE)
   ←[subject_of]← Attestation ─[attests_geometry]→ Geometry(Tang territory)
   
-  Member Things:
-  Thing(Chang'an) ←[subject_of]← Attestation ─[typed_by]→ Authority(member_of)
-                                             └─[relates_to]→ Thing(Tang Dynasty)
+  Member SpatialEntities:
+  SpatialEntity(Chang'an) ←[subject_of]← Attestation ─[typed_by]→ Authority(member_of)
+                                             └─[relates_to]→ SpatialEntity(Tang Dynasty)
 ```
 
 **PeriodO Integration:**
-- PeriodO periods import as Things with external IDs (e.g., `periodo:p0qhb9d`)
-- PeriodO data maps directly to Thing + Name + Timespan + Geometry attestations
+- PeriodO periods import as SpatialEntities with external IDs (e.g., `periodo:p0qhb9d`)
+- PeriodO data maps directly to SpatialEntity + Name + Timespan + Geometry attestations
 - WHG-created periods follow the same pattern with `whg:` namespace
 
-**Example**: "Tang Dynasty" as a period Thing:
+**Example**: "Tang Dynasty" as a period SpatialEntity:
 - ID: `things/tang-dynasty`
 - Has chrononym Names via attestations: "Tang Dynasty" (English), "唐朝" (Chinese)
 - Classified as "period" via Authority
@@ -41,31 +41,31 @@ Period Thing (e.g., "Tang Dynasty")
 
 ---
 
-## Route Things
+## Route SpatialEntities
 
-A **route Thing** represents a sequentially-ordered set of places, typically without specific temporal information about traversal.
+A **route SpatialEntity** represents a sequentially-ordered set of places, typically without specific temporal information about traversal.
 
 **Characteristics:**
 - Classified via attestation with `typed_by` edge to AUTHORITY document with classification "route"
-- Members are Things representing segments (waypoints or path sections)
+- Members are SpatialEntities representing segments (waypoints or path sections)
 - Segments are ordered using the `sequence` field in Attestation nodes
 - Timespan attestations are optional or represent when the route existed (not traversal times)
-- May include path Geometries as separate Things with LineString geometries
+- May include path Geometries as separate SpatialEntities with LineString geometries
 
 **Graph Structure:**
 ```
-Route Thing (e.g., "Silk Road")
+Route SpatialEntity (e.g., "Silk Road")
   ←[subject_of]← Attestation ─[attests_name]→ Name("Silk Road")
   ←[subject_of]← Attestation ─[typed_by]→ Authority(classification: "route")
   ←[subject_of]← Attestation ─[attests_timespan]→ Timespan(route's existence)
   
-  Member Things (with sequence):
-  Thing(Chang'an) ←[subject_of]← Attestation(sequence: 1) ─[typed_by]→ Authority(member_of)
-                                                          └─[relates_to]→ Thing(Silk Road)
-  Thing(Dunhuang) ←[subject_of]← Attestation(sequence: 2) ─[typed_by]→ Authority(member_of)
-                                                          └─[relates_to]→ Thing(Silk Road)
-  Thing(Samarkand) ←[subject_of]← Attestation(sequence: 3) ─[typed_by]→ Authority(member_of)
-                                                           └─[relates_to]→ Thing(Silk Road)
+  Member SpatialEntities (with sequence):
+  SpatialEntity(Chang'an) ←[subject_of]← Attestation(sequence: 1) ─[typed_by]→ Authority(member_of)
+                                                          └─[relates_to]→ SpatialEntity(Silk Road)
+  SpatialEntity(Dunhuang) ←[subject_of]← Attestation(sequence: 2) ─[typed_by]→ Authority(member_of)
+                                                          └─[relates_to]→ SpatialEntity(Silk Road)
+  SpatialEntity(Samarkand) ←[subject_of]← Attestation(sequence: 3) ─[typed_by]→ Authority(member_of)
+                                                           └─[relates_to]→ SpatialEntity(Silk Road)
 ```
 
 **Examples:**
@@ -81,41 +81,41 @@ Route Thing (e.g., "Silk Road")
 
 ---
 
-## Itinerary Things
+## Itinerary SpatialEntities
 
-An **itinerary Thing** represents a journey or route through space and time, with temporal information about when segments were traversed.
+An **itinerary SpatialEntity** represents a journey or route through space and time, with temporal information about when segments were traversed.
 
 **Characteristics:**
 - Classified via attestation with `typed_by` edge to AUTHORITY document with classification "itinerary"
-- Members are Things representing segments (waypoints, routes, or regions)
+- Members are SpatialEntities representing segments (waypoints, routes, or regions)
 - Segments are ordered using the `sequence` field in Attestation nodes
 - **Each segment attestation has its own Timespan attestation** (when that segment was traversed)
 - Itinerary's overall Timespan is the outer bounds of segment Timespans (unless explicitly overridden)
 - Segments can be:
-    - **Destinations**: Things representing places visited (points or regions)
-    - **Routes**: Things with LineString Geometries representing paths between destinations
+    - **Destinations**: SpatialEntities representing places visited (points or regions)
+    - **Routes**: SpatialEntities with LineString Geometries representing paths between destinations
     - **Mixed**: Some segments may be large regions traversed without specific routes
 
 **Graph Structure:**
 ```
-Itinerary Thing (e.g., "Marco Polo's Journey")
+Itinerary SpatialEntity (e.g., "Marco Polo's Journey")
   ←[subject_of]← Attestation ─[attests_name]→ Name("Marco Polo's Journey to China")
   ←[subject_of]← Attestation ─[typed_by]→ Authority(classification: "itinerary")
   ←[subject_of]← Attestation ─[attests_timespan]→ Timespan(1271-1295, computed)
   
-  Member Things (with sequence and temporal data):
-  Thing(Venice) ←[subject_of]← Attestation(sequence: 1) ─[typed_by]→ Authority(member_of)
-                                                        ├─[relates_to]→ Thing(Marco Polo Journey)
+  Member SpatialEntities (with sequence and temporal data):
+  SpatialEntity(Venice) ←[subject_of]← Attestation(sequence: 1) ─[typed_by]→ Authority(member_of)
+                                                        ├─[relates_to]→ SpatialEntity(Marco Polo Journey)
                                                         └─[attests_timespan]→ Timespan(Jan-Jun 1271)
   
-  Thing(Route-to-Constantinople) ←[subject_of]← Attestation(sequence: 2) 
+  SpatialEntity(Route-to-Constantinople) ←[subject_of]← Attestation(sequence: 2) 
                                                              ├─[typed_by]→ Authority(member_of)
-                                                             ├─[relates_to]→ Thing(Marco Polo Journey)
+                                                             ├─[relates_to]→ SpatialEntity(Marco Polo Journey)
                                                              └─[attests_timespan]→ Timespan(Jun-Sep 1271)
   
-  Thing(Constantinople) ←[subject_of]← Attestation(sequence: 3)
+  SpatialEntity(Constantinople) ←[subject_of]← Attestation(sequence: 3)
                                                    ├─[typed_by]→ Authority(member_of)
-                                                   ├─[relates_to]→ Thing(Marco Polo Journey)
+                                                   ├─[relates_to]→ SpatialEntity(Marco Polo Journey)
                                                    └─[attests_timespan]→ Timespan(Sep-Nov 1271)
 ```
 
@@ -129,34 +129,34 @@ Itinerary Thing (e.g., "Marco Polo's Journey")
 
 ---
 
-## Network Things
+## Network SpatialEntities
 
-A **network Thing** represents a set of connections between places that may not follow a particular sequence.
+A **network SpatialEntity** represents a set of connections between places that may not follow a particular sequence.
 
 **Characteristics:**
 - Classified via attestation with `typed_by` edge to AUTHORITY document with classification "network"
-- Connections between Things are attested using `connected_to` relation type (via AUTHORITY)
+- Connections between SpatialEntities are attested using `connected_to` relation type (via AUTHORITY)
 - Connections may have Timespan attestations (when the connection existed)
 - Connection metadata in Attestation nodes specifies type, directionality, and other attributes
 - Multiple attestations can represent the same connection at different times or from different sources
-- Networks do not store detailed route geometries by default; these can be linked via references to route Things or Geometry records
+- Networks do not store detailed route geometries by default; these can be linked via references to route SpatialEntities or Geometry records
 
 **Graph Structure:**
 ```
-Network Thing (e.g., "Mediterranean Trade Network")
+Network SpatialEntity (e.g., "Mediterranean Trade Network")
   ←[subject_of]← Attestation ─[attests_name]→ Name("Mediterranean Trade Network")
   ←[subject_of]← Attestation ─[typed_by]→ Authority(classification: "network")
   ←[subject_of]← Attestation ─[attests_timespan]→ Timespan(network's operational period)
   
   Connections (via connected_to attestations):
-  Thing(Constantinople) ←[subject_of]← Attestation(connection_metadata: {...})
+  SpatialEntity(Constantinople) ←[subject_of]← Attestation(connection_metadata: {...})
                                                    ├─[typed_by]→ Authority(connected_to)
-                                                   ├─[relates_to]→ Thing(Venice)
+                                                   ├─[relates_to]→ SpatialEntity(Venice)
                                                    └─[attests_timespan]→ Timespan(1200-1453)
   
-  Thing(Venice) ←[subject_of]← Attestation(connection_metadata: {...})
+  SpatialEntity(Venice) ←[subject_of]← Attestation(connection_metadata: {...})
                                           ├─[typed_by]→ Authority(connected_to)
-                                          ├─[relates_to]→ Thing(Alexandria)
+                                          ├─[relates_to]→ SpatialEntity(Alexandria)
                                           └─[attests_timespan]→ Timespan(1100-1500)
 ```
 
@@ -186,33 +186,33 @@ Network Thing (e.g., "Mediterranean Trade Network")
 
 ---
 
-## Gazetteer Group Things
+## Gazetteer Group SpatialEntities
 
-A **gazetteer group Thing** represents a thematic collection of gazetteers sharing common characteristics.
+A **gazetteer group SpatialEntity** represents a thematic collection of gazetteers sharing common characteristics.
 
 **Characteristics:**
 - Classified via attestation with `typed_by` edge to AUTHORITY document with classification "gazetteer_group"
-- Members are other Things (which are themselves gazetteers) linked via `member_of` attestations
+- Members are other SpatialEntities (which are themselves gazetteers) linked via `member_of` attestations
 - Can have its own Names describing the collection theme
 - May have Timespan attestations representing the collection's temporal scope
 - May have inherited Geometry from member gazetteers
 
 **Graph Structure:**
 ```
-Gazetteer Group Thing (e.g., "Ancient World Gazetteers")
+Gazetteer Group SpatialEntity (e.g., "Ancient World Gazetteers")
   ←[subject_of]← Attestation ─[attests_name]→ Name("Ancient World Gazetteers")
   ←[subject_of]← Attestation ─[typed_by]→ Authority(classification: "gazetteer_group")
   ←[subject_of]← Attestation ─[attests_timespan]→ Timespan(-3000 to 500)
   
-  Member Things:
-  Thing(Pleiades) ←[subject_of]← Attestation ─[typed_by]→ Authority(member_of)
-                                             └─[relates_to]→ Thing(Ancient World Gazetteers)
+  Member SpatialEntities:
+  SpatialEntity(Pleiades) ←[subject_of]← Attestation ─[typed_by]→ Authority(member_of)
+                                             └─[relates_to]→ SpatialEntity(Ancient World Gazetteers)
   
-  Thing(DARMC) ←[subject_of]← Attestation ─[typed_by]→ Authority(member_of)
-                                          └─[relates_to]→ Thing(Ancient World Gazetteers)
+  SpatialEntity(DARMC) ←[subject_of]← Attestation ─[typed_by]→ Authority(member_of)
+                                          └─[relates_to]→ SpatialEntity(Ancient World Gazetteers)
   
-  Thing(Barrington) ←[subject_of]← Attestation ─[typed_by]→ Authority(member_of)
-                                                └─[relates_to]→ Thing(Ancient World Gazetteers)
+  SpatialEntity(Barrington) ←[subject_of]← Attestation ─[typed_by]→ Authority(member_of)
+                                                └─[relates_to]→ SpatialEntity(Ancient World Gazetteers)
 ```
 
 **Examples:**
@@ -232,14 +232,14 @@ Gazetteer Group Thing (e.g., "Ancient World Gazetteers")
 
 ## Timespan Inheritance and Computation
 
-Similar to Geometry inheritance, **Timespan inheritance** can be computed for Things lacking explicit Timespan attestations.
+Similar to Geometry inheritance, **Timespan inheritance** can be computed for SpatialEntities lacking explicit Timespan attestations.
 
 **Field Naming Note:** All examples use `end_earliest` and `end_latest` (not `stop_earliest`/`stop_latest`) for consistency with W3C Time Ontology. This applies to all timespan operations including inheritance and computation.
 
 **Computation Rules:**
 
-**For compositional Things (with members):**
-1. Find all member Things via `member_of` attestations
+**For compositional SpatialEntities (with members):**
+1. Find all member SpatialEntities via `member_of` attestations
 2. For each member, find its Timespan attestations via graph traversal
 3. Compute outer bounds:
     - `start_earliest` = minimum of all member `start_earliest` values
@@ -262,7 +262,7 @@ Similar to Geometry inheritance, **Timespan inheritance** can be computed for Th
 // Compute Timespan for Tang Dynasty from members
 LET dynasty = DOCUMENT("things/tang-dynasty")
 
-// Find all member Things
+// Find all member SpatialEntities
 LET members = (
   FOR att IN attestations
     FOR e1 IN edges
@@ -277,7 +277,7 @@ LET members = (
         LET relType = DOCUMENT(e2._to)
         FILTER relType.label == "member_of"
         
-        // Get the parent Thing
+        // Get the parent SpatialEntity
         FOR e3 IN edges
           FILTER e3._from == att._id
           FILTER e3.edge_type == "relates_to"
@@ -309,7 +309,7 @@ RETURN {
 
 **Example Result:**
 ```javascript
-// Tang Dynasty period Thing (no explicit Timespan)
+// Tang Dynasty period SpatialEntity (no explicit Timespan)
 // Members:
 //   - Chang'an (Timespan: 618-904)
 //   - Luoyang (Timespan: 618-907)
@@ -327,7 +327,7 @@ RETURN {
 **Override example:**
 ```
 // Tang Dynasty with explicit Timespan attestation
-Thing(Tang Dynasty) ←[subject_of]← Attestation ─[attests_timespan]→ Timespan(618-907)
+SpatialEntity(Tang Dynasty) ←[subject_of]← Attestation ─[attests_timespan]→ Timespan(618-907)
 
 // This explicit attestation overrides the computed bounds from members
 ```
@@ -336,13 +336,13 @@ Thing(Tang Dynasty) ←[subject_of]← Attestation ─[attests_timespan]→ Time
 
 ## Geometry Inheritance
 
-**Note on GeometryCollection:** ArangoDB does not support the GeoJSON `GeometryCollection` type. For Things with heterogeneous geometries (e.g., both point and polygon), create multiple geometry attestations—one per geometry type. This naturally aligns with the attestation model where each geometry claim is a separate evidential statement.
+**Several geometries:** where sources differ, or one source gives different geometries for different dates, record each as its own geometry attestation, so each keeps its source, dates and certainty. Where one source asserts a single heterogeneous shape, a `GeometryCollection` is fine.
 
-Things can inherit Geometry from their members when no explicit Geometry attestation exists:
+SpatialEntities can inherit Geometry from their members when no explicit Geometry attestation exists:
 
 **Computation Pattern:**
 ```aql
-// Find inherited Geometry for a Route Thing
+// Find inherited Geometry for a Route SpatialEntity
 FOR thing IN things
   FILTER thing._id == "things/silk-road"
   
