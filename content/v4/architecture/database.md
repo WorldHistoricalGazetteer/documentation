@@ -1,5 +1,22 @@
 # Database Technology Assessment
 
+```{admonition} Reassessed 2026-09-28: the ArangoDB recommendation does not stand
+:class: warning
+
+This assessment (October 2025) is kept unchanged below as the record of what was known then.
+It was re-tested in September 2026 against the licence text and against measurements on real
+PLATO data and a 47M-place synthetic hierarchy. The recommendation is now **PostgreSQL/PostGIS +
+Elasticsearch, with PLATO RDF as the interchange and publication format**.
+
+In summary:
+- ArangoDB's Community Edition hard-caps data at 100 GB in software, and its licence has no
+  non-commercial exemption.
+- On WHG's traversal queries ArangoDB was about 5× to 500× slower than PostgreSQL, the gap
+  widening with result size. It missed a 5-second budget that PostgreSQL met.
+
+See [Addendum: 2026 reassessment](#addendum-2026-reassessment).
+```
+
 ## TL;DR
 
 **WHG v4** is transitioning to a property graph data model centered on attestations (source-backed claims about historical places). We need a database that natively supports:
@@ -1343,3 +1360,145 @@ The lack of GeometryCollection support is adequately addressed by our attestatio
 **PostgreSQL with extensions provides a proven alternative** that guarantees sustainability and includes full GeometryCollection support, but requires accepting greater query complexity (especially for graph traversals with Attestations as nodes) and careful performance optimization.
 
 The database choice is a critical architectural decision that will shape WHG v4's development timeline, operational requirements, and long-term sustainability.
+---
+
+(addendum-2026-reassessment)=
+## Addendum: 2026 reassessment
+
+*Added 2026-09-28. The document above is left unchanged. The working notes, with every figure
+below and its caveats, are in the whg3 repository at `developer/plan-arangodb-reassessment.md`.
+The benchmark harness, planted controls and raw results are held by the WHG technical team.*
+
+### Why it was reopened
+
+This assessment made ArangoDB conditional on one thing: "sustainable licensing appropriate for an
+academic, non-commercial research infrastructure". **That licensing discussion never took place.**
+Meanwhile three things changed:
+
+- ArangoDB's licence changed.
+- WHG shipped phonetic search (Symphonym in Elasticsearch) and query-time identity clustering, both
+  without a graph database.
+- PLATO made the attestation model portable as a format, independent of any store.
+
+The case was re-tested on one rule, fixed before any measurement. The switch carries the burden of
+proof. It is justified only if some traversal query that v4 must answer is **not** answered by the
+existing stack within **5 seconds** (a one-off browser query) and **is** answered by the candidate
+store within 5 seconds. Network, route and itinerary path-finding may be built if the
+infrastructure allows, but it does not decide the infrastructure.
+
+### Licensing, from the text
+
+The ArangoDB Community License (dated 31 Oct 2023, still current in 2026) grants use "only for your
+internal business purposes in a dataset that is less than 100GB aggregated across the cluster",
+and §2(g) forbids use with any dataset "in the aggregate 100GB or more".
+
+- **It has no commercial test.** It contains no non-commercial, academic or non-profit exemption,
+  and no evaluation exception.
+- **The exemption that did exist was withdrawn.** A February 2024 vendor post said the limit
+  "explicitly does not apply to non-profit organizations". That sentence was removed when the post
+  was "Updated 3/28/25 for accuracy".
+- **The binary enforces the cap.** A stock 3.12.12 server reports a limit of 107,374,182,400 bytes.
+  Per the vendor documentation, it goes read-only two days after the limit is exceeded and shuts
+  down two days after that.
+- **The alternatives are poor.** The last Apache-2.0 line (3.11) reached end-of-life in May 2025.
+
+At this assessment's own projection of 500 GB–1 TB, ArangoDB would therefore need an Enterprise
+contract.
+
+The projection itself does not reconcile. It sizes 28M Things, computes on "73M" nodes, and its
+per-Thing model implies about 280M nodes and 700M edges. Production already holds 47M places.
+
+### The traversal test
+
+**Arms.** The same attestation model was loaded identically into three stores:
+
+- PostgreSQL 15/PostGIS, with plain recursive CTEs and no graph extension.
+- ArangoDB 3.12.12, with attestations as vertices as specified above.
+- An RDF triplestore (Oxigraph) holding PLATO's own N-Triples.
+
+**Data.** Real PLATO corpora (Pleiades, Vision of Ireland, Vision of Britain), plus a planted
+set of known answers.
+
+**Controls.** Every store had to return each planted answer exactly, and reject each planted
+near-miss, before any timing counted. That covers time-scoped containment, succession, provenance
+through `derived_from`, PLATO retraction parity, the four-hop Thing→Attestation→Name→Authority
+showcase, and shortest path. All three did, and the three stores then agreed on every real query.
+
+**Scale.** PostgreSQL was then run at production scale: 47M places, 245M attestations and 58M
+relations, in 81 GB, capped at 4 CPUs and 8 GB RAM.
+
+| Query at 47M places | Rows | PostgreSQL (warm / cold) |
+|---|---|---|
+| Ancestors of a place, time-scoped | 5 | 0.8 ms / 6 ms |
+| First 100 children of a unit with 242k children | 100 | 0.9 ms / 1.8 ms |
+| Retraction status through a 5-deep chain | 1 | 0.1 ms / 8 ms |
+| Sources behind a claim, through `derived_from` | 3 | 0.6 ms / 21 ms |
+| Showcase: 50 candidate names + bounding box + period | 1 | 3 ms / 301 ms |
+| All descendants of a large region | 469,208 | 1.07 s / 1.34 s |
+| All descendants of a whole country | 6,602,879 | 20 s / 21 s |
+
+ArangoDB was given the whole country's subtree (6.6M places, 7.9M containment attestations) on
+identical resources:
+
+| Descendants | PostgreSQL | ArangoDB (attestation vertices) | ArangoDB (timed edges) |
+|---|---|---|---|
+| 1,255 | 10 ms | 364 ms | 32 ms |
+| 18,453 | 53 ms | 8.0 s | 1.5 s |
+| 99,239 | 220 ms | 110 s | 49 s |
+| 469,208 | 1.07 s | not finished after 53 min | — |
+
+ArangoDB's cost per row grows with subtree size. In the model recommended above, it misses the
+5-second budget at about 18k descendants. PostgreSQL meets it beyond 469k. The only query
+PostgreSQL misses is listing 6.6M rows, which no browser page displays. That need is met in either
+store by a precomputed count, paged lists and map tiles.
+
+**No query favours ArangoDB.**
+
+Real data is also shallower than assumed:
+- The deepest real containment chain is 10 levels.
+- The longest real succession chain is 3.
+- Pleiades contains genuine containment cycles and a succession self-loop, which every store must
+  survive.
+
+### The RDF triplestore option
+
+This option was not evaluated above. It is a serious candidate, because PLATO *is* RDF and
+round-trips with zero differences. It is rejected as the primary store for three reasons:
+
+1. **No per-step filtering.** A relation in PLATO RDF is an attestation resource, so a SPARQL
+   property path cannot filter by relation type or timespan at each step. The single-query form
+   returned every planted near-miss. Correct answers need one query per level from the client:
+   2.2 s for 2,918 descendants, against 16 ms in PostgreSQL.
+2. **It adds a service.** Elasticsearch would still be needed for multilingual phonetic search.
+3. **Update and retraction semantics** would have to be built on top.
+
+It is **retained as a publication layer**: a SPARQL endpoint generated from the store of record,
+as the RDF representation already intends. Suitable engines:
+
+- **QLever** (Apache-2.0): billion-triple scale.
+- **Apache Jena Fuseki** (Apache-2.0): GeoSPARQL 1.0.
+
+GraphDB Free is unsuitable: its licence forbids publishing evaluation results and caps
+concurrency.
+
+### The other grounds, re-tested
+
+- **Attestations as first-class nodes.** This is a property of the model, not the store. The same
+  model ran correctly as PostgreSQL rows, RDF resources and ArangoDB vertices.
+- **GeoJSON.** PostGIS handles every geometry type, including GeometryCollection. The lack of
+  GeometryCollection in ArangoDB had already shaped the data model (see the RDF representation's
+  guidance to split geometries), and that constraint can now be lifted.
+- **Vector similarity.** This is in production in Elasticsearch (Symphonym).
+- **A single integrated system.** This was not achievable as planned. The server plan kept
+  Elasticsearch and reserved capacity for ArangoDB *beside* PostgreSQL and Redis.
+- **Fit to the server.** The planned V4 server (32 GB RAM, 320 GB SSD) cannot host the 128 GB RAM
+  and 260–360 GB that this assessment says ArangoDB needs. It can host an 81–200 GB PostgreSQL.
+
+### Recommendation
+
+**Build v4 on PostgreSQL/PostGIS as the store of record and Elasticsearch for search, with PLATO as
+the interchange format and a generated SPARQL endpoint for Linked Data.**
+
+- Do not open a licensing negotiation with ArangoDB.
+- Revisit only if a v4 query emerges that the test above does not cover and PostgreSQL cannot
+  answer within budget. The harness is kept so that such a query can be tested on the same data.
