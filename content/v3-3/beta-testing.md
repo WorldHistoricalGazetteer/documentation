@@ -1,4 +1,10 @@
-# v3.3 Beta Testing Plan
+# Beta Testing Plan
+
+```{note}
+Written for the Collaborative Workbench when it was labelled "v3.3", this plan now covers beta
+testing for **WHG v4.0**. The [Draft v4 User Guide](../v4/userguide_index.md) is part of what is
+under review.
+```
 
 ```{admonition} Who this is for
 :class: note

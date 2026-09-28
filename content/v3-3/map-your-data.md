@@ -1,5 +1,14 @@
 # Map your Data
 
+```{admonition} Coming soon — preview feature
+:class: important
+
+**Map your Data** is **not yet generally available**. It is currently in beta behind
+a **beta** menu tab, open to WHG staff and invited **beta testers**, and is documented
+here in advance so that the design can be reviewed and refined before release. Screens,
+labels, and behaviour described below may still change. When the feature is released
+this notice will be removed.
+```
 
 ## What it is
 

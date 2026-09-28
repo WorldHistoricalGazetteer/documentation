@@ -1,5 +1,9 @@
 # Data Formats In and Out
 
+```{note}
+Part of the [Draft v4 User Guide](../userguide_index.md): under review during beta testing.
+```
+
 % TODO(release): confirm which PLATO import and export paths have shipped, and the LPF version
 % supported at launch (see LPF discussion #53).
 

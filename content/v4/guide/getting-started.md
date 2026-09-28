@@ -1,5 +1,9 @@
 # Getting Started
 
+```{note}
+Part of the [Draft v4 User Guide](../userguide_index.md): under review during beta testing.
+```
+
 % TODO(release): check every figure and menu name on this page against the live site at launch.
 % TODO(release): confirm that downloading openly licensed data needs no account.
 

@@ -1,5 +1,9 @@
 # Identifiers and Citation
 
+```{note}
+Part of the [Draft v4 User Guide](../userguide_index.md): under review during beta testing.
+```
+
 % TODO(release): re-verify every example URL on this page, and whether contributed-record
 % identifiers resolve for anonymous users at launch (in 2026 only source-gazetteer records did).
 

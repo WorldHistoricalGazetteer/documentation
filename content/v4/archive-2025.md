@@ -17,5 +17,4 @@ Implementation in ArangoDB <./data-model/implementation.md>
 Kubernetes Configuration <./architecture/kubernetes.md>
 Technical Administration <./architecture/technical-administration.md>
 Service Configuration <./architecture/service-configuration.md>
-Beta Testing Plan (2026) <../v3-3/beta-testing.md>
 ```

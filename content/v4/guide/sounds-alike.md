@@ -1,5 +1,9 @@
 # Sounds-alike Search
 
+```{note}
+Part of the [Draft v4 User Guide](../userguide_index.md): under review during beta testing.
+```
+
 Historical place names reach us spelled in many ways and written in many scripts. *München*,
 *Munich* and *Мюнхен* are one name, heard three ways. A search that only compares letters misses
 these connections. WHG also compares how names **sound**.

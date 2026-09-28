@@ -1,5 +1,9 @@
 # Suggesting Corrections
 
+```{note}
+Part of the [Draft v4 User Guide](../userguide_index.md): under review during beta testing.
+```
+
 % TODO(release): confirm the button label and where it appears on a record page.
 % TODO(release): confirm steps 2-5 against the shipped form (is a reason field present?).
 

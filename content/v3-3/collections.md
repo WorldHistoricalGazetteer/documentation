@@ -1,5 +1,14 @@
 # Collaborative Collections
 
+```{admonition} Coming soon — preview feature
+:class: important
+
+The **Collaborative Workbench** doc-types described here are **not yet generally
+available**. They are in beta behind the **beta** menu tab, open to WHG staff and
+invited **beta testers**, and are documented in advance so the design can be
+reviewed and refined before release. Screens, labels, and behaviour may still
+change. When the feature is released this notice will be removed.
+```
 
 ## What it is
 
@@ -17,9 +26,9 @@ places (*Map your Data*) is simply the first doc-type; the others let you build 
   analysis. *("Gazetteer" is the new name for what was called a "Dataset"; a "Gazetteer Group"
   was a "Dataset Collection" — see [A note on names](#a-note-on-names).)*
 
-Two further doc-types, **Routes** and **Networks**, are signposted in the tool as *"Planned"*.
-They are first-class historical entities in their own right (a route or a network is more than a
-list of places), and are planned for a later release.
+Two further doc-types — **Routes** and **Networks** — are signposted in the tool as *"Coming
+with v4"*. They are first-class historical entities in their own right (a route or a network is
+more than a list of places), and arrive with WHG's next-generation data model.
 
 ## Starting a new document
 
@@ -31,7 +40,7 @@ Open the Workbench and choose **New…**. You are offered a tile for each doc-ty
 | **Itinerary** | An ordered Place Collection (a journey) |
 | **Gazetteer Group** | Group published gazetteers together |
 | **Map your Data** | The reconciliation workflow for a table of places |
-| **Route** / **Network** *(disabled)* | *Planned* |
+| **Route** / **Network** *(disabled)* | *Coming with v4* |
 
 Published items you have permission to edit also carry an **Edit in Workbench** button on their own
 page (see [Editing something already published](#editing-something-already-published)).
