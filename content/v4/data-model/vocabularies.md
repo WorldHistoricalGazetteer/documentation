@@ -20,18 +20,22 @@ SpatialEntities are classified via attestations that connect to a Type (a label,
 SpatialEntity ←[attests_about]─ Attestation ─[attests_type]→ Type(classification)
 ```
 
-The following classification values are recognized for contribution types:
+The following PLATO Types mark SpatialEntities that are made of other places (see
+[Routes, Itineraries, Networks, Groups and Periods](patterns.md)):
 
 ### Contribution Type Classifications
 
 | Classification | Definition | Example Uses |
 |----------------|------------|--------------|
-| `gazetteer` | A dataset of places from a common context | Historical maps, archaeological surveys, administrative registers |
-| `route` | A sequentially-ordered set of places | Silk Road, Roman roads, maritime routes, pilgrimage paths |
-| `itinerary` | A route with temporal dimensions | Travel diaries, military campaigns, migration paths, voyage logs |
-| `network` | A dataset of connections between places | Trade networks, postal systems, diplomatic relations, communication infrastructure |
-| `gazetteer_group` | A thematic collection of gazetteers | Ancient World collection, Colonial archives, Environmental history datasets |
-| `period` | A temporal entity with chrononym and geographic extent | Dynasties, eras, cultural periods, geological epochs |
+| `plato:TypeRoute` | A sequentially-ordered set of places | Silk Road, Roman roads, maritime routes, pilgrimage paths |
+| `plato:TypeItinerary` | A route with temporal dimensions | Travel diaries, military campaigns, migration paths, voyage logs |
+| `plato:TypeNetwork` | A dataset of connections between places | Trade networks, postal systems, diplomatic relations, communication infrastructure |
+| `plato:TypeSegment` | A physical link with an existence of its own | A leg of a route between two stations, a reach of a river between confluences |
+
+Gazetteers, gazetteer groups and periods are not SpatialEntities, so they are not classified here: a
+**Gazetteer** is a dataset (`dcat:Dataset`) of contributed SpatialEntities and their attestations, a
+**gazetteer group** is a group of Gazetteers (`plato:GazetteerGroup`, joined by `plato:member_of_group`),
+and a **period** is an Authority (`plato:Period`).
 
 ### GeoNames Feature Classes
 

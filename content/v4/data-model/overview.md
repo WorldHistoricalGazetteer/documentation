@@ -20,7 +20,7 @@ geographic information.
 
 The WHG data model is built around a **property graph** structure where information is represented as:
 
-- **SpatialEntities**: Primary entities (locations, historical entities, collections, periods, routes, itineraries, networks)
+- **SpatialEntities**: Primary entities (locations, historical entities, collections, routes, itineraries, networks)
 - **Attributes**: Descriptions of SpatialEntities (Names, Geometries, Timespans)
 - **Attestations**: Source-backed claims connecting SpatialEntities to attributes or other SpatialEntities
 
@@ -44,10 +44,18 @@ entities. The term "SpatialEntity" is borrowed from schema.org's root type, chos
 - **Locations**: Geographic places (cities, regions, landmarks, etc.)
 - **Historical entities**: Political entities, empires, states
 - **Collections**: Curated sets of related SpatialEntities
-- **Periods**: Temporal spans with cultural/historical significance
 - **Routes**: Ordered sequences of locations representing journeys
 - **Itineraries**: Specific instances of travel along routes
 - **Networks**: Systems of interconnected SpatialEntities
+
+What kind of thing a SpatialEntity is is not a field on the SpatialEntity: it is asserted by Type attestations
+(`attests_type`, for example to an AAT concept), and routes, itineraries, networks and segments are typed with
+`plato:TypeRoute`, `plato:TypeItinerary`, `plato:TypeNetwork` and `plato:TypeSegment` (see
+[Routes, Itineraries, Networks, Groups and Periods](patterns.md)).
+
+A **period** is not a SpatialEntity: it is an Authority (`plato:Period`), and places are dated by Timespans, which may
+refer to a Period. A **Gazetteer** is not a SpatialEntity either: it is a dataset (`dcat:Dataset`) holding contributed
+SpatialEntities and their attestations, and a **gazetteer group** is a group of Gazetteers (`plato:GazetteerGroup`).
 
 ### Why "SpatialEntity"?
 
@@ -72,7 +80,6 @@ A SpatialEntity in WHG consists of:
 ```json
 {
   "id": "whg:12345",
-  "thing_type": "location",
   "description": "Major Byzantine/Ottoman city on the Bosphorus",
   "created": "2023-01-15T10:30:00Z",
   "modified": "2024-02-20T14:45:00Z"
@@ -82,7 +89,6 @@ A SpatialEntity in WHG consists of:
 **Key Properties**:
 
 - `id`: Unique persistent identifier (URI)
-- `thing_type`: Classification (location, historical_entity, collection, period, route, itinerary, network)
 - `description`: Human-readable summary
 - `created`, `modified`: Temporal metadata for curation
 

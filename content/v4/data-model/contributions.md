@@ -15,7 +15,7 @@ A dataset of places sourced from a common historical or geographical context.
 **Characteristics in the model:**
 - Each place becomes a SpatialEntity
 - Places may have classification via `attests_type` edges to Types (GeoNames feature classes or custom classifications)
-- Places may be grouped under a parent SpatialEntity representing the gazetteer dataset itself via `member_of` relationships
+- The gazetteer itself is a Gazetteer (`plato:Gazetteer`, a `dcat:Dataset`): the workspace that holds its contributed SpatialEntities and their attestations. It is not a SpatialEntity, and its places are not `member_of` it
 - Dataset-level metadata (DOI, title, description) stored in AUTHORITY documents with `authority_type: "dataset"`
 - Names, Geometries, and Timespans linked via Attestation nodes and edges
 
@@ -48,7 +48,7 @@ LPF place → SpatialEntity
 A sequentially-ordered set of places, typically without specific temporal traversal information.
 
 **Characteristics in the model:**
-- Container SpatialEntity classified via `attests_type` edge to Type("route")
+- Container SpatialEntity classified via `attests_type` edge to Type(`plato:TypeRoute`)
 - Member SpatialEntities (waypoints/segments) linked via Attestations with `sequence` field and `member_of` relation type
 - Timespan attestations optional or represent when route existed (not traversal)
 - May include path Geometries as separate SpatialEntities with LineString geometries
@@ -68,7 +68,7 @@ A sequentially-ordered set of places, typically without specific temporal traver
 
 **Mapping to model:**
 ```
-Route contribution → SpatialEntity (attests_type Type["route"])
+Route contribution → SpatialEntity (attests_type Type[plato:TypeRoute])
   ├─ Route name → Name (via Attestation + edges)
   ├─ Waypoint 1 → SpatialEntity with Attestation(sequence: 1) + has_relation_type(member_of) + relates_to(Route)
   ├─ Waypoint 2 → SpatialEntity with Attestation(sequence: 2) + has_relation_type(member_of) + relates_to(Route)
@@ -83,7 +83,7 @@ Route contribution → SpatialEntity (attests_type Type["route"])
 A route with temporal dimensions indicating when segments were traversed.
 
 **Characteristics in the model:**
-- Container SpatialEntity classified via `attests_type` edge to Type("itinerary")
+- Container SpatialEntity classified via `attests_type` edge to Type(`plato:TypeItinerary`)
 - Member SpatialEntities linked via Attestations with `sequence` field and `member_of` relation type
 - **Each segment Attestation has its own Timespan attestation** (via attests_timespan edge)
 - Overall itinerary Timespan computed from segment bounds (or explicitly overridden)
@@ -103,7 +103,7 @@ A route with temporal dimensions indicating when segments were traversed.
 
 **Mapping to model:**
 ```
-Itinerary contribution → SpatialEntity (attests_type Type["itinerary"])
+Itinerary contribution → SpatialEntity (attests_type Type[plato:TypeItinerary])
 ├─ Itinerary name → Name (via Attestation + edges)
 ├─ Segment 1 → SpatialEntity
 │   ├─ Attestation document (sequence: 1, certainty: ...) in attestations collection
@@ -122,7 +122,7 @@ Itinerary contribution → SpatialEntity (attests_type Type["itinerary"])
 A dataset indicating geospatial connections between places that may not follow a sequence.
 
 **Characteristics in the model:**
-- Container SpatialEntity classified via `attests_type` edge to Type("network")
+- Container SpatialEntity classified via `attests_type` edge to Type(`plato:TypeNetwork`)
 - Connections between member SpatialEntities via Attestations with `connected_to` relation type
 - Multiple instances of same connection over time represented by multiple Attestations with different Timespan attestations
 - Can reference route Geometries if available, but not required
@@ -143,7 +143,7 @@ A dataset indicating geospatial connections between places that may not follow a
 
 **Mapping to model:**
 ```
-Network contribution → SpatialEntity (attests_type Type["network"])
+Network contribution → SpatialEntity (attests_type Type[plato:TypeNetwork])
   ├─ Network name → Name (via Attestation)
   ├─ Connection 1:
   │   ├─ SpatialEntity A ←[attests_about]─ Attestation
@@ -159,13 +159,15 @@ Network contribution → SpatialEntity (attests_type Type["network"])
 
 ### Gazetteer Group
 
-A thematic collection of gazetteers sharing common characteristics.
+A thematic or organisational grouping of Gazetteers (not of places) sharing common characteristics.
 
 **Characteristics in the model:**
-- Container SpatialEntity classified via `attests_type` edge to Type("gazetteer_group")
-- Member SpatialEntities (which are themselves gazetteers) linked via Attestations with `member_of` relation type
-- Group-level Names and descriptions
-- May have Timespan attestations representing the collection's temporal scope
+- A Gazetteer Group (`plato:GazetteerGroup`), not a SpatialEntity: it has no name, type, geometry or timespan attestations, and it does not appear among places
+- Each member Gazetteer is linked to the group directly with `plato:member_of_group` (Gazetteer → GazetteerGroup), not with `member_of` attestations
+- Anything the group appears to cover in space or time is worked out from its Gazetteers' contents and, if shown, is computed
+- See [Gazetteer groups](patterns.md#gazetteer-groups)
+
+% TODO(v4): say what a gazetteer group's own metadata is in WHG (title, description, curators), once decided; PLATO declares only the class and member_of_group.
 
 **Examples:**
 - **Ancient World Gazetteers**: Pleiades + DARMC + Barrington Atlas + ANE Placemarks
@@ -182,12 +184,8 @@ A thematic collection of gazetteers sharing common characteristics.
 
 **Mapping to model:**
 ```
-Gazetteer Group → SpatialEntity (attests_type Type["gazetteer_group"])
-  ├─ Group name → Name (via Attestation)
-  ├─ Member gazetteer 1 → via Attestation + has_relation_type(member_of) + relates_to(Group)
-  ├─ Member gazetteer 2 → via Attestation + has_relation_type(member_of) + relates_to(Group)
-  ├─ Group timespan → Timespan (via Attestation for collection scope)
-  └─ Group description → description field in SpatialEntity
+Gazetteer 1 ─[member_of_group]→ GazetteerGroup
+Gazetteer 2 ─[member_of_group]→ GazetteerGroup
 ```
 
 ---
@@ -408,7 +406,7 @@ The transformation from contribution formats to internal graph structure creates
 // Creates in graph database:
 
 // 1. SpatialEntity document
-{ "_id": "things/constantinople", "thing_type": "location" }
+{ "_id": "things/constantinople" }
 
 // 2. Name document
 { "_id": "names/constantinople-en", "toponym": "Constantinople" }
@@ -684,8 +682,8 @@ When drawing manually, contributor prompted to specify:
 - Standardize inconsistent metadata
 
 **Curation operations:**
-- Create period SpatialEntities from PeriodO imports
-- Build gazetteer group collections
+- Import PeriodO periods as Period authorities (`plato:Period`)
+- Build gazetteer groups (`plato:GazetteerGroup`)
 - Link major authority gazetteers
 - Maintain namespace mappings in AUTHORITY
 

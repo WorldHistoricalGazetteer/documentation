@@ -20,14 +20,17 @@ You can use WHG data without knowing RDF (JSON/LPF works fine), but RDF export p
 
 ### whg:SpatialEntity
 
-Any entity that can be attested in historical sources. This includes places, periods, people, events, polities, and any other entities of historical interest.
+Any entity that can be attested in historical sources. This includes places, people, events, polities, and any other entities of historical interest. Periods are not SpatialEntities: a period is an Authority (see `whg:Authority` below).
 
 **Extends:** `owl:SpatialEntity`
 
 **Properties:**
 - `dcterms:identifier` - Unique identifier
 - `dcterms:description` - Textual description
-- `whg:thingType` - Classification (location, historical_entity, collection, period, route, itinerary, network)
+
+What kind of thing a SpatialEntity is is not a property of the SpatialEntity: it is asserted by Type attestations
+(`attests_type`), and routes, itineraries, networks and segments are typed with `plato:TypeRoute`,
+`plato:TypeItinerary`, `plato:TypeNetwork` and `plato:TypeSegment`.
 
 ### whg:Name
 
@@ -233,7 +236,6 @@ The following example demonstrates the graph-based attestation model using Medie
 # SpatialEntity: Baghdad
 ex:baghdad a whg:SpatialEntity ;
     dcterms:identifier "whg:baghdad" ;
-    whg:thingType "location" ;
     dcterms:description "Historical city, capital of Abbasid Caliphate" .
 
 # Names
@@ -343,8 +345,7 @@ exa:att_004 a whg:Attestation ;
 
 # SpatialEntity-to-SpatialEntity relationship: Baghdad connected to Basra
 ex:basra a whg:SpatialEntity ;
-    dcterms:identifier "whg:basra" ;
-    whg:thingType "location" .
+    dcterms:identifier "whg:basra" .
 
 exauth:connected_to a whg:Authority ;
     whg:authorityType "relation_type" ;
@@ -667,17 +668,17 @@ SELECT ?place ?geom WHERE {
 }
 ```
 
-### Find all members of a period
+### Find all members of a route, itinerary or network
 
 ```sparql
 PREFIX whg: <http://whgazetteer.org/ontology/>
 
-SELECT ?member ?period WHERE {
+SELECT ?member ?container WHERE {
     ?member_auth whg:authorityType "relation_type" ;
                 rdfs:label "member_of" .
     ?attestation whg:attests ?member ;
                 whg:typedBy ?member_auth ;
-                whg:relatesTo ?period .
+                whg:relatesTo ?container .
 }
 ```
 
@@ -729,7 +730,6 @@ WHG accepts contributions in multiple formats:
 
 ex:my_place a whg:SpatialEntity ;
     dcterms:identifier "your-id" ;
-    whg:thingType "location" ;
     dcterms:description "Historical site in Mesopotamia" .
 
 ex:my_place_geom a geo:Geometry ;

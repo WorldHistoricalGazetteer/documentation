@@ -167,7 +167,6 @@ SpatialEntity:
 ```javascript
 {
   "_id": "things/mexico-city",
-  "thing_type": "location",
   "description": "Major city in modern Mexico"
 }
 ```

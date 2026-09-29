@@ -5,7 +5,7 @@
 The WHG v4 data model achieves historical place representation through a graph-based attestation architecture:
 
 **Entity nodes** (documents in document collections):
-- **SpatialEntities** - unified entities (places, periods, routes, networks)
+- **SpatialEntities** - unified entities (places, routes, networks)
 - **Names** - multilingual labels with phonetic embeddings
 - **Geometries** - spatial representations with derived fields
 - **Timespans** - temporal bounds with PeriodO integration

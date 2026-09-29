@@ -50,8 +50,8 @@ Not just "where" but "when was it called X and where was it located then."
 - **Timespan entities**: Separate temporal bounds from place concepts as first-class nodes
 - **Temporal attestations**: Names, geometries, classifications all time-bound via Attestation nodes linking to Timespans
 - **Multiple temporal claims**: Conflicting sources about dates represented as separate Attestation nodes
-- **PeriodO integration**: Standard period definitions accessible as Timespan entities referenced by Attestations
-- **Inheritance**: Temporal bounds computed for periods and collections from members via graph traversal
+- **PeriodO integration**: Standard period definitions held as Period authorities (`plato:Period`); an Attestation's Timespan may refer to a Period (`plato:relative_to`) or carry a PeriodO URI (`plato:periodo_uri`)
+- **Inheritance**: Temporal bounds computed for collections from members via graph traversal
 
 **Use cases:**
 - "What was Chang'an's extent during the Tang Dynasty?"
@@ -61,9 +61,9 @@ Not just "where" but "when was it called X and where was it located then."
 
 **Example workflow:**
 1. User queries: "Places in Tang Dynasty period"
-2. WHG resolves `periodo:p0tang` as Timespan (618-907 CE)
-3. Graph traversal finds all SpatialEntities with Attestations linking via `member_of` relation to Tang Dynasty SpatialEntity
-4. For each member SpatialEntity, retrieves Names via Attestations with Timespan edges overlapping 618-907
+2. WHG resolves `periodo:p0tang` to the Tang Dynasty Period authority (`plato:period_periodo_uri`), whose Timespan (`plato:has_timespan`) is 618-907 CE
+3. Graph traversal finds all SpatialEntities with Attestations whose Timespans refer to that Period (`plato:relative_to` the Period, or `plato:periodo_uri` the same PeriodO definition)
+4. For each such SpatialEntity, retrieves Names via Attestations with Timespan edges overlapping 618-907
 5. Returns contemporary toponyms, not modern names
 
 ---
@@ -141,7 +141,7 @@ Low-barrier entry for diverse contribution formats with professional-grade outpu
 
 **How the model supports it:**
 - **Multiple ingest formats**: LPF JSON, CSV, spreadsheets, GPX, edge lists
-- **Flexible structure**: Routes, itineraries, networks, gazetteers all accommodated via SpatialEntity classifications
+- **Flexible structure**: Routes, itineraries and networks accommodated via SpatialEntity classifications (Type attestations); gazetteers as Gazetteers (datasets) holding the SpatialEntities they contribute
 - **DOI minting**: Contributors receive citable dataset DOIs stored in AUTHORITY(dataset) documents
 - **Source attribution**: Every contribution's DOI embedded in AUTHORITY documents linked via `sourced_by` edges
 - **Transformation layer**: Automatic conversion to graph model (SpatialEntities, Attestations, edges) with validation
@@ -255,7 +255,6 @@ Places change: borders shift, cities move, territories fragment and coalesce.
 - **Succession chains**: `succeeds` relation via AUTHORITY tracks place continuity/replacement through Attestations
 - **Coextensivity**: `coextensive_with` relation marks spatial equivalences
 - **Network evolution**: Connections appear/disappear over time via Attestations with different Timespans
-- **Period computation**: Territory bounds derived from member places via graph aggregation
 
 **Use cases:**
 - Animating territorial changes of empires over centuries
@@ -267,7 +266,7 @@ Places change: borders shift, cities move, territories fragment and coalesce.
 **Example workflow:**
 1. User queries "Abbasid Caliphate territory over time"
 2. WHG finds SpatialEntity with multiple Timespan attestations
-3. For each period, traverses graph to find members via `member_of` Attestations
+3. For each attested Timespan, traverses graph to find members via `member_of` Attestations
 4. Computes inherited geometry from members
 5. Timeline visualization shows:
    - 750 CE: Full extent (inherited from ~100 provinces via graph traversal)
@@ -329,9 +328,8 @@ Places change: borders shift, cities move, territories fragment and coalesce.
    - Classification via Attestation → Type(archaeological_site)
 4. Reconciliation suggests links to existing gazetteers (Pleiades, ANE) via same_as
 5. Team confirms matches, creates same_as Attestation nodes
-6. Adds period Timespan attestations linking to "Early Bronze Age Anatolia" SpatialEntity
-7. Links sites to period SpatialEntity via member_of Attestations
-8. Dataset receives DOI in AUTHORITY document, becomes part of WHG's indexed corpus
+6. Adds Timespan attestations whose Timespans refer to the "Early Bronze Age Anatolia" Period authority (for example, one aligned with a PeriodO definition)
+7. Dataset receives DOI in AUTHORITY document, becomes part of WHG's indexed corpus
 
 ---
 
