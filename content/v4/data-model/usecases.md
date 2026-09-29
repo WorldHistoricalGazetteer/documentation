@@ -112,16 +112,15 @@ Not just static places, but connections, movements, and relationships through ti
 **How the model supports it:**
 - **Route SpatialEntities**: Sequential waypoints without temporal constraints
 - **Itinerary SpatialEntities**: Journeys with segment-level temporal data
-- **Network SpatialEntities**: Connection graphs with typed edges and metadata
+- **Network SpatialEntities**: Connection graphs with typed edges
 - **Sequence field**: Ordered segments in Attestation nodes for routes/itineraries
-- **connected_to relations**: Network edges via AUTHORITY(connected_to) with Attestation nodes containing connection_metadata
+- **connected_to relations**: Network edges via Attestation nodes typed by AUTHORITY(connected_to)
 - **Temporal dynamics**: Networks evolving over time through multiple Attestation nodes with different Timespan links
 
 **Use cases:**
 - Reconstructing Silk Road trade routes with waypoint sequences
 - Analyzing Marco Polo's journey with dates at each location
 - Mapping medieval pilgrimage networks and their evolution
-- Studying postal system efficiency through connection metadata
 - Visualizing trade network changes during political upheavals
 
 **Example workflow:**
@@ -131,9 +130,6 @@ Not just static places, but connections, movements, and relationships through ti
    - Timespan overlap with query period
 3. Filters connections by Timespan attestations
 4. Visualizes graph with:
-   - Node sizes: trade volume (from connection_metadata in Attestation nodes)
-   - Edge thickness: connection intensity
-   - Color: connection type (trade, diplomatic, etc.)
    - Timeline slider: watch network evolution 1200→1400 by filtering Timespan links
 
 ---
@@ -310,9 +306,8 @@ Places change: borders shift, cities move, territories fragment and coalesce.
 **Workflow:**
 1. Contributor uploads CSV of Hanse cities with membership dates
 2. WHG creates SpatialEntity nodes with Attestations linking to Timespan entities for each city
-3. Contributor adds network edges (city-to-city connections) with trade volume data
+3. Contributor adds network edges (city-to-city connections)
 4. WHG creates Network SpatialEntity with Attestation nodes containing:
-   - `connection_metadata` with trade volumes
    - `has_relation_type` → RelationType(connected_to)
    - `relates_to` → target city SpatialEntities
    - `attests_timespan` → temporal ranges

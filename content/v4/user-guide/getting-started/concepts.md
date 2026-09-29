@@ -249,9 +249,10 @@ Thing: [thing-Samarkand]
 Relation: connected_to
 Object: [thing-Kashgar]
 Source: ["Historical Atlas of Silk Roads"]
-Connection Metadata: {type: "trade_route", name: "Silk Road"}
 Timespan: 100 BCE - 1500 CE
-``` Attestation**
+```
+
+**Example 3: Classification Attestation**
 ```
 Subject: [place-Ephesus]
 Relation: has_type
@@ -268,7 +269,6 @@ Subject: [place-Samarkand]
 Relation: connected_to
 Object: [place-Kashgar]
 Source: ["Historical Atlas of Silk Roads"]
-Connection Metadata: {type: "trade_route", name: "Silk Road"}
 Timespan: 100 BCE - 1500 CE
 ```
 
@@ -299,7 +299,6 @@ Notes: "Archaeological evidence contradicts claimed timespan"
 **Implementation**: 
 - Each leg is a `connected_to` attestation with a `sequence` attribute
 - Sequence numbers define order (1, 2, 3...)
-- Connection metadata can include travel time, distance, mode
 
 **Example: Silk Road Segment**
 ```
@@ -330,7 +329,6 @@ Object: [Samarkand]
 - Administrative networks (nodes = administrative centers, edges = hierarchical control)
 
 **Key Features**:
-- Connection metadata (type, directionality, weight/importance)
 - Temporal dynamics (networks change over time)
 - Multiple overlapping networks
 

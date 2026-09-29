@@ -409,11 +409,6 @@ Relations are grouped by type:
 - Preview card on hover
 - Click to navigate
 
-**Connection Metadata**: Additional information
-- For trade: Types of goods, volume, frequency
-- For routes: Distance, travel time, mode
-- For hierarchy: Nature of relationship
-
 **Directionality**:
 - Symmetric: Relation goes both ways
 - Asymmetric: One-directional (e.g., part-of)

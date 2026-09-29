@@ -166,45 +166,6 @@ The `precision` field in Geometry entities uses controlled vocabulary for qualit
 
 ---
 
-## Connection Type Vocabulary (for Networks)
-
-The `connection_type` field in Attestation `connection_metadata` (for network connections) uses domain-specific vocabulary:
-
-| Connection Type | Definition | Example Applications |
-|-----------------|------------|----------------------|
-| `trade` | Commercial exchange relationships | Merchant routes, port connections, market networks |
-| `diplomatic` | Political/diplomatic relationships | Treaty networks, embassy connections, alliance systems |
-| `postal` | Communication via postal systems | Mail routes, courier networks, postal stations |
-| `telecommunication` | Electronic communication networks | Telegraph lines, telephone networks, early internet |
-| `administrative` | Governance and administration links | Imperial administration, colonial governance, tax collection |
-| `military` | Military connections and supply lines | Garrison networks, supply routes, strategic positions |
-| `social` | Social and cultural connections | Family networks, scholarly exchanges, religious communities |
-| `religious` | Religious pilgrimage or institutional ties | Pilgrimage routes, monastery networks, ecclesiastical hierarchy |
-| `scholarly` | Academic and intellectual exchange | University networks, correspondence networks, translation centers |
-| `maritime` | Sea-based connections | Shipping routes, naval networks, fishing fleets |
-| `riverine` | River-based connections | River trade, canal systems, riverine communication |
-
-**Notes:**
-- Connection types are extensible for specific research domains
-- Multiple connection types can characterize a single link (e.g., both trade and diplomatic)
-- Use `connection_metadata` JSON object in attestation documents for additional domain-specific attributes
-- Connection metadata is stored in the attestation node itself, not in the edge, because it describes the nature of the attestation (the claim about the connection) rather than being a separate entity
-
----
-
-## Directionality Vocabulary (for Networks)
-
-The `directionality` field in Attestation `connection_metadata`:
-
-| Directionality | Definition | Example |
-|----------------|------------|---------|
-| `bidirectional` | Flow in both directions equally | Mutual trade relationships, two-way postal routes |
-| `from_subject_to_object` | Flow from subject to object only | Tribute payments, one-way supply lines |
-| `from_object_to_subject` | Flow from object to subject only | Reverse of above |
-| `asymmetric` | Bidirectional but unequal flows | Unequal trade balances, hierarchical relationships |
-
----
-
 ## Certainty Assessment
 
 The `certainty` field (0.0–1.0 float) in Attestation nodes and optional `certainty_note` provide evidence quality assessment:

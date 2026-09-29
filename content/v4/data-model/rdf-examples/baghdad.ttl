@@ -259,12 +259,6 @@ ex:att_007 a whg:Attestation ;
            whg:object ex:basra ;
            whg:objectType "thing" ;
            whg:sequence 1 ;
-           whg:connectionMetadata [
-                 whg:routeType "trade" ;
-                 whg:transportMode "caravan" ;
-                 whg:tradeGoods "textiles, spices, dates" ;
-                 whg:flowDirection "bidirectional"
-             ] ;
            whg:temporalScope ex:time_abbasid_golden_age ;
            whg:certainty 0.95 ;
            whg:notes "Major trade route connecting capital to Gulf ports" ;

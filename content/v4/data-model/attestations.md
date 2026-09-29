@@ -13,7 +13,6 @@ An Attestation node contains only metadata:
   "_key": "att-001",
   "_id": "attestations/att-001",
   "sequence": null,                    // For ordered sequences in routes/itineraries
-  "connection_metadata": null,         // For network relationships
   "certainty": 0.95,                   // Confidence level (0.0-1.0)
   "certaintyNote": "Well-documented in primary sources",
   "notes": "Additional context",
@@ -26,7 +25,6 @@ An Attestation node contains only metadata:
 **Key Properties:**
 - `@id`: the attestation's identifier (an IRI)
 - `sequence`: Integer for ordering waypoints in routes/itineraries
-- `connection_metadata`: JSON for network connection details (trade goods, flow direction, etc.)
 - `certainty`: Confidence value (0.0-1.0)
 - `certaintyNote`: Explanation of certainty assessment
 - `notes`: Free-text context
@@ -399,9 +397,9 @@ SpatialEntity(samarkand) ←[attests_about]─ Attestation(att-005) ─[relates_
 
 ---
 
-### Example 5: Network Connection with Metadata
+### Example 5: Network Connection
 
-**Scenario:** "Constantinople had trade connections with Venice, exchanging spices and textiles"
+**Scenario:** "Constantinople had trade connections with Venice"
 
 **Graph structure (Star-Schema):**
 ```
@@ -416,16 +414,10 @@ SpatialEntity(constantinople) ←[attests_about]─ Attestation(att-007) ─[rel
                     Timespan(byzantine-venetian)
 ```
 
-**Attestation with connection metadata:**
+**Attestation:**
 ```javascript
 {
   "_id": "attestations/att-007",
-  "connection_metadata": {
-    "connection_type": "trade",
-    "directionality": "bidirectional",
-    "commodity": ["spices", "textiles", "metals"],
-    "intensity": 0.9
-  },
   "certainty": 0.92
 }
 ```
@@ -543,71 +535,11 @@ Each attestation is independent, with its own:
 
 ### Find all names for a SpatialEntity at a specific time
 
-```aql
-// Find names for Constantinople in year 800 CE
-FOR thing IN things
-  FILTER thing._id == "things/constantinople"
-  
-  FOR att IN attestations
-    FOR e1 IN edges
-      FILTER e1._from == thing._id
-      FILTER e1._to == att._id
-      FILTER e1.edge_type == "subject_of"
-      
-      // Get the name
-      FOR e2 IN edges
-        FILTER e2._from == att._id
-        FILTER e2.edge_type == "attests_name"
-        LET name = DOCUMENT(e2._to)
-        
-        // Get the timespan
-        FOR e3 IN edges
-          FILTER e3._from == att._id
-          FILTER e3.edge_type == "attests_timespan"
-          LET timespan = DOCUMENT(e3._to)
-          
-          // Check if 800 CE falls within the timespan
-          FILTER timespan.start_earliest <= "0800-01-01"
-          FILTER timespan.end_latest >= "0800-12-31"
-          
-          RETURN {
-            name: name.name,
-            language: name.language,
-            timespan: timespan.label,
-            certainty: att.certainty
-          }
-```
+To find what Constantinople was called in 800 CE, start from the SpatialEntity and collect every Attestation that `attests_about` it. From each Attestation, follow `attests_name` to its Name and `attests_timespan` to its Timespan, and keep only those whose Timespan could include the year 800 (`start_earliest` no later than the start of 800, `end_latest` no earlier than its end). Each result gives the Name with its language, the Timespan's label and the Attestation's `certainty`.
 
 ### Find all SpatialEntities connected via a specific relation type
 
-```aql
-// Find all capitals of empires
-FOR att IN attestations
-  // Get the relation type
-  FOR e1 IN edges
-    FILTER e1._from == att._id
-    FILTER e1.edge_type == "typed_by"
-    LET relationType = DOCUMENT(e1._to)
-    FILTER relationType.label == "capital_of"
-    
-    // Get subject SpatialEntity
-    FOR e2 IN edges
-      FILTER e2._to == att._id
-      FILTER e2.edge_type == "subject_of"
-      LET subject = DOCUMENT(e2._from)
-      
-      // Get object SpatialEntity
-      FOR e3 IN edges
-        FILTER e3._from == att._id
-        FILTER e3.edge_type == "relates_to"
-        LET object = DOCUMENT(e3._to)
-        
-        RETURN {
-          capital: subject.description,
-          empire: object.description,
-          certainty: att.certainty
-        }
-```
+To list capitals and the empires they served, find the Attestations whose `has_relation_type` is the RelationType `capital_of`. For each one, the SpatialEntity it `attests_about` is the capital and the SpatialEntity it `relates_to` is the empire; the result reports the pair with the Attestation's `certainty`.
 
 ---
 

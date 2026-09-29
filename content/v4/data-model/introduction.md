@@ -60,9 +60,6 @@ ATTESTATION
     integer
     sequence
     "for ordered sequences in routes/itineraries"
-    json
-    connection_metadata
-    "for networks: trade goods, flow direction, etc"
     float
     certainty
     "0.0 to 1.0"

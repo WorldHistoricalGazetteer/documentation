@@ -116,7 +116,6 @@ We use seven primary collections:
   "_id": "attestations/att-001",
   "_rev": "_xyz789",
   "sequence": null,                    // For ordered sequences in routes/itineraries
-  "connection_metadata": null,         // For network relationships
   "certainty": 0.95,                   // Confidence level (0.0-1.0)
   "certaintyNote": "Well-documented in primary sources",
   "notes": "Additional context",
@@ -499,177 +498,37 @@ db.edges.ensureIndex({
 });
 ```
 
-## Query Patterns in AQL
+## Query Patterns
 
-ArangoDB's unified query language (AQL) integrates graph traversal, document filtering, geospatial queries, and vector similarity seamlessly.
+Common queries combine traversal from a SpatialEntity through its Attestations with filters on Names, Geometries, Timespans and RelationTypes. Each pattern below describes what the query finds and which entities and properties it passes through.
 
 ### Name Resolution Over Time
 
 **Query:** "What was Chang'an called in 700 AD?"
 
-```aql
-LET query_date = DATE_TIMESTAMP("700-01-01")
-
-FOR thing IN things
-  FILTER thing._key == "changan"
-  
-  // Traverse to attestations via edges
-  FOR e1 IN edges
-    FILTER e1._from == thing._id
-    FILTER e1.edge_type == "subject_of"
-    LET att = DOCUMENT(e1._to)
-    
-    // Get the name via edges
-    FOR e2 IN edges
-      FILTER e2._from == att._id
-      FILTER e2.edge_type == "attests_name"
-      LET name = DOCUMENT(e2._to)
-      
-      // Check temporal validity via edges
-      FOR e3 IN edges
-        FILTER e3._from == att._id
-        FILTER e3.edge_type == "attests_timespan"
-        LET ts = DOCUMENT(e3._to)
-        FILTER ts.start_latest <= query_date
-        FILTER ts.end_earliest >= query_date
-        
-        RETURN {
-          name: name.name,
-          language: name.language,
-          certainty: att.certainty,
-          timespan: ts.label
-        }
-```
+Start from the SpatialEntity for Chang'an and collect every Attestation that `attests_about` it. From each, follow `attests_name` to the Name and `attests_timespan` to the Timespan, keeping only Attestations whose Timespan certainly includes 700 CE: its `start_latest` is no later than 700 and its `end_earliest` no earlier. The answer lists each Name with its language, the Timespan's label and the Attestation's `certainty`.
 
 ### Spatial Queries with Temporal Filter
 
 **Query:** "Places within 100km of Constantinople in the 13th century"
 
-```aql
-LET constantinople_point = [28.98, 41.01]
-LET query_start = DATE_TIMESTAMP("1200-01-01")
-LET query_end = DATE_TIMESTAMP("1300-12-31")
-
-FOR thing IN things
-  // Spatial filter using representative_point
-  FILTER GEO_DISTANCE(thing.representative_point, constantinople_point) <= 100000
-  
-  // Verify temporal validity via graph traversal
-  LET temporal_check = (
-    FOR e1 IN edges
-      FILTER e1._from == thing._id
-      FILTER e1.edge_type == "subject_of"
-      LET att = DOCUMENT(e1._to)
-      
-      FOR e2 IN edges
-        FILTER e2._from == att._id
-        FILTER e2.edge_type == "attests_geometry"
-        
-        FOR e3 IN edges
-          FILTER e3._from == att._id
-          FILTER e3.edge_type == "attests_timespan"
-          LET ts = DOCUMENT(e3._to)
-          FILTER ts.start_latest <= query_end
-          FILTER ts.end_earliest >= query_start
-          RETURN true
-  )
-  
-  FILTER LENGTH(temporal_check) > 0
-  
-  // Get full geometries
-  LET geometries = (
-    FOR e1 IN edges
-      FILTER e1._from == thing._id
-      FILTER e1.edge_type == "subject_of"
-      LET att = DOCUMENT(e1._to)
-      
-      FOR e2 IN edges
-        FILTER e2._from == att._id
-        FILTER e2.edge_type == "attests_geometry"
-        LET geom = DOCUMENT(e2._to)
-        FILTER GEO_DISTANCE(geom.representative_point, constantinople_point) <= 100000
-        RETURN geom
-  )
-  
-  FILTER LENGTH(geometries) > 0
-  
-  RETURN {
-    thing: thing,
-    distance: GEO_DISTANCE(thing.representative_point, constantinople_point),
-    geometries: geometries
-  }
-```
+1. Narrow the candidates to SpatialEntities located within 100 km of Constantinople.
+2. For each candidate, look at the Attestations that `attests_about` it and keep the candidate only if at least one of them both `attests_geometry` a Geometry and `attests_timespan` a Timespan overlapping 1200–1300 (`start_latest` no later than 1300, `end_earliest` no earlier than 1200).
+3. Return each remaining SpatialEntity with its distance from Constantinople and those of its attested Geometries that lie within the 100 km radius.
 
 ### Vector Similarity Search for Toponyms
 
 **Query:** "Find names similar to 'Chang'an' across languages"
 
-```aql
-LET query_embedding = @query_vector // passed as bind parameter
+Each Name can carry a `nameEmbedding`, a vector representing its sound. Compare the embedding of "Chang'an" with those of all Names, keep the Names whose cosine similarity exceeds 0.8, and return the ten closest with their language, script, `nameType` and similarity score.
 
-FOR name IN names
-  LET similarity = APPROX_NEAR_COSINE(name.embedding, query_embedding)
-  FILTER similarity > 0.8
-  SORT similarity DESC
-  LIMIT 10
-  
-  RETURN {
-    name: name.name,
-    language: name.language,
-    script: name.script,
-    similarity: similarity,
-    name_type: name.name_type
-  }
-```
-
-**Important:** Use `APPROX_NEAR_COSINE()` for index-accelerated searches. The non-indexed `COSINE_SIMILARITY()` function is available but will be much slower at scale.
+**Important:** at scale this search must use an approximate nearest-neighbour index; comparing the query against every Name's embedding will be much slower.
 
 ### Network Connection Query
 
-**Query:** "All trade connections from Constantinople 1200-1300 CE"
+**Query:** "All connections from Constantinople 1200-1300 CE"
 
-```aql
-LET query_start = DATE_TIMESTAMP("1200-01-01")
-LET query_end = DATE_TIMESTAMP("1300-12-31")
-
-FOR thing IN things
-  FILTER thing._key == "constantinople"
-  
-  // Find outgoing attestations via edges
-  FOR e1 IN edges
-    FILTER e1._from == thing._id
-    FILTER e1.edge_type == "subject_of"
-    LET att = DOCUMENT(e1._to)
-    
-    // Check if it's a connection via typed_by edge
-    FOR e2 IN edges
-      FILTER e2._from == att._id
-      FILTER e2.edge_type == "typed_by"
-      LET rel_type = DOCUMENT(e2._to)
-      FILTER rel_type.label == "connected_to"
-      FILTER att.connection_metadata LIKE "%trade%"
-      
-      // Get the connected Thing via relates_to edge
-      FOR e3 IN edges
-        FILTER e3._from == att._id
-        FILTER e3.edge_type == "relates_to"
-        LET connected_thing = DOCUMENT(e3._to)
-        
-        // Check temporal validity via attests_timespan edge
-        FOR e4 IN edges
-          FILTER e4._from == att._id
-          FILTER e4.edge_type == "attests_timespan"
-          LET ts = DOCUMENT(e4._to)
-          FILTER ts.start_latest <= query_end
-          FILTER ts.end_earliest >= query_start
-          
-          RETURN {
-            connected_place: connected_thing,
-            connection_type: att.connection_metadata,
-            certainty: att.certainty,
-            timespan: ts
-          }
-```
+Start from Constantinople and find the Attestations that `attests_about` it and whose `has_relation_type` is the RelationType `connected_to`. Follow each one's `relates_to` to the connected SpatialEntity, keep the connections whose `attests_timespan` overlaps 1200–1300, and return each connected SpatialEntity with the Attestation's `certainty` and Timespan.
 
 ## Handling Temporal Nulls and Geological Time
 
@@ -691,25 +550,11 @@ For `start_earliest`, `start_latest`, `end_earliest`, `end_latest` fields repres
 
 ### Query Logic
 
-```aql
-// Point-in-time query
-FOR ts IN timespans
-  FILTER ts.start_latest <= @query_date
-  FILTER ts.end_earliest >= @query_date
-  RETURN ts
+Timespans are matched against a query date or range by comparing their four bounds:
 
-// Overlap query
-FOR ts IN timespans
-  FILTER ts.start_latest <= @query_end
-  FILTER ts.end_earliest >= @query_start
-  RETURN ts
-
-// Unknown bounds handling
-FOR ts IN timespans
-  FILTER (ts.start_earliest == null OR ts.start_earliest <= @query_date)
-  FILTER (ts.end_latest == null OR ts.end_latest >= @query_date)
-  RETURN ts
-```
+- **Point in time:** a Timespan certainly includes a date when its `start_latest` is on or before the date and its `end_earliest` is on or after it.
+- **Overlap with a range:** a Timespan overlaps a range when its `start_latest` is on or before the end of the range and its `end_earliest` is on or after its start.
+- **Unknown bounds:** to include Timespans that may have included a date, compare the outer bounds instead and treat a missing bound as open: `start_earliest` is absent or on or before the date, and `end_latest` is absent or on or after it.
 
 ## ArangoDB Capabilities Assessment
 

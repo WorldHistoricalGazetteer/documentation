@@ -137,7 +137,6 @@ A **network SpatialEntity** represents a set of connections between places that 
 - Classified via attestation with `attests_type` edge to a Type "network"
 - Connections between SpatialEntities are attested using `connected_to` relation type (via AUTHORITY)
 - Connections may have Timespan attestations (when the connection existed)
-- Connection metadata in Attestation nodes specifies type, directionality, and other attributes
 - Multiple attestations can represent the same connection at different times or from different sources
 - Networks do not store detailed route geometries by default; these can be linked via references to route SpatialEntities or Geometry records
 
@@ -149,28 +148,15 @@ Network SpatialEntity (e.g., "Mediterranean Trade Network")
   ←[attests_about]─ Attestation ─[attests_timespan]→ Timespan(network's operational period)
   
   Connections (via connected_to attestations):
-  SpatialEntity(Constantinople) ←[attests_about]─ Attestation(connection_metadata: {...})
+  SpatialEntity(Constantinople) ←[attests_about]─ Attestation
                                                       ├─[has_relation_type]→ RelationType(connected_to)
                                                       ├─[relates_to]→ SpatialEntity(Venice)
                                                       └─[attests_timespan]→ Timespan(1200-1453)
   
-  SpatialEntity(Venice) ←[attests_about]─ Attestation(connection_metadata: {...})
+  SpatialEntity(Venice) ←[attests_about]─ Attestation
                                              ├─[has_relation_type]→ RelationType(connected_to)
                                              ├─[relates_to]→ SpatialEntity(Alexandria)
                                              └─[attests_timespan]→ Timespan(1100-1500)
-```
-
-**Connection Metadata Structure** (in Attestation node):
-```javascript
-{
-  "connection_metadata": {
-    "connection_type": "trade",
-    "directionality": "bidirectional",
-    "commodity": ["spices", "silk"],
-    "intensity": 0.9,
-    "frequency": "monthly"
-  }
-}
 ```
 
 **Examples:**
@@ -255,55 +241,10 @@ Similar to Geometry inheritance, **Timespan inheritance** can be computed for Sp
 - Itinerary duration = earliest segment start to latest segment end
 - Can be overridden for overall journey context (e.g., preparation/return time)
 
-**Example Query (AQL):**
-```aql
-// Compute Timespan for Tang Dynasty from members
-LET dynasty = DOCUMENT("things/tang-dynasty")
-
-// Find all member SpatialEntities
-LET members = (
-  FOR att IN attestations
-    FOR e1 IN edges
-      FILTER e1._to == att._id
-      FILTER e1.edge_type == "subject_of"
-      LET member = DOCUMENT(e1._from)
-      
-      // Check if this is a member_of attestation
-      FOR e2 IN edges
-        FILTER e2._from == att._id
-        FILTER e2.edge_type == "typed_by"
-        LET relType = DOCUMENT(e2._to)
-        FILTER relType.label == "member_of"
-        
-        // Get the parent SpatialEntity
-        FOR e3 IN edges
-          FILTER e3._from == att._id
-          FILTER e3.edge_type == "relates_to"
-          FILTER e3._to == dynasty._id
-          
-          // Get member's Timespan
-          FOR memberAtt IN attestations
-            FOR e4 IN edges
-              FILTER e4._from == member._id
-              FILTER e4._to == memberAtt._id
-              FILTER e4.edge_type == "subject_of"
-              
-              FOR e5 IN edges
-                FILTER e5._from == memberAtt._id
-                FILTER e5.edge_type == "attests_timespan"
-                LET timespan = DOCUMENT(e5._to)
-                
-                RETURN timespan
-)
-
-// Compute bounds
-RETURN {
-  start_earliest: MIN(members[*].start_earliest),
-  start_latest: MIN(members[*].start_latest),
-  end_earliest: MAX(members[*].end_earliest),
-  end_latest: MAX(members[*].end_latest)
-}
-```
+**Example (Tang Dynasty):**
+1. Start from the Tang Dynasty SpatialEntity and find every Attestation whose `has_relation_type` is `member_of` and which `relates_to` the dynasty; the SpatialEntity each of these `attests_about` is a member.
+2. For each member, collect the Timespans reached through `attests_timespan` from the Attestations about that member.
+3. Take the minimum of the members' `start_earliest` and `start_latest` values and the maximum of their `end_earliest` and `end_latest` values.
 
 **Example Result:**
 ```javascript
@@ -339,38 +280,7 @@ SpatialEntity(Tang Dynasty) ←[attests_about]─ Attestation ─[attests_timesp
 SpatialEntities can inherit Geometry from their members when no explicit Geometry attestation exists:
 
 **Computation Pattern:**
-```aql
-// Find inherited Geometry for a Route SpatialEntity
-FOR thing IN things
-  FILTER thing._id == "things/silk-road"
-  
-  // Check if explicit Geometry exists
-  LET explicitGeom = (
-    FOR att IN attestations
-      FOR e1 IN edges
-        FILTER e1._from == thing._id
-        FILTER e1._to == att._id
-        FILTER e1.edge_type == "subject_of"
-        
-        FOR e2 IN edges
-          FILTER e2._from == att._id
-          FILTER e2.edge_type == "attests_geometry"
-          RETURN DOCUMENT(e2._to)
-  )
-  
-  // If no explicit Geometry, compute from members
-  LET inheritedGeom = LENGTH(explicitGeom) == 0 ? (
-    // Find all member geometries
-    FOR member IN members
-      // Get member's Geometry
-      // Then compute union/convex hull
-  ) : null
-  
-  RETURN {
-    explicit: explicitGeom,
-    inherited: inheritedGeom
-  }
-```
+For the Silk Road route, first look for Geometries attested directly: Attestations that `attests_about` the route and `attests_geometry` a Geometry. Only if there are none, gather the Geometries attested for the route's member SpatialEntities and derive one from them (a union or convex hull). The result reports the explicit Geometries and the inherited one; at most one of the two is filled.
 
 **Use Cases:**
 - Routes inherit LineString from member waypoints

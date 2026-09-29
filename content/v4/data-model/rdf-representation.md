@@ -86,7 +86,6 @@ A node that bundles together claims about a SpatialEntity, linking it to Names, 
 
 **Properties:**
 - `whg:sequence` - Ordering for routes and itineraries
-- `whg:connectionMetadata` - JSON object for network relationships (trade goods, flow direction, etc.)
 - `whg:certainty` - Confidence value (0.0-1.0)
 - `whg:certaintyNote` - Explanation of uncertainty
 - `whg:notes` - Additional context or commentary
@@ -358,11 +357,6 @@ exa:att_005 a whg:Attestation ;
     whg:attests ex:baghdad ;
     whg:typedBy exauth:connected_to ;
     whg:relatesTo ex:basra ;
-    whg:connectionMetadata """{
-        "connection_type": "trade",
-        "directionality": "bidirectional",
-        "commodity": ["dates", "textiles"]
-    }"""^^xsd:string ;
     whg:certainty 0.85 ;
     prov:hadPrimarySource exauth:yaqut .
 

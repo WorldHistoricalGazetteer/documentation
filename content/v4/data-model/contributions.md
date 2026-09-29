@@ -123,8 +123,7 @@ A dataset indicating geospatial connections between places that may not follow a
 
 **Characteristics in the model:**
 - Container SpatialEntity classified via `attests_type` edge to Type("network")
-- Connections between member SpatialEntities via Attestations with `connection_metadata` field and `connected_to` relation type
-- Connection metadata specifies type, directionality, and domain-specific attributes
+- Connections between member SpatialEntities via Attestations with `connected_to` relation type
 - Multiple instances of same connection over time represented by multiple Attestations with different Timespan attestations
 - Can reference route Geometries if available, but not required
 
@@ -147,7 +146,7 @@ A dataset indicating geospatial connections between places that may not follow a
 Network contribution → SpatialEntity (attests_type Type["network"])
   ├─ Network name → Name (via Attestation)
   ├─ Connection 1:
-  │   ├─ SpatialEntity A ←[attests_about]─ Attestation(connection_metadata: {...})
+  │   ├─ SpatialEntity A ←[attests_about]─ Attestation
   │   │                                      ├─[has_relation_type]→ RelationType(connected_to)
   │   │                                      └─[relates_to]→ SpatialEntity B
   │   └─ Timespan via attests_timespan edge (when connection existed)
@@ -238,7 +237,7 @@ Gazetteer Group → SpatialEntity (attests_type Type["gazetteer_group"])
 - `type` or `feature_class`
 - `source`, `source_type`, `certainty`
 - For routes: `sequence`
-- For networks: `target_id`, `connection_type`, `directionality`
+- For networks: `target_id`
 
 ---
 
@@ -278,7 +277,7 @@ WHG may in future accept contributions in Turtle (`.ttl`) format. See the comple
 - Track/path → Route SpatialEntity with LineString Geometry
 - Waypoints → Member SpatialEntities with Point Geometries
 - Timestamps → Timespan attestations (for itineraries)
-- Metadata → Attestation fields and connection_metadata
+- Metadata → Attestation fields
 
 ---
 
@@ -346,7 +345,7 @@ WHG may in future accept contributions in Turtle (`.ttl`) format. See the comple
 - LPF `when` → Timespan entities + Attestations with attests_timespan edges
 - LPF `relations[]` → Attestations with has_relation_type + relates_to edges (member_of, same_as, connected_to)
 - CSV rows → SpatialEntities with derived Attestations from column values
-- Network edge lists → Attestations with connection_metadata and connected_to relation
+- Network edge lists → Attestations with connected_to relation
 
 **Export (Internal Model → LPF):**
 - SpatialEntity + Attestations + edges → Reconstructed LPF place document
@@ -374,7 +373,6 @@ The WHG application includes a **transformation layer** that:
 - Provides audit trails in the Django changelog
 - Maps contribution types to appropriate SpatialEntity classifications via Types
 - Extracts sequence information for routes/itineraries into Attestation nodes
-- Parses connection metadata for networks into Attestation nodes
 - Computes vector embeddings for Name entities
 - Derives geometric fields (bbox, representative_point, hull) for Geometry entities
 
@@ -388,7 +386,7 @@ The transformation from contribution formats to internal graph structure creates
    - SpatialEntities, Names, Geometries, Timespans, Authorities
 
 2. **Attestation documents** (in attestations collection):
-   - Contain only metadata: certainty, notes, sequence, connection_metadata, timestamps
+   - Contain only metadata: certainty, notes, sequence, timestamps
    - No embedded relationships or references to other entities
 
 3. **Edge documents** (in edges collection):
@@ -499,6 +497,7 @@ Contributors and staff can manually create individual Attestation nodes and thei
   "_to": "authorities/source-xyz",
   "edge_type": "sourced_by"
 }
+```
 
 **Access control:**
 - Contributors can add attestations to their own contributed data

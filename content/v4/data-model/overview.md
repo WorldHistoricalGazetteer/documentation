@@ -323,7 +323,6 @@ The attestation model works through edges that connect attestation nodes to othe
 {
   "id": "att:55667",
   "sequence": null,
-  "connection_metadata": null,
   "certainty": 0.95,
   "certaintyNote": "Well-documented in primary chronicles",
   "notes": "Name used during Byzantine period",
@@ -336,7 +335,6 @@ The attestation model works through edges that connect attestation nodes to othe
 **Key Properties**:
 
 - `sequence`: Ordering for routes and itineraries
-- `connection_metadata`: JSON object for network relationships (e.g., trade goods, flow direction)
 - `certainty`: Confidence value (0.0-1.0)
 - `certaintyNote`: Explanation of uncertainty assessment
 - `notes`: Additional context
@@ -393,10 +391,6 @@ Attestations connect SpatialEntities to different entity types through different
 **For Routes and Itineraries**:
 
 - `sequence`: Integer indicating order of waypoints along a route
-
-**For Networks**:
-
-- `connection_metadata`: JSON storing relationship details (trade goods, volume, direction, etc.)
 
 **For All Attestations**:
 

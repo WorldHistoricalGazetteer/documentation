@@ -140,7 +140,7 @@ the store of record is PostgreSQL/PostGIS, with Elasticsearch for search (see th
 The WHG v4 model's success depends on maintaining clear architectural boundaries:
 
 **Attestations** (document collection):
-- Store only metadata: certainty, notes, sequence, connection_metadata, timestamps
+- Store only metadata: certainty, notes, sequence, timestamps
 - Serve as junction points in the graph
 - Enable bundling multiple claims with shared provenance
 
