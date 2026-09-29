@@ -39,7 +39,7 @@ We use seven primary collections:
   "thing_type": "location",
   "description": "Major Byzantine/Ottoman city on the Bosphorus",
   "namespace": "whg",
-  "label": "Constantinople", // denormalized for quick access
+  "primary_name": "Constantinople", // denormalized for quick access
   "representative_point": [28.98, 41.01], // denormalized for spatial queries
   "created": "2025-01-15T10:30:00Z",
   "modified": "2025-03-20T14:22:00Z"
@@ -53,13 +53,13 @@ We use seven primary collections:
 {
   "_key": "name-istanbul-tr",
   "_id": "names/name-istanbul-tr",
-  "toponym": "İstanbul",
+  "name": "İstanbul",
   "language": "tr",
   "script": "Latn",
   "ipa": "isˈtanbuɫ",
-  "nameType": ["preferred", "toponym"],
-  "nameEmbedding": [0.234, -0.567, 0.123, ...], // 256-dimensional vector
-  "transliterationSystem": null,
+  "name_type": ["preferred", "toponym"],
+  "embedding": [0.234, -0.567, 0.123, ...], // 256-dimensional vector
+  "transliteration_system": null,
   "romanized": "Istanbul"
 }
 ```
@@ -71,18 +71,18 @@ We use seven primary collections:
 {
   "_key": "geom-constantinople-city",
   "_id": "geometries/geom-constantinople-city",
-  "geojson": {
+  "geom": {
     "type": "MultiPolygon",
     "coordinates": [
       [[[28.94, 41.01], [29.00, 41.01], [29.00, 41.05], [28.94, 41.05], [28.94, 41.01]]],
       [[[28.90, 41.00], [28.92, 41.00], [28.92, 41.02], [28.90, 41.02], [28.90, 41.00]]]
     ]
   },
-  "reprPoint": [28.97, 41.03],
+  "representative_point": [28.97, 41.03],
   "bbox": [28.90, 41.00, 29.00, 41.05],
-  "spatialPrecision": ["historical_approximate", "uncertain_boundary"],
-  "precisionKm": [5.0, 2.0],
-  "sourceCrs": "EPSG:4326"
+  "precision": ["historical_approximate", "uncertain_boundary"],
+  "precision_km": [5.0, 2.0],
+  "source_crs": "EPSG:4326"
 }
 ```
 
@@ -95,16 +95,18 @@ We use seven primary collections:
 {
   "_key": "timespan-byzantine-period",
   "_id": "timespans/timespan-byzantine-period",
-  "startEarliest": -11644444800000, // Unix timestamp: 330 CE
-  "startLatest": -11612908800000,   // Unix timestamp: 331 CE
-  "endEarliest": 693878400000,      // Unix timestamp: 1453 CE
-  "endLatest": 694483200000,        // Unix timestamp: 1453 CE
+  "start_earliest": -11644444800000, // Unix timestamp: 330 CE
+  "start_latest": -11612908800000,   // Unix timestamp: 331 CE
+  "end_earliest": 693878400000,      // Unix timestamp: 1453 CE
+  "end_latest": 694483200000,        // Unix timestamp: 1453 CE
   "label": "Byzantine Period in Constantinople",
   "precision": "year",
-  "precisionValue": 1,
-  "periodoUri": "periodo:p0byzantine"
+  "precision_value": 1,
+  "periodo_id": "periodo:p0byzantine"
 }
 ```
+
+**Field Naming Note:** WHG uses `end_earliest` and `end_latest` (not `stop_earliest`/`stop_latest`) for consistency with W3C Time Ontology. This applies to both internal storage and all exports.
 
 ### Attestations Collection (Document Collection)
 
@@ -116,8 +118,9 @@ We use seven primary collections:
   "_id": "attestations/att-001",
   "_rev": "_xyz789",
   "sequence": null,                    // For ordered sequences in routes/itineraries
+  "connection_metadata": null,         // For network relationships
   "certainty": 0.95,                   // Confidence level (0.0-1.0)
-  "certaintyNote": "Well-documented in primary sources",
+  "certainty_note": "Well-documented in primary sources",
   "notes": "Additional context",
   "created": "2024-01-15T10:30:00Z",
   "modified": "2024-02-20T14:45:00Z",
@@ -139,7 +142,7 @@ We use seven primary collections:
 {
   "_key": "source-al-tabari",
   "_id": "authorities/source-al-tabari",
-  "authorityType": "source",
+  "authority_type": "source",
   "citation": "Al-Tabari, History of the Prophets and Kings",
   "source_type": "manuscript",
   "record_id": "tabari-vol-27",
@@ -150,11 +153,11 @@ We use seven primary collections:
 {
   "_key": "dataset-islamic-cities",
   "_id": "authorities/dataset-islamic-cities",
-  "authorityType": "dataset",
+  "authority_type": "dataset",
   "title": "Islamic Cities Database",
   "publisher": "University Research Center",
   "version": "1.0",
-  "licence": "CC-BY-4.0",
+  "license": "CC-BY-4.0",
   "doi": "doi:10.83427/whg-dataset-123"
 }
 
@@ -162,7 +165,7 @@ We use seven primary collections:
 {
   "_key": "relation-member-of",
   "_id": "authorities/relation-member-of",
-  "authorityType": "relationType",
+  "authority_type": "relation_type",
   "label": "member_of",
   "inverse": "contains",
   "domain": ["thing"],
@@ -174,13 +177,13 @@ We use seven primary collections:
 {
   "_key": "period-abbasid",
   "_id": "authorities/period-abbasid",
-  "authorityType": "period",
+  "authority_type": "period",
   "label": "Abbasid Caliphate",
   "uri": "periodo:p0abbasid",
-  "startEarliest": -11644444800000,
-  "startLatest": -11612908800000,
-  "endEarliest": 693878400000,
-  "endLatest": 694483200000
+  "start_earliest": -11644444800000,
+  "start_latest": -11612908800000,
+  "end_earliest": 693878400000,
+  "end_latest": 694483200000
 }
 ```
 
@@ -190,13 +193,13 @@ We use seven primary collections:
 // Generic edge collection for ALL graph relationships
 // This is an EDGE collection with _from and _to fields
 
-// Attestation to Thing edge
+// Thing to Attestation edge
 {
   "_key": "edge-001",
   "_id": "edges/edge-001",
-  "_from": "attestations/att-001",
-  "_to": "things/constantinople",
-  "edge_type": "attests_about",
+  "_from": "things/constantinople",
+  "_to": "attestations/att-001",
+  "edge_type": "subject_of",
   "created": "2025-01-15T10:30:00Z"
 }
 
@@ -246,7 +249,7 @@ We use seven primary collections:
   "_id": "edges/edge-006",
   "_from": "attestations/att-capital-of",
   "_to": "authorities/relation-capital-of",
-  "edge_type": "has_relation_type",
+  "edge_type": "typed_by",
   "created": "2025-01-15T10:30:00Z"
 }
 
@@ -277,13 +280,12 @@ We use seven primary collections:
 
 | Edge Type | From | To | Purpose |
 |-----------|------|-----|---------|
-| `attests_about` | Attestation | Thing | Links attestation to the Thing it describes |
+| `subject_of` | Thing | Attestation | Links attestation to the Thing it describes |
 | `attests_name` | Attestation | Name | Links attestation to a Name claim |
 | `attests_geometry` | Attestation | Geometry | Links attestation to a Geometry claim |
 | `attests_timespan` | Attestation | Timespan | Links attestation to temporal bounds |
 | `sourced_by` | Attestation | Authority | Links attestation to source citation |
-| `attests_type` | Attestation | Type | Links attestation to a classification (Type) |
-| `has_relation_type` | Attestation | RelationType | Links attestation to relation type definition |
+| `typed_by` | Attestation | Authority | Links attestation to relation type definition |
 | `relates_to` | Attestation | Thing | Links attestation to related Thing |
 | `meta_attestation` | Attestation | Attestation | Links meta-attestation to target attestation |
 | `part_of` | Authority | Authority | Links Source to parent Dataset |
@@ -498,37 +500,177 @@ db.edges.ensureIndex({
 });
 ```
 
-## Query Patterns
+## Query Patterns in AQL
 
-Common queries combine traversal from a SpatialEntity through its Attestations with filters on Names, Geometries, Timespans and RelationTypes. Each pattern below describes what the query finds and which entities and properties it passes through.
+ArangoDB's unified query language (AQL) integrates graph traversal, document filtering, geospatial queries, and vector similarity seamlessly.
 
 ### Name Resolution Over Time
 
 **Query:** "What was Chang'an called in 700 AD?"
 
-Start from the SpatialEntity for Chang'an and collect every Attestation that `attests_about` it. From each, follow `attests_name` to the Name and `attests_timespan` to the Timespan, keeping only Attestations whose Timespan certainly includes 700 CE: its `start_latest` is no later than 700 and its `end_earliest` no earlier. The answer lists each Name with its language, the Timespan's label and the Attestation's `certainty`.
+```aql
+LET query_date = DATE_TIMESTAMP("700-01-01")
+
+FOR thing IN things
+  FILTER thing._key == "changan"
+  
+  // Traverse to attestations via edges
+  FOR e1 IN edges
+    FILTER e1._from == thing._id
+    FILTER e1.edge_type == "subject_of"
+    LET att = DOCUMENT(e1._to)
+    
+    // Get the name via edges
+    FOR e2 IN edges
+      FILTER e2._from == att._id
+      FILTER e2.edge_type == "attests_name"
+      LET name = DOCUMENT(e2._to)
+      
+      // Check temporal validity via edges
+      FOR e3 IN edges
+        FILTER e3._from == att._id
+        FILTER e3.edge_type == "attests_timespan"
+        LET ts = DOCUMENT(e3._to)
+        FILTER ts.start_latest <= query_date
+        FILTER ts.end_earliest >= query_date
+        
+        RETURN {
+          name: name.name,
+          language: name.language,
+          certainty: att.certainty,
+          timespan: ts.label
+        }
+```
 
 ### Spatial Queries with Temporal Filter
 
 **Query:** "Places within 100km of Constantinople in the 13th century"
 
-1. Narrow the candidates to SpatialEntities located within 100 km of Constantinople.
-2. For each candidate, look at the Attestations that `attests_about` it and keep the candidate only if at least one of them both `attests_geometry` a Geometry and `attests_timespan` a Timespan overlapping 1200–1300 (`start_latest` no later than 1300, `end_earliest` no earlier than 1200).
-3. Return each remaining SpatialEntity with its distance from Constantinople and those of its attested Geometries that lie within the 100 km radius.
+```aql
+LET constantinople_point = [28.98, 41.01]
+LET query_start = DATE_TIMESTAMP("1200-01-01")
+LET query_end = DATE_TIMESTAMP("1300-12-31")
+
+FOR thing IN things
+  // Spatial filter using representative_point
+  FILTER GEO_DISTANCE(thing.representative_point, constantinople_point) <= 100000
+  
+  // Verify temporal validity via graph traversal
+  LET temporal_check = (
+    FOR e1 IN edges
+      FILTER e1._from == thing._id
+      FILTER e1.edge_type == "subject_of"
+      LET att = DOCUMENT(e1._to)
+      
+      FOR e2 IN edges
+        FILTER e2._from == att._id
+        FILTER e2.edge_type == "attests_geometry"
+        
+        FOR e3 IN edges
+          FILTER e3._from == att._id
+          FILTER e3.edge_type == "attests_timespan"
+          LET ts = DOCUMENT(e3._to)
+          FILTER ts.start_latest <= query_end
+          FILTER ts.end_earliest >= query_start
+          RETURN true
+  )
+  
+  FILTER LENGTH(temporal_check) > 0
+  
+  // Get full geometries
+  LET geometries = (
+    FOR e1 IN edges
+      FILTER e1._from == thing._id
+      FILTER e1.edge_type == "subject_of"
+      LET att = DOCUMENT(e1._to)
+      
+      FOR e2 IN edges
+        FILTER e2._from == att._id
+        FILTER e2.edge_type == "attests_geometry"
+        LET geom = DOCUMENT(e2._to)
+        FILTER GEO_DISTANCE(geom.representative_point, constantinople_point) <= 100000
+        RETURN geom
+  )
+  
+  FILTER LENGTH(geometries) > 0
+  
+  RETURN {
+    thing: thing,
+    distance: GEO_DISTANCE(thing.representative_point, constantinople_point),
+    geometries: geometries
+  }
+```
 
 ### Vector Similarity Search for Toponyms
 
 **Query:** "Find names similar to 'Chang'an' across languages"
 
-Each Name can carry a `nameEmbedding`, a vector representing its sound. Compare the embedding of "Chang'an" with those of all Names, keep the Names whose cosine similarity exceeds 0.8, and return the ten closest with their language, script, `nameType` and similarity score.
+```aql
+LET query_embedding = @query_vector // passed as bind parameter
 
-**Important:** at scale this search must use an approximate nearest-neighbour index; comparing the query against every Name's embedding will be much slower.
+FOR name IN names
+  LET similarity = APPROX_NEAR_COSINE(name.embedding, query_embedding)
+  FILTER similarity > 0.8
+  SORT similarity DESC
+  LIMIT 10
+  
+  RETURN {
+    name: name.name,
+    language: name.language,
+    script: name.script,
+    similarity: similarity,
+    name_type: name.name_type
+  }
+```
+
+**Important:** Use `APPROX_NEAR_COSINE()` for index-accelerated searches. The non-indexed `COSINE_SIMILARITY()` function is available but will be much slower at scale.
 
 ### Network Connection Query
 
-**Query:** "All connections from Constantinople 1200-1300 CE"
+**Query:** "All trade connections from Constantinople 1200-1300 CE"
 
-Start from Constantinople and find the Attestations that `attests_about` it and whose `has_relation_type` is the RelationType `connected_to`. Follow each one's `relates_to` to the connected SpatialEntity, keep the connections whose `attests_timespan` overlaps 1200–1300, and return each connected SpatialEntity with the Attestation's `certainty` and Timespan.
+```aql
+LET query_start = DATE_TIMESTAMP("1200-01-01")
+LET query_end = DATE_TIMESTAMP("1300-12-31")
+
+FOR thing IN things
+  FILTER thing._key == "constantinople"
+  
+  // Find outgoing attestations via edges
+  FOR e1 IN edges
+    FILTER e1._from == thing._id
+    FILTER e1.edge_type == "subject_of"
+    LET att = DOCUMENT(e1._to)
+    
+    // Check if it's a connection via typed_by edge
+    FOR e2 IN edges
+      FILTER e2._from == att._id
+      FILTER e2.edge_type == "typed_by"
+      LET rel_type = DOCUMENT(e2._to)
+      FILTER rel_type.label == "connected_to"
+      FILTER att.connection_metadata LIKE "%trade%"
+      
+      // Get the connected Thing via relates_to edge
+      FOR e3 IN edges
+        FILTER e3._from == att._id
+        FILTER e3.edge_type == "relates_to"
+        LET connected_thing = DOCUMENT(e3._to)
+        
+        // Check temporal validity via attests_timespan edge
+        FOR e4 IN edges
+          FILTER e4._from == att._id
+          FILTER e4.edge_type == "attests_timespan"
+          LET ts = DOCUMENT(e4._to)
+          FILTER ts.start_latest <= query_end
+          FILTER ts.end_earliest >= query_start
+          
+          RETURN {
+            connected_place: connected_thing,
+            connection_type: att.connection_metadata,
+            certainty: att.certainty,
+            timespan: ts
+          }
+```
 
 ## Handling Temporal Nulls and Geological Time
 
@@ -550,11 +692,25 @@ For `start_earliest`, `start_latest`, `end_earliest`, `end_latest` fields repres
 
 ### Query Logic
 
-Timespans are matched against a query date or range by comparing their four bounds:
+```aql
+// Point-in-time query
+FOR ts IN timespans
+  FILTER ts.start_latest <= @query_date
+  FILTER ts.end_earliest >= @query_date
+  RETURN ts
 
-- **Point in time:** a Timespan certainly includes a date when its `start_latest` is on or before the date and its `end_earliest` is on or after it.
-- **Overlap with a range:** a Timespan overlaps a range when its `start_latest` is on or before the end of the range and its `end_earliest` is on or after its start.
-- **Unknown bounds:** to include Timespans that may have included a date, compare the outer bounds instead and treat a missing bound as open: `start_earliest` is absent or on or before the date, and `end_latest` is absent or on or after it.
+// Overlap query
+FOR ts IN timespans
+  FILTER ts.start_latest <= @query_end
+  FILTER ts.end_earliest >= @query_start
+  RETURN ts
+
+// Unknown bounds handling
+FOR ts IN timespans
+  FILTER (ts.start_earliest == null OR ts.start_earliest <= @query_date)
+  FILTER (ts.end_latest == null OR ts.end_latest >= @query_date)
+  RETURN ts
+```
 
 ## ArangoDB Capabilities Assessment
 

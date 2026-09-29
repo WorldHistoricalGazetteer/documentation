@@ -319,7 +319,7 @@ A special value representing unbounded time (from geological prehistory or into 
 See: [Handling Temporal Nulls](../../v4/data-model/implementation.html#handling-temporal-nulls-and-geological-time)
 
 ### Timespan
-A WHG entity representing a temporal range with uncertainty indicators (start_earliest, start_latest, end_earliest, end_latest).
+A WHG entity representing a temporal range with uncertainty indicators (start_earliest, start_latest, stop_earliest, stop_latest).
 
 See: [Data Model: Core Entities](../../v4/data-model/overview.html)
 
