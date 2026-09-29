@@ -8,7 +8,8 @@ places in order), an **itinerary** (a journey along a way, dated stop by stop) a
 earlier drafts modelled in the same way now sit instead: a **gazetteer group**, which is a group of
 Gazetteers, and a **period**, which is an Authority. Neither of those is a SpatialEntity.
 
-The model is PLATO's. A route, an itinerary or a network is a SpatialEntity, typed as such, and
+The model is PLATO's, as released in version 0.6.0
+([doi:10.5281/zenodo.23047592](https://doi.org/10.5281/zenodo.23047592)). A route, an itinerary or a network is a SpatialEntity, typed as such, and
 everything about it (its members, their order, its connections and the figures a source gives for
 them) is an attestation with its own source, date and certainty.
 

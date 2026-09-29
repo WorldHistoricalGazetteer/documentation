@@ -513,5 +513,6 @@ from a place's spatial relations. They are not how a route or journey is entered
 
 - [Routes, Itineraries, Networks, Groups and Periods](../data-model/patterns.md): the model in
   full, with diagrams.
-- [PLATO](https://github.com/pelagios/place-attestation-ontology): the ontology, the spreadsheet
+- [PLATO](https://github.com/pelagios/place-attestation-ontology)
+  ([doi:10.5281/zenodo.21688313](https://doi.org/10.5281/zenodo.21688313)): the ontology, the spreadsheet
   table definitions and the examples.
