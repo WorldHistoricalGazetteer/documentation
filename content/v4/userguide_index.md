@@ -24,4 +24,5 @@ Suggesting Corrections <./guide/corrections.md>
 Sounds-alike Search <./guide/sounds-alike.md>
 Identifiers and Citation <./guide/identifiers.md>
 Data Formats In and Out <./guide/formats.md>
+Routes, Itineraries and Networks <./guide/routes-and-networks.md>
 ```
