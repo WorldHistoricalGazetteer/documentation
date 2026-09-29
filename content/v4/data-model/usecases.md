@@ -35,8 +35,8 @@ A unified authority file service that matches place references against multiple 
 5. User selects `pleiades:89167`
 6. WHG creates new Attestation node with `same_as` relationship via edges:
    ```
-   User SpatialEntity ←[subject_of]← Attestation ─[typed_by]→ AUTHORITY(same_as)
-                                        └─[relates_to]→ Pleiades SpatialEntity
+   User SpatialEntity ←[attests_about]─ Attestation ─[has_relation_type]→ RelationType(same_as)
+                                           └─[relates_to]→ Pleiades SpatialEntity
    ```
 
 ---
@@ -127,7 +127,7 @@ Not just static places, but connections, movements, and relationships through ti
 **Example workflow:**
 1. User explores "Mediterranean trade network, 1200-1400 CE"
 2. WHG retrieves Network SpatialEntity and traverses edges to find all Attestations with:
-   - `typed_by` → AUTHORITY(connected_to)
+   - `has_relation_type` → RelationType(connected_to)
    - Timespan overlap with query period
 3. Filters connections by Timespan attestations
 4. Visualizes graph with:
@@ -176,9 +176,9 @@ Every claim is sourced; every source is transparent and traceable.
 
 **How it works:**
 Every claim in WHG is represented as an attestation node (document) in the attestations collection, connected via edges to:
-- The SpatialEntity being described (via `subject_of` edge)
+- The SpatialEntity being described (via `attests_about` edge)
 - The attribute being claimed (Name, Geometry, Timespan via `attests_*` edges)
-- Or another SpatialEntity for relationships (via `typed_by` and `relates_to` edges)
+- Or another SpatialEntity for relationships (via `has_relation_type` and `relates_to` edges)
 - Sources supporting the claim (via `sourced_by` edges to Authority documents)
 
 This graph structure enables complete provenance chains: follow edges from any claim back to its sources, and from sources forward to all claims they support.
@@ -294,9 +294,9 @@ Places change: borders shift, cities move, territories fragment and coalesce.
 4. Researcher reviews matches, confirms or rejects via UI
 5. WHG creates new Attestation nodes with `same_as` relationships:
    ```
-   Text SpatialEntity ←[subject_of]← Attestation ─[typed_by]→ AUTHORITY(same_as)
-                                        ├─[relates_to]→ Authority SpatialEntity
-                                        └─[sourced_by]→ AUTHORITY(user's dataset)
+   Text SpatialEntity ←[attests_about]─ Attestation ─[has_relation_type]→ RelationType(same_as)
+                                           ├─[relates_to]→ Authority SpatialEntity
+                                           └─[sourced_by]→ AUTHORITY(user's dataset)
    ```
 6. Researcher exports reconciled dataset with coordinates for mapping
 7. Cites WHG with dataset DOI from AUTHORITY document for reproducibility
@@ -313,7 +313,7 @@ Places change: borders shift, cities move, territories fragment and coalesce.
 3. Contributor adds network edges (city-to-city connections) with trade volume data
 4. WHG creates Network SpatialEntity with Attestation nodes containing:
    - `connection_metadata` with trade volumes
-   - `typed_by` → AUTHORITY(connected_to)
+   - `has_relation_type` → RelationType(connected_to)
    - `relates_to` → target city SpatialEntities
    - `attests_timespan` → temporal ranges
 5. Researcher queries network filtered by date ranges via Timespan edge traversal
@@ -331,7 +331,7 @@ Places change: borders shift, cities move, territories fragment and coalesce.
 2. Uploads GPX tracks and site metadata
 3. WHG creates SpatialEntity nodes with:
    - Geometry nodes linked via Attestations
-   - Classification via Attestation → AUTHORITY(archaeological_site)
+   - Classification via Attestation → Type(archaeological_site)
 4. Reconciliation suggests links to existing gazetteers (Pleiades, ANE) via same_as
 5. Team confirms matches, creates same_as Attestation nodes
 6. Adds period Timespan attestations linking to "Early Bronze Age Anatolia" SpatialEntity
@@ -349,7 +349,7 @@ Places change: borders shift, cities move, territories fragment and coalesce.
 2. Creates Itinerary SpatialEntity representing migration path
 3. Adds segments as SpatialEntities with Attestations containing:
    - `sequence` field for ordering
-   - `typed_by` → AUTHORITY(member_of)
+   - `has_relation_type` → RelationType(member_of)
    - `attests_timespan` → approximate dates of occupation
    - `certainty` scores reflecting uncertainty
 4. Links to linguistic evidence (ethnonyms in Name documents) and archaeological sites
@@ -437,15 +437,15 @@ The graph model supports these kinds of question. Bounded traversals are served 
 
 **Example of multi-hop traversal:**
 ```
-SpatialEntity → [subject_of edge] → Attestation → [attests_name edge] → Name
-↓ [sourced_by edge]
-Authority
+SpatialEntity ← [attests_about edge] ← Attestation → [attests_name edge] → Name
+                                       ↓ [sourced_by edge]
+                                       Authority
 ```
 
 This enables queries like "find all names for things sourced by X" by traversing:
 1. Authority → [sourced_by edges, reversed] → Attestations
 2. Attestations → [attests_name edges] → Names
-3. Attestations → [subject_of edges, reversed] → SpatialEntities
+3. Attestations → [attests_about edges] → SpatialEntities
 
 **Flexible Relationships:**
 - New relation types added via AUTHORITY documents without schema changes

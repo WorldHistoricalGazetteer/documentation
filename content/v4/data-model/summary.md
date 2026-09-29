@@ -13,7 +13,7 @@ The WHG v4 data model achieves historical place representation through a graph-b
 - **Authorities** - sources, datasets, relation types, periods
 
 **Relationship edges** (documents in edges collection):
-- **Edges** - typed connections between all nodes (subject_of, attests_name, attests_geometry, attests_timespan, sourced_by, typed_by, relates_to, meta_attestation, part_of)
+- **Edges** - typed connections between all nodes (attests_about, attests_name, attests_geometry, attests_timespan, attests_type, sourced_by, has_relation_type, relates_to, meta_attestation, part_of)
 
 **Critical distinction:** Attestations are NOT edges; they are nodes in a document collection that serve as junction points. All relationships are expressed through edges in a separate edge collection.
 
@@ -38,8 +38,6 @@ This separation of **entities** from **evidence** enables:
 **Derived geometric fields**: Pre-computed `representative_point`, `bbox`, `hull` optimize spatial queries and enable geometry inheritance.
 
 **Namespaced identifiers**: Compact external references (`pleiades:579885`) preserve authority IDs while Django resolves to full URIs.
-
-**Consistent field naming**: Timespan boundaries use `end_earliest` and `end_latest` (not `stop_earliest`/`stop_latest`) for consistency with W3C Time Ontology across all representations.
 
 ---
 
@@ -147,7 +145,7 @@ The WHG v4 model's success depends on maintaining clear architectural boundaries
 - Enable bundling multiple claims with shared provenance
 
 **Edges** (edge collection):
-- Express all relationships: subject_of, attests_name, attests_geometry, attests_timespan, sourced_by, typed_by, relates_to, meta_attestation
+- Express all relationships: attests_about, attests_name, attests_geometry, attests_timespan, attests_type, sourced_by, has_relation_type, relates_to, meta_attestation
 - Enable efficient graph traversal
 - Support complex multi-hop queries
 

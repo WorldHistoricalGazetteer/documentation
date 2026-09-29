@@ -95,12 +95,12 @@ A node that bundles together claims about a SpatialEntity, linking it to Names, 
 - `dcterms:contributor` - User or system that created attestation
 
 **Outgoing relationships** (expressed as predicates):
-- `whg:attests` - Links to the SpatialEntity being attested (subject_of in graph)
+- `whg:attests` - Links to the SpatialEntity being attested (attests_about in graph)
 - `whg:attestsName` - Links to Name entity (attests_name in graph)
 - `whg:attestsGeometry` - Links to Geometry entity (attests_geometry in graph)
 - `whg:attestsTimespan` - Links to Timespan entity (attests_timespan in graph)
 - `whg:relatesTo` - Links to another SpatialEntity via custom relation (relates_to in graph)
-- `whg:typedBy` - Links to Authority defining relation type (typed_by in graph)
+- `whg:typedBy` - Links to Authority defining relation type (has_relation_type in graph)
 - `prov:hadPrimarySource` - Links to Source Authority (sourced_by in graph)
 
 ### whg:Authority

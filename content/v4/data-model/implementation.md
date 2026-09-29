@@ -39,7 +39,7 @@ We use seven primary collections:
   "thing_type": "location",
   "description": "Major Byzantine/Ottoman city on the Bosphorus",
   "namespace": "whg",
-  "primary_name": "Constantinople", // denormalized for quick access
+  "label": "Constantinople", // denormalized for quick access
   "representative_point": [28.98, 41.01], // denormalized for spatial queries
   "created": "2025-01-15T10:30:00Z",
   "modified": "2025-03-20T14:22:00Z"
@@ -53,13 +53,13 @@ We use seven primary collections:
 {
   "_key": "name-istanbul-tr",
   "_id": "names/name-istanbul-tr",
-  "name": "İstanbul",
+  "toponym": "İstanbul",
   "language": "tr",
   "script": "Latn",
   "ipa": "isˈtanbuɫ",
-  "name_type": ["preferred", "toponym"],
-  "embedding": [0.234, -0.567, 0.123, ...], // 256-dimensional vector
-  "transliteration_system": null,
+  "nameType": ["preferred", "toponym"],
+  "nameEmbedding": [0.234, -0.567, 0.123, ...], // 256-dimensional vector
+  "transliterationSystem": null,
   "romanized": "Istanbul"
 }
 ```
@@ -71,18 +71,18 @@ We use seven primary collections:
 {
   "_key": "geom-constantinople-city",
   "_id": "geometries/geom-constantinople-city",
-  "geom": {
+  "geojson": {
     "type": "MultiPolygon",
     "coordinates": [
       [[[28.94, 41.01], [29.00, 41.01], [29.00, 41.05], [28.94, 41.05], [28.94, 41.01]]],
       [[[28.90, 41.00], [28.92, 41.00], [28.92, 41.02], [28.90, 41.02], [28.90, 41.00]]]
     ]
   },
-  "representative_point": [28.97, 41.03],
+  "reprPoint": [28.97, 41.03],
   "bbox": [28.90, 41.00, 29.00, 41.05],
-  "precision": ["historical_approximate", "uncertain_boundary"],
-  "precision_km": [5.0, 2.0],
-  "source_crs": "EPSG:4326"
+  "spatialPrecision": ["historical_approximate", "uncertain_boundary"],
+  "precisionKm": [5.0, 2.0],
+  "sourceCrs": "EPSG:4326"
 }
 ```
 
@@ -95,18 +95,16 @@ We use seven primary collections:
 {
   "_key": "timespan-byzantine-period",
   "_id": "timespans/timespan-byzantine-period",
-  "start_earliest": -11644444800000, // Unix timestamp: 330 CE
-  "start_latest": -11612908800000,   // Unix timestamp: 331 CE
-  "end_earliest": 693878400000,      // Unix timestamp: 1453 CE
-  "end_latest": 694483200000,        // Unix timestamp: 1453 CE
+  "startEarliest": -11644444800000, // Unix timestamp: 330 CE
+  "startLatest": -11612908800000,   // Unix timestamp: 331 CE
+  "endEarliest": 693878400000,      // Unix timestamp: 1453 CE
+  "endLatest": 694483200000,        // Unix timestamp: 1453 CE
   "label": "Byzantine Period in Constantinople",
   "precision": "year",
-  "precision_value": 1,
-  "periodo_id": "periodo:p0byzantine"
+  "precisionValue": 1,
+  "periodoUri": "periodo:p0byzantine"
 }
 ```
-
-**Field Naming Note:** WHG uses `end_earliest` and `end_latest` (not `stop_earliest`/`stop_latest`) for consistency with W3C Time Ontology. This applies to both internal storage and all exports.
 
 ### Attestations Collection (Document Collection)
 
@@ -120,7 +118,7 @@ We use seven primary collections:
   "sequence": null,                    // For ordered sequences in routes/itineraries
   "connection_metadata": null,         // For network relationships
   "certainty": 0.95,                   // Confidence level (0.0-1.0)
-  "certainty_note": "Well-documented in primary sources",
+  "certaintyNote": "Well-documented in primary sources",
   "notes": "Additional context",
   "created": "2024-01-15T10:30:00Z",
   "modified": "2024-02-20T14:45:00Z",
@@ -142,7 +140,7 @@ We use seven primary collections:
 {
   "_key": "source-al-tabari",
   "_id": "authorities/source-al-tabari",
-  "authority_type": "source",
+  "authorityType": "source",
   "citation": "Al-Tabari, History of the Prophets and Kings",
   "source_type": "manuscript",
   "record_id": "tabari-vol-27",
@@ -153,11 +151,11 @@ We use seven primary collections:
 {
   "_key": "dataset-islamic-cities",
   "_id": "authorities/dataset-islamic-cities",
-  "authority_type": "dataset",
+  "authorityType": "dataset",
   "title": "Islamic Cities Database",
   "publisher": "University Research Center",
   "version": "1.0",
-  "license": "CC-BY-4.0",
+  "licence": "CC-BY-4.0",
   "doi": "doi:10.83427/whg-dataset-123"
 }
 
@@ -165,7 +163,7 @@ We use seven primary collections:
 {
   "_key": "relation-member-of",
   "_id": "authorities/relation-member-of",
-  "authority_type": "relation_type",
+  "authorityType": "relationType",
   "label": "member_of",
   "inverse": "contains",
   "domain": ["thing"],
@@ -177,13 +175,13 @@ We use seven primary collections:
 {
   "_key": "period-abbasid",
   "_id": "authorities/period-abbasid",
-  "authority_type": "period",
+  "authorityType": "period",
   "label": "Abbasid Caliphate",
   "uri": "periodo:p0abbasid",
-  "start_earliest": -11644444800000,
-  "start_latest": -11612908800000,
-  "end_earliest": 693878400000,
-  "end_latest": 694483200000
+  "startEarliest": -11644444800000,
+  "startLatest": -11612908800000,
+  "endEarliest": 693878400000,
+  "endLatest": 694483200000
 }
 ```
 
@@ -193,13 +191,13 @@ We use seven primary collections:
 // Generic edge collection for ALL graph relationships
 // This is an EDGE collection with _from and _to fields
 
-// Thing to Attestation edge
+// Attestation to Thing edge
 {
   "_key": "edge-001",
   "_id": "edges/edge-001",
-  "_from": "things/constantinople",
-  "_to": "attestations/att-001",
-  "edge_type": "subject_of",
+  "_from": "attestations/att-001",
+  "_to": "things/constantinople",
+  "edge_type": "attests_about",
   "created": "2025-01-15T10:30:00Z"
 }
 
@@ -249,7 +247,7 @@ We use seven primary collections:
   "_id": "edges/edge-006",
   "_from": "attestations/att-capital-of",
   "_to": "authorities/relation-capital-of",
-  "edge_type": "typed_by",
+  "edge_type": "has_relation_type",
   "created": "2025-01-15T10:30:00Z"
 }
 
@@ -280,12 +278,13 @@ We use seven primary collections:
 
 | Edge Type | From | To | Purpose |
 |-----------|------|-----|---------|
-| `subject_of` | Thing | Attestation | Links attestation to the Thing it describes |
+| `attests_about` | Attestation | Thing | Links attestation to the Thing it describes |
 | `attests_name` | Attestation | Name | Links attestation to a Name claim |
 | `attests_geometry` | Attestation | Geometry | Links attestation to a Geometry claim |
 | `attests_timespan` | Attestation | Timespan | Links attestation to temporal bounds |
 | `sourced_by` | Attestation | Authority | Links attestation to source citation |
-| `typed_by` | Attestation | Authority | Links attestation to relation type definition |
+| `attests_type` | Attestation | Type | Links attestation to a classification (Type) |
+| `has_relation_type` | Attestation | RelationType | Links attestation to relation type definition |
 | `relates_to` | Attestation | Thing | Links attestation to related Thing |
 | `meta_attestation` | Attestation | Attestation | Links meta-attestation to target attestation |
 | `part_of` | Authority | Authority | Links Source to parent Dataset |

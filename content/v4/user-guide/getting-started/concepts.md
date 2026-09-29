@@ -148,8 +148,8 @@ Historical dating is often uncertain. WHG models:
 Timespan for "Angkor was the capital of the Khmer Empire"
   start_earliest: 802
   start_latest: 802
-  stop_earliest: 1431
-  stop_latest: 1432
+  end_earliest: 1431
+  end_latest: 1432
   precision: "year"
   label: "Angkor period"
 ```

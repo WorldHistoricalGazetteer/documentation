@@ -120,16 +120,16 @@ A **Name** represents a linguistic form by which a SpatialEntity is known.
 ```json
 {
   "id": "name:67890",
-  "name": "القسطنطينية",
+  "toponym": "القسطنطينية",
   "language": "ara",
   "script": "Arab",
   "variant": "standard",
-  "transliteration": "al-Qusṭanṭīnīyah",
+  "romanized": "al-Qusṭanṭīnīyah",
   "ipa": "ʔalqustˤɑntˤiːnijːɐ",
-  "name_type": [
+  "nameType": [
     "toponym"
   ],
-  "embedding": [
+  "nameEmbedding": [
     0.123,
     -0.456,
     ...
@@ -139,14 +139,14 @@ A **Name** represents a linguistic form by which a SpatialEntity is known.
 
 **Key Properties**:
 
-- `name`: The actual text in original script
+- `toponym`: The actual text in original script
 - `language`: ISO 639-3 language code
 - `script`: ISO 15924 script code
 - `variant`: Relationship to other forms (official, colloquial, historical, etc.)
-- `transliteration`: Romanization for searchability
+- `romanized`: Romanization for searchability
 - `ipa`: International Phonetic Alphabet representation
-- `name_type`: Array of classifications (toponym, chrononym, ethnonym, etc.)
-- `embedding`: Vector representation for phonetic similarity search
+- `nameType`: Array of classifications (toponym, chrononym, ethnonym, etc.)
+- `nameEmbedding`: Vector representation for phonetic similarity search
 
 ### Name Types
 
@@ -168,14 +168,14 @@ A **Geometry** represents a spatial location or extent of a SpatialEntity at a p
 ```json
 {
   "id": "geom:11223",
-  "geom": {
+  "geojson": {
     "type": "Point",
     "coordinates": [
       28.9784,
       41.0082
     ]
   },
-  "representative_point": {
+  "reprPoint": {
     "type": "Point",
     "coordinates": [
       28.9784,
@@ -196,21 +196,21 @@ A **Geometry** represents a spatial location or extent of a SpatialEntity at a p
     29.0,
     41.1
   ],
-  "precision": "approximate",
-  "precision_km": 5,
-  "source_crs": "EPSG:4326"
+  "spatialPrecision": "approximate",
+  "precisionKm": 5,
+  "sourceCrs": "EPSG:4326"
 }
 ```
 
 **Key Properties**:
 
-- `geom`: GeoJSON geometry (Point, Polygon, LineString, Multi*)
-- `representative_point`: Single point for mapping/search
+- `geojson`: GeoJSON geometry (Point, Polygon, LineString, Multi*)
+- `reprPoint`: Single point for mapping/search
 - `hull`: Convex hull of the geometry
 - `bbox`: Bounding box [min_lon, min_lat, max_lon, max_lat]
-- `precision`: Spatial certainty indicator (exact, approximate, uncertain)
-- `precision_km`: Uncertainty radius in kilometers
-- `source_crs`: Original coordinate reference system (EPSG code or historical CRS)
+- `spatialPrecision`: Spatial certainty indicator (exact, approximate, uncertain)
+- `precisionKm`: Uncertainty radius in kilometers
+- `sourceCrs`: Original coordinate reference system (EPSG code or historical CRS)
 
 ### Geometry Formats
 
@@ -266,25 +266,23 @@ A **Timespan** represents a temporal interval with explicit uncertainty modeling
 ```json
 {
   "id": "time:33445",
-  "start_earliest": "0802-01-01",
-  "start_latest": "0802-12-31",
-  "end_earliest": "1431-01-01",
-  "end_latest": "1432-12-31",
+  "startEarliest": "0802-01-01",
+  "startLatest": "0802-12-31",
+  "endEarliest": "1431-01-01",
+  "endLatest": "1432-12-31",
   "label": "Angkor period",
   "precision": "year",
-  "precision_value": 1
+  "precisionValue": 1
 }
 ```
 
 **Key Properties**:
 
-- `start_earliest`, `start_latest`: Range of possible start dates
-- `end_earliest`, `end_latest`: Range of possible end dates
+- `startEarliest`, `startLatest`: Range of possible start dates
+- `endEarliest`, `endLatest`: Range of possible end dates
 - `label`: Human-readable period name
 - `precision`: Temporal granularity (year, decade, century, era, geological_period)
-- `precision_value`: Numeric precision indicator
-
-**Field Naming Convention:** Internally, WHG uses `end_earliest` and `end_latest` for consistency with W3C Time Ontology and RDF representations. Some legacy documentation may reference `stop_earliest` and `stop_latest`, which are equivalent fields. Going forward, all documentation and implementations should use the "end" terminology for consistency.
+- `precisionValue`: Numeric precision indicator
 
 ### Modeling Temporal Uncertainty
 
@@ -327,7 +325,7 @@ The attestation model works through edges that connect attestation nodes to othe
   "sequence": null,
   "connection_metadata": null,
   "certainty": 0.95,
-  "certainty_note": "Well-documented in primary chronicles",
+  "certaintyNote": "Well-documented in primary chronicles",
   "notes": "Name used during Byzantine period",
   "created": "2023-01-15T10:30:00Z",
   "modified": "2024-02-20T14:45:00Z",
@@ -340,7 +338,7 @@ The attestation model works through edges that connect attestation nodes to othe
 - `sequence`: Ordering for routes and itineraries
 - `connection_metadata`: JSON object for network relationships (e.g., trade goods, flow direction)
 - `certainty`: Confidence value (0.0-1.0)
-- `certainty_note`: Explanation of uncertainty assessment
+- `certaintyNote`: Explanation of uncertainty assessment
 - `notes`: Additional context
 - `created`, `modified`: Temporal metadata
 - `contributor`: User or system that created the attestation
@@ -356,9 +354,9 @@ These relationships are all expressed through **edges** in the EDGE collection:
 ```javascript
 // Example edges connecting an attestation
 {
-  "_from": "things/constantinople",
-  "_to": "attestations/att-001",
-  "edge_type": "subject_of"
+  "_from": "attestations/att-001",
+  "_to": "things/constantinople",
+  "edge_type": "attests_about"
 }
 
 {
@@ -384,11 +382,11 @@ These relationships are all expressed through **edges** in the EDGE collection:
 
 Attestations connect SpatialEntities to different entity types through different edge patterns:
 
-1. **Names**: SpatialEntity → Attestation (subject_of), Attestation → Name (attests_name)
-2. **Geometries**: SpatialEntity → Attestation (subject_of), Attestation → Geometry (attests_geometry)
-3. **Timespans**: SpatialEntity → Attestation (subject_of), Attestation → Timespan (attests_timespan)
-4. **Classifications**: SpatialEntity → Attestation (subject_of), Attestation → Authority (typed_by with classification)
-5. **Other SpatialEntities**: SpatialEntity → Attestation (subject_of), Attestation → Authority (typed_by with relation_type), Attestation → SpatialEntity (relates_to)
+1. **Names**: Attestation → SpatialEntity (attests_about), Attestation → Name (attests_name)
+2. **Geometries**: Attestation → SpatialEntity (attests_about), Attestation → Geometry (attests_geometry)
+3. **Timespans**: Attestation → SpatialEntity (attests_about), Attestation → Timespan (attests_timespan)
+4. **Classifications**: Attestation → SpatialEntity (attests_about), Attestation → Type (attests_type)
+5. **Other SpatialEntities**: Attestation → SpatialEntity (attests_about), Attestation → RelationType (has_relation_type), Attestation → SpatialEntity (relates_to)
 
 ### Special Attestation Features
 
@@ -410,11 +408,13 @@ Attestations connect SpatialEntities to different entity types through different
 Entities relate through **Attestations** and **Edges** (see [Attestations & Relations](attestations.md)):
 
 ```
-SpatialEntity --[edge: subject_of]--> Attestation
+Attestation --[edge: attests_about]--> SpatialEntity
 Attestation --[edge: attests_name]--> Name
 Attestation --[edge: attests_geometry]--> Geometry
 Attestation --[edge: attests_timespan]--> Timespan
+Attestation --[edge: attests_type]--> Type
 Attestation --[edge: relates_to]--> SpatialEntity (relationships)
+Attestation --[edge: has_relation_type]--> RelationType (relationships)
 Attestation --[edge: meta_attestation]--> Attestation (meta-attestations)
 Attestation --[edge: sourced_by]--> Authority
 ```

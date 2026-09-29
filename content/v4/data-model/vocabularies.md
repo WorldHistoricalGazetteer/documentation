@@ -7,17 +7,17 @@ This vocabulary document describes controlled vocabularies used throughout WHG v
 - **Attestations** are nodes (documents) in the attestations collection containing metadata
 - **Edges** are separate documents in the edges collection connecting attestations to other entities
 - **Authorities** are documents in the authorities collection providing reference data
-- **Edge types** (subject_of, attests_name, etc.) are values in the `edge_type` field of edge documents
+- **Edge types** (attests_about, attests_name, etc.) are values in the `edge_type` field of edge documents
 - **Relation types** (member_of, connected_to, etc.) are labels in Authority documents with `authority_type: "relation_type"`
 
 This separation enables flexible vocabulary expansion without schema changes.
 
 ## SpatialEntity Classification Vocabulary
 
-SpatialEntities are classified via attestations that connect to AUTHORITY documents with `authority_type: "classification"`. In the graph model, this is expressed through edges:
+SpatialEntities are classified via attestations that connect to a Type (a label, with an optional vocabulary URI such as an AAT concept); a Type is not an Authority. In the graph model, this is expressed through edges:
 
 ```
-SpatialEntity ←[subject_of]← Attestation ─[typed_by]→ Authority(classification)
+SpatialEntity ←[attests_about]─ Attestation ─[attests_type]→ Type(classification)
 ```
 
 The following classification values are recognized for contribution types:
@@ -73,7 +73,7 @@ Names can serve multiple semantic functions. The `name_type` field is an array t
 **Notes:**
 - A single Name can have multiple types. For example, "Hellas" (Ἑλλάς) can be `["toponym", "ethnonym"]`
 - **Toponym** is the inclusive category for all geographic feature names
-- Specific feature types (rivers, mountains, seas) are indicated through SpatialEntity classification (`typed_by` edge to classification AUTHORITY) rather than as separate name types
+- Specific feature types (rivers, mountains, seas) are indicated through SpatialEntity classification (`attests_type` edge to a Type) rather than as separate name types
 - No combinations are forbidden; the model accommodates complex naming practices across cultures
 - This vocabulary is extensible; new name_types can be added as needed
 
@@ -106,7 +106,7 @@ Source types are stored in Authority documents with `authority_type: "source"`. 
 // Authority (source)
 {
   "_id": "authorities/source-chronicle",
-  "authority_type": "source",
+  "authorityType": "source",
   "citation": "Byzantine Chronicle, 10th century",
   "source_type": ["manuscript", "historical"]
 }

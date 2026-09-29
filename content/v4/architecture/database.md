@@ -17,6 +17,8 @@ In summary:
 See [Addendum: 2026 reassessment](#addendum-2026-reassessment).
 ```
 
+Note (September 2026): the property and field names in this page's examples predate WHG's alignment with PLATO. The current names are in the [data model](../data-model/overview.md) pages.
+
 ## TL;DR
 
 **WHG v4** is transitioning to a property graph data model centered on attestations (source-backed claims about historical places). We need a database that natively supports:

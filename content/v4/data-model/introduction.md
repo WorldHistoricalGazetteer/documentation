@@ -30,7 +30,7 @@ graph TD
     AUTH[AUTHORITY<br/>Byzantine Chronicle<br/>authority_type: source]
     A[ATTESTATION<br/>att-001<br/>certainty: 1.0]
     
-    T -->|subject_of| A
+    A -->|attests_about| T
     A -->|attests_name| N
     A -->|attests_geometry| G
     A -->|attests_timespan| TS
@@ -95,7 +95,7 @@ An Attestation with `_id = "attestations/att-001"` becomes a bundle through edge
     "things/constantinople",
         edge_type
 :
-    "subject_of"
+    "attests_about"
 }
 
 // Edge 2: Links this attestation to a Name
@@ -199,7 +199,7 @@ between different types of reference data: `"dataset"`, `"source"`, `"relation_t
 ### RELATION_TYPE (authority_type: "relation_type")
 
 RELATION_TYPE documents provide extensibility and semantic richness for SpatialEntity-to-SpatialEntity relationships. While
-system-defined edge types like "subject_of", "attests_name", and "attests_geometry" are hard-coded into the application,
+system-defined edge types like "attests_about", "attests_name", and "attests_geometry" are hard-coded into the application,
 the "relates_to" edge type allows for custom, user-defined relationships between SpatialEntities.
 
 For example, historians might need to model that:

@@ -6,7 +6,7 @@ A **period SpatialEntity** represents a span of time, often with associated geog
 
 **Characteristics:**
 - Has Name(s) with `name_type` including "chrononym"
-- Classified via attestation with `typed_by` edge to AUTHORITY document with classification "period"
+- Classified via attestation with `attests_type` edge to a Type "period"
 - Has Timespan attestations defining its temporal bounds
 - Members are SpatialEntities that existed during that period
 - Member temporalities can vary; the period's Timespan represents the outer bounds
@@ -15,15 +15,15 @@ A **period SpatialEntity** represents a span of time, often with associated geog
 **Graph Structure:**
 ```
 Period SpatialEntity (e.g., "Tang Dynasty")
-  ←[subject_of]← Attestation ─[attests_name]→ Name("Tang Dynasty", chrononym)
-  ←[subject_of]← Attestation ─[attests_name]→ Name("唐朝", chrononym)
-  ←[subject_of]← Attestation ─[typed_by]→ Authority(classification: "period")
-  ←[subject_of]← Attestation ─[attests_timespan]→ Timespan(618-907 CE)
-  ←[subject_of]← Attestation ─[attests_geometry]→ Geometry(Tang territory)
+  ←[attests_about]─ Attestation ─[attests_name]→ Name("Tang Dynasty", chrononym)
+  ←[attests_about]─ Attestation ─[attests_name]→ Name("唐朝", chrononym)
+  ←[attests_about]─ Attestation ─[attests_type]→ Type("period")
+  ←[attests_about]─ Attestation ─[attests_timespan]→ Timespan(618-907 CE)
+  ←[attests_about]─ Attestation ─[attests_geometry]→ Geometry(Tang territory)
   
   Member SpatialEntities:
-  SpatialEntity(Chang'an) ←[subject_of]← Attestation ─[typed_by]→ Authority(member_of)
-                                             └─[relates_to]→ SpatialEntity(Tang Dynasty)
+  SpatialEntity(Chang'an) ←[attests_about]─ Attestation ─[has_relation_type]→ RelationType(member_of)
+                                                └─[relates_to]→ SpatialEntity(Tang Dynasty)
 ```
 
 **PeriodO Integration:**
@@ -34,7 +34,7 @@ Period SpatialEntity (e.g., "Tang Dynasty")
 **Example**: "Tang Dynasty" as a period SpatialEntity:
 - ID: `things/tang-dynasty`
 - Has chrononym Names via attestations: "Tang Dynasty" (English), "唐朝" (Chinese)
-- Classified as "period" via Authority
+- Classified as "period" via a Type
 - Has Timespan: 618-907 CE via attestation
 - Members include Chang'an, Luoyang (each with their own Timespan attestations)
 - Geometry can be explicit (official territory) or inherited (union of member cities)
@@ -46,7 +46,7 @@ Period SpatialEntity (e.g., "Tang Dynasty")
 A **route SpatialEntity** represents a sequentially-ordered set of places, typically without specific temporal information about traversal.
 
 **Characteristics:**
-- Classified via attestation with `typed_by` edge to AUTHORITY document with classification "route"
+- Classified via attestation with `attests_type` edge to a Type "route"
 - Members are SpatialEntities representing segments (waypoints or path sections)
 - Segments are ordered using the `sequence` field in Attestation nodes
 - Timespan attestations are optional or represent when the route existed (not traversal times)
@@ -55,17 +55,17 @@ A **route SpatialEntity** represents a sequentially-ordered set of places, typic
 **Graph Structure:**
 ```
 Route SpatialEntity (e.g., "Silk Road")
-  ←[subject_of]← Attestation ─[attests_name]→ Name("Silk Road")
-  ←[subject_of]← Attestation ─[typed_by]→ Authority(classification: "route")
-  ←[subject_of]← Attestation ─[attests_timespan]→ Timespan(route's existence)
+  ←[attests_about]─ Attestation ─[attests_name]→ Name("Silk Road")
+  ←[attests_about]─ Attestation ─[attests_type]→ Type("route")
+  ←[attests_about]─ Attestation ─[attests_timespan]→ Timespan(route's existence)
   
   Member SpatialEntities (with sequence):
-  SpatialEntity(Chang'an) ←[subject_of]← Attestation(sequence: 1) ─[typed_by]→ Authority(member_of)
-                                                          └─[relates_to]→ SpatialEntity(Silk Road)
-  SpatialEntity(Dunhuang) ←[subject_of]← Attestation(sequence: 2) ─[typed_by]→ Authority(member_of)
-                                                          └─[relates_to]→ SpatialEntity(Silk Road)
-  SpatialEntity(Samarkand) ←[subject_of]← Attestation(sequence: 3) ─[typed_by]→ Authority(member_of)
-                                                           └─[relates_to]→ SpatialEntity(Silk Road)
+  SpatialEntity(Chang'an) ←[attests_about]─ Attestation(sequence: 1) ─[has_relation_type]→ RelationType(member_of)
+                                                             └─[relates_to]→ SpatialEntity(Silk Road)
+  SpatialEntity(Dunhuang) ←[attests_about]─ Attestation(sequence: 2) ─[has_relation_type]→ RelationType(member_of)
+                                                             └─[relates_to]→ SpatialEntity(Silk Road)
+  SpatialEntity(Samarkand) ←[attests_about]─ Attestation(sequence: 3) ─[has_relation_type]→ RelationType(member_of)
+                                                              └─[relates_to]→ SpatialEntity(Silk Road)
 ```
 
 **Examples:**
@@ -86,7 +86,7 @@ Route SpatialEntity (e.g., "Silk Road")
 An **itinerary SpatialEntity** represents a journey or route through space and time, with temporal information about when segments were traversed.
 
 **Characteristics:**
-- Classified via attestation with `typed_by` edge to AUTHORITY document with classification "itinerary"
+- Classified via attestation with `attests_type` edge to a Type "itinerary"
 - Members are SpatialEntities representing segments (waypoints, routes, or regions)
 - Segments are ordered using the `sequence` field in Attestation nodes
 - **Each segment attestation has its own Timespan attestation** (when that segment was traversed)
@@ -99,24 +99,24 @@ An **itinerary SpatialEntity** represents a journey or route through space and t
 **Graph Structure:**
 ```
 Itinerary SpatialEntity (e.g., "Marco Polo's Journey")
-  ←[subject_of]← Attestation ─[attests_name]→ Name("Marco Polo's Journey to China")
-  ←[subject_of]← Attestation ─[typed_by]→ Authority(classification: "itinerary")
-  ←[subject_of]← Attestation ─[attests_timespan]→ Timespan(1271-1295, computed)
+  ←[attests_about]─ Attestation ─[attests_name]→ Name("Marco Polo's Journey to China")
+  ←[attests_about]─ Attestation ─[attests_type]→ Type("itinerary")
+  ←[attests_about]─ Attestation ─[attests_timespan]→ Timespan(1271-1295, computed)
   
   Member SpatialEntities (with sequence and temporal data):
-  SpatialEntity(Venice) ←[subject_of]← Attestation(sequence: 1) ─[typed_by]→ Authority(member_of)
-                                                        ├─[relates_to]→ SpatialEntity(Marco Polo Journey)
-                                                        └─[attests_timespan]→ Timespan(Jan-Jun 1271)
+  SpatialEntity(Venice) ←[attests_about]─ Attestation(sequence: 1) ─[has_relation_type]→ RelationType(member_of)
+                                                           ├─[relates_to]→ SpatialEntity(Marco Polo Journey)
+                                                           └─[attests_timespan]→ Timespan(Jan-Jun 1271)
   
-  SpatialEntity(Route-to-Constantinople) ←[subject_of]← Attestation(sequence: 2) 
-                                                             ├─[typed_by]→ Authority(member_of)
-                                                             ├─[relates_to]→ SpatialEntity(Marco Polo Journey)
-                                                             └─[attests_timespan]→ Timespan(Jun-Sep 1271)
+  SpatialEntity(Route-to-Constantinople) ←[attests_about]─ Attestation(sequence: 2)
+                                                                ├─[has_relation_type]→ RelationType(member_of)
+                                                                ├─[relates_to]→ SpatialEntity(Marco Polo Journey)
+                                                                └─[attests_timespan]→ Timespan(Jun-Sep 1271)
   
-  SpatialEntity(Constantinople) ←[subject_of]← Attestation(sequence: 3)
-                                                   ├─[typed_by]→ Authority(member_of)
-                                                   ├─[relates_to]→ SpatialEntity(Marco Polo Journey)
-                                                   └─[attests_timespan]→ Timespan(Sep-Nov 1271)
+  SpatialEntity(Constantinople) ←[attests_about]─ Attestation(sequence: 3)
+                                                      ├─[has_relation_type]→ RelationType(member_of)
+                                                      ├─[relates_to]→ SpatialEntity(Marco Polo Journey)
+                                                      └─[attests_timespan]→ Timespan(Sep-Nov 1271)
 ```
 
 **Examples:**
@@ -134,7 +134,7 @@ Itinerary SpatialEntity (e.g., "Marco Polo's Journey")
 A **network SpatialEntity** represents a set of connections between places that may not follow a particular sequence.
 
 **Characteristics:**
-- Classified via attestation with `typed_by` edge to AUTHORITY document with classification "network"
+- Classified via attestation with `attests_type` edge to a Type "network"
 - Connections between SpatialEntities are attested using `connected_to` relation type (via AUTHORITY)
 - Connections may have Timespan attestations (when the connection existed)
 - Connection metadata in Attestation nodes specifies type, directionality, and other attributes
@@ -144,20 +144,20 @@ A **network SpatialEntity** represents a set of connections between places that 
 **Graph Structure:**
 ```
 Network SpatialEntity (e.g., "Mediterranean Trade Network")
-  ←[subject_of]← Attestation ─[attests_name]→ Name("Mediterranean Trade Network")
-  ←[subject_of]← Attestation ─[typed_by]→ Authority(classification: "network")
-  ←[subject_of]← Attestation ─[attests_timespan]→ Timespan(network's operational period)
+  ←[attests_about]─ Attestation ─[attests_name]→ Name("Mediterranean Trade Network")
+  ←[attests_about]─ Attestation ─[attests_type]→ Type("network")
+  ←[attests_about]─ Attestation ─[attests_timespan]→ Timespan(network's operational period)
   
   Connections (via connected_to attestations):
-  SpatialEntity(Constantinople) ←[subject_of]← Attestation(connection_metadata: {...})
-                                                   ├─[typed_by]→ Authority(connected_to)
-                                                   ├─[relates_to]→ SpatialEntity(Venice)
-                                                   └─[attests_timespan]→ Timespan(1200-1453)
+  SpatialEntity(Constantinople) ←[attests_about]─ Attestation(connection_metadata: {...})
+                                                      ├─[has_relation_type]→ RelationType(connected_to)
+                                                      ├─[relates_to]→ SpatialEntity(Venice)
+                                                      └─[attests_timespan]→ Timespan(1200-1453)
   
-  SpatialEntity(Venice) ←[subject_of]← Attestation(connection_metadata: {...})
-                                          ├─[typed_by]→ Authority(connected_to)
-                                          ├─[relates_to]→ SpatialEntity(Alexandria)
-                                          └─[attests_timespan]→ Timespan(1100-1500)
+  SpatialEntity(Venice) ←[attests_about]─ Attestation(connection_metadata: {...})
+                                             ├─[has_relation_type]→ RelationType(connected_to)
+                                             ├─[relates_to]→ SpatialEntity(Alexandria)
+                                             └─[attests_timespan]→ Timespan(1100-1500)
 ```
 
 **Connection Metadata Structure** (in Attestation node):
@@ -191,7 +191,7 @@ Network SpatialEntity (e.g., "Mediterranean Trade Network")
 A **gazetteer group SpatialEntity** represents a thematic collection of gazetteers sharing common characteristics.
 
 **Characteristics:**
-- Classified via attestation with `typed_by` edge to AUTHORITY document with classification "gazetteer_group"
+- Classified via attestation with `attests_type` edge to a Type "gazetteer_group"
 - Members are other SpatialEntities (which are themselves gazetteers) linked via `member_of` attestations
 - Can have its own Names describing the collection theme
 - May have Timespan attestations representing the collection's temporal scope
@@ -200,19 +200,19 @@ A **gazetteer group SpatialEntity** represents a thematic collection of gazettee
 **Graph Structure:**
 ```
 Gazetteer Group SpatialEntity (e.g., "Ancient World Gazetteers")
-  ←[subject_of]← Attestation ─[attests_name]→ Name("Ancient World Gazetteers")
-  ←[subject_of]← Attestation ─[typed_by]→ Authority(classification: "gazetteer_group")
-  ←[subject_of]← Attestation ─[attests_timespan]→ Timespan(-3000 to 500)
+  ←[attests_about]─ Attestation ─[attests_name]→ Name("Ancient World Gazetteers")
+  ←[attests_about]─ Attestation ─[attests_type]→ Type("gazetteer_group")
+  ←[attests_about]─ Attestation ─[attests_timespan]→ Timespan(-3000 to 500)
   
   Member SpatialEntities:
-  SpatialEntity(Pleiades) ←[subject_of]← Attestation ─[typed_by]→ Authority(member_of)
+  SpatialEntity(Pleiades) ←[attests_about]─ Attestation ─[has_relation_type]→ RelationType(member_of)
+                                                └─[relates_to]→ SpatialEntity(Ancient World Gazetteers)
+  
+  SpatialEntity(DARMC) ←[attests_about]─ Attestation ─[has_relation_type]→ RelationType(member_of)
                                              └─[relates_to]→ SpatialEntity(Ancient World Gazetteers)
   
-  SpatialEntity(DARMC) ←[subject_of]← Attestation ─[typed_by]→ Authority(member_of)
-                                          └─[relates_to]→ SpatialEntity(Ancient World Gazetteers)
-  
-  SpatialEntity(Barrington) ←[subject_of]← Attestation ─[typed_by]→ Authority(member_of)
-                                                └─[relates_to]→ SpatialEntity(Ancient World Gazetteers)
+  SpatialEntity(Barrington) ←[attests_about]─ Attestation ─[has_relation_type]→ RelationType(member_of)
+                                                   └─[relates_to]→ SpatialEntity(Ancient World Gazetteers)
 ```
 
 **Examples:**
@@ -233,8 +233,6 @@ Gazetteer Group SpatialEntity (e.g., "Ancient World Gazetteers")
 ## Timespan Inheritance and Computation
 
 Similar to Geometry inheritance, **Timespan inheritance** can be computed for SpatialEntities lacking explicit Timespan attestations.
-
-**Field Naming Note:** All examples use `end_earliest` and `end_latest` (not `stop_earliest`/`stop_latest`) for consistency with W3C Time Ontology. This applies to all timespan operations including inheritance and computation.
 
 **Computation Rules:**
 
@@ -317,17 +315,17 @@ RETURN {
 
 // Computed Timespan for Tang Dynasty:
 {
-  "start_earliest": 618,
-  "start_latest": 650,
-  "end_earliest": 900,
-  "end_latest": 907
+  "startEarliest": 618,
+  "startLatest": 650,
+  "endEarliest": 900,
+  "endLatest": 907
 }
 ```
 
 **Override example:**
 ```
 // Tang Dynasty with explicit Timespan attestation
-SpatialEntity(Tang Dynasty) ←[subject_of]← Attestation ─[attests_timespan]→ Timespan(618-907)
+SpatialEntity(Tang Dynasty) ←[attests_about]─ Attestation ─[attests_timespan]→ Timespan(618-907)
 
 // This explicit attestation overrides the computed bounds from members
 ```

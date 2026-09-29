@@ -15,7 +15,7 @@ An Attestation node contains only metadata:
   "sequence": null,                    // For ordered sequences in routes/itineraries
   "connection_metadata": null,         // For network relationships
   "certainty": 0.95,                   // Confidence level (0.0-1.0)
-  "certainty_note": "Well-documented in primary sources",
+  "certaintyNote": "Well-documented in primary sources",
   "notes": "Additional context",
   "created": "2024-01-15T10:30:00Z",
   "modified": "2024-02-20T14:45:00Z",
@@ -28,7 +28,7 @@ An Attestation node contains only metadata:
 - `sequence`: Integer for ordering waypoints in routes/itineraries
 - `connection_metadata`: JSON for network connection details (trade goods, flow direction, etc.)
 - `certainty`: Confidence value (0.0-1.0)
-- `certainty_note`: Explanation of certainty assessment
+- `certaintyNote`: Explanation of certainty assessment
 - `notes`: Free-text context
 - `created`, `modified`: Temporal metadata
 - `contributor`: User or system that created the attestation
@@ -50,9 +50,9 @@ All relationships are expressed through the unified **EDGE** collection. Each ed
 {
   "_key": "edge-001",
   "_id": "edges/edge-001",
-  "_from": "things/constantinople",     // Source node
-  "_to": "attestations/att-001",        // Target node
-  "edge_type": "subject_of",           // Type of relationship
+  "_from": "attestations/att-001",      // Source node
+  "_to": "things/constantinople",       // Target node
+  "edge_type": "attests_about",        // Type of relationship
   "role": "subject",                   // Optional disambiguation
   "properties": {},                    // Optional edge-specific data
   "created": "2024-01-15T10:30:00Z"
@@ -63,13 +63,14 @@ All relationships are expressed through the unified **EDGE** collection. Each ed
 
 | Edge Type | Direction | Meaning |
 |-----------|-----------|---------|
-| `subject_of` | SpatialEntity → Attestation | This attestation is about this SpatialEntity |
+| `attests_about` | Attestation → SpatialEntity | This attestation is about this SpatialEntity |
 | `attests_name` | Attestation → Name | This attestation claims this Name |
 | `attests_geometry` | Attestation → Geometry | This attestation claims this Geometry |
 | `attests_timespan` | Attestation → Timespan | This attestation claims this Timespan |
 | `sourced_by` | Attestation → Authority | This attestation is backed by this Source |
 | `relates_to` | Attestation → SpatialEntity | This attestation connects to another SpatialEntity |
-| `typed_by` | Attestation → Authority | This attestation uses this Relation Type |
+| `attests_type` | Attestation → Type | This attestation classifies the SpatialEntity with this Type |
+| `has_relation_type` | Attestation → RelationType | This attestation uses this Relation Type |
 | `meta_attestation` | Attestation → Attestation | This attestation comments on another |
 | `part_of` | Authority → Authority | This Source is part of this Dataset |
 
@@ -104,7 +105,7 @@ Users can define domain-specific relation types through AUTHORITY documents:
 ```javascript
 {
   "_id": "authorities/capital-of",
-  "authority_type": "relation_type",
+  "authorityType": "relationType",
   "label": "capital_of",
   "inverse": "has_capital",
   "domain": ["city", "location"],
@@ -153,7 +154,7 @@ Each edge represents an independent relationship with the Attestation as the hub
                            ↑
                     [attests_name]
                            |
-SpatialEntity(mexico-city) →[subject_of]→ Attestation(att-001) ─[attests_timespan]→ Timespan(1325-1521)
+SpatialEntity(mexico-city) ←[attests_about]─ Attestation(att-001) ─[attests_timespan]→ Timespan(1325-1521)
                            |
                     [sourced_by]
                            ↓
@@ -186,9 +187,9 @@ Name:
 ```javascript
 {
   "_id": "names/tenochtitlan",
-  "name": "Tenochtitlan",
+  "toponym": "Tenochtitlan",
   "language": "nah",
-  "name_type": ["toponym"]
+  "nameType": ["toponym"]
 }
 ```
 
@@ -196,10 +197,10 @@ Timespan:
 ```javascript
 {
   "_id": "timespans/aztec-tenochtitlan",
-  "start_earliest": "1325-01-01",
-  "start_latest": "1325-12-31",
-  "end_earliest": "1521-08-13",
-  "end_latest": "1521-08-13",
+  "startEarliest": "1325-01-01",
+  "startLatest": "1325-12-31",
+  "endEarliest": "1521-08-13",
+  "endLatest": "1521-08-13",
   "precision": "year"
 }
 ```
@@ -208,7 +209,7 @@ Authority (Source):
 ```javascript
 {
   "_id": "authorities/codex-mendoza",
-  "authority_type": "source",
+  "authorityType": "source",
   "citation": "Codex Mendoza, 16th century",
   "uri": "https://example.org/codex-mendoza"
 }
@@ -216,11 +217,11 @@ Authority (Source):
 
 **Edges:**
 ```javascript
-// SpatialEntity to Attestation
+// Attestation to SpatialEntity
 {
-  "_from": "things/mexico-city",
-  "_to": "attestations/att-001",
-  "edge_type": "subject_of"
+  "_from": "attestations/att-001",
+  "_to": "things/mexico-city",
+  "edge_type": "attests_about"
 }
 
 // Attestation to Name
@@ -245,8 +246,6 @@ Authority (Source):
 }
 ```
 
-**Note on Timespan Fields:** Internally, WHG uses `stop_earliest` and `stop_latest` for temporal bounds. When exporting to RDF/W3C Time format, these are mapped to `end_earliest` and `end_latest` for standards compliance. This example shows internal field names.
-
 ---
 
 ### Example 2: SpatialEntity with Geometry and Different Timespan
@@ -259,7 +258,7 @@ Authority (Source):
                            ↑
                     [attests_geometry]
                            |
-SpatialEntity(changan) ←[subject_of]← Attestation(att-002) ─[attests_timespan]→ Timespan(tang-dynasty)
+SpatialEntity(changan) ←[attests_about]─ Attestation(att-002) ─[attests_timespan]→ Timespan(tang-dynasty)
                            |
                     [sourced_by]
                            ↓
@@ -269,9 +268,9 @@ SpatialEntity(changan) ←[subject_of]← Attestation(att-002) ─[attests_times
 **Edges:**
 ```javascript
 {
-  "_from": "things/changan",
-  "_to": "attestations/att-002",
-  "edge_type": "subject_of"
+  "_from": "attestations/att-002",
+  "_to": "things/changan",
+  "edge_type": "attests_about"
 }
 
 {
@@ -301,11 +300,11 @@ SpatialEntity(changan) ←[subject_of]← Attestation(att-002) ─[attests_times
 
 **Graph structure (Star-Schema):**
 ```
-                    Authority(capital-of relation)
+                    RelationType(capital-of)
                            ↑
-                       [typed_by]
+                  [has_relation_type]
                            |
-SpatialEntity(alexandria) ←[subject_of]← Attestation(att-003) ─[relates_to]→ SpatialEntity(ptolemaic-egypt)
+SpatialEntity(alexandria) ←[attests_about]─ Attestation(att-003) ─[relates_to]→ SpatialEntity(ptolemaic-egypt)
                            |
                       [sourced_by]
                            ↓
@@ -314,18 +313,18 @@ SpatialEntity(alexandria) ←[subject_of]← Attestation(att-003) ─[relates_to
 
 **Edges:**
 ```javascript
-// SpatialEntity to Attestation
+// Attestation to SpatialEntity
 {
-  "_from": "things/alexandria",
-  "_to": "attestations/att-003",
-  "edge_type": "subject_of"
+  "_from": "attestations/att-003",
+  "_to": "things/alexandria",
+  "edge_type": "attests_about"
 }
 
 // Attestation to Relation Type
 {
   "_from": "attestations/att-003",
   "_to": "authorities/capital-of",
-  "edge_type": "typed_by"
+  "edge_type": "has_relation_type"
 }
 
 // Attestation to Related SpatialEntity
@@ -351,11 +350,11 @@ SpatialEntity(alexandria) ←[subject_of]← Attestation(att-003) ─[relates_to
 
 **Graph structure (Star-Schema):**
 ```
-                    Authority(member-of relation)
+                    RelationType(member-of)
                            ↑
-                       [typed_by]
+                  [has_relation_type]
                            |
-SpatialEntity(samarkand) ←[subject_of]← Attestation(att-005) ─[relates_to]→ SpatialEntity(silk-road)
+SpatialEntity(samarkand) ←[attests_about]─ Attestation(att-005) ─[relates_to]→ SpatialEntity(silk-road)
                            |
                       [sourced_by]
                            ↓
@@ -374,15 +373,15 @@ SpatialEntity(samarkand) ←[subject_of]← Attestation(att-005) ─[relates_to]
 **Edges:**
 ```javascript
 {
-  "_from": "things/samarkand",
-  "_to": "attestations/att-005",
-  "edge_type": "subject_of"
+  "_from": "attestations/att-005",
+  "_to": "things/samarkand",
+  "edge_type": "attests_about"
 }
 
 {
   "_from": "attestations/att-005",
   "_to": "authorities/member-of",
-  "edge_type": "typed_by"
+  "edge_type": "has_relation_type"
 }
 
 {
@@ -406,11 +405,11 @@ SpatialEntity(samarkand) ←[subject_of]← Attestation(att-005) ─[relates_to]
 
 **Graph structure (Star-Schema):**
 ```
-                    Authority(connected-to relation)
+                    RelationType(connected-to)
                            ↑
-                       [typed_by]
+                  [has_relation_type]
                            |
-SpatialEntity(constantinople) ←[subject_of]← Attestation(att-007) ─[relates_to]→ SpatialEntity(venice)
+SpatialEntity(constantinople) ←[attests_about]─ Attestation(att-007) ─[relates_to]→ SpatialEntity(venice)
                            |
                     [attests_timespan]
                            ↓
@@ -434,15 +433,15 @@ SpatialEntity(constantinople) ←[subject_of]← Attestation(att-007) ─[relate
 **Edges:**
 ```javascript
 {
-  "_from": "things/constantinople",
-  "_to": "attestations/att-007",
-  "edge_type": "subject_of"
+  "_from": "attestations/att-007",
+  "_to": "things/constantinople",
+  "edge_type": "attests_about"
 }
 
 {
   "_from": "attestations/att-007",
   "_to": "authorities/connected-to",
-  "edge_type": "typed_by"
+  "edge_type": "has_relation_type"
 }
 
 {
@@ -498,7 +497,7 @@ Attestation(att-001) ←[meta_attestation]← Attestation(att-meta)
 }
 ```
 
-**Note on Meta-Attestation Edge Type:** The edge connecting meta-attestations uses `edge_type: "meta_attestation"` with an optional `meta_type` property in the edge's properties field to specify the nature of the relationship (contradicts, supports, supersedes, etc.). This is distinct from the `typed_by` edge pattern used for SpatialEntity-to-SpatialEntity relationships.
+**Note on Meta-Attestation Edge Type:** The edge connecting meta-attestations uses `edge_type: "meta_attestation"` with an optional `meta_type` property in the edge's properties field to specify the nature of the relationship (contradicts, supports, supersedes, etc.). This is distinct from the `has_relation_type` edge pattern used for SpatialEntity-to-SpatialEntity relationships.
 
 ---
 
@@ -512,23 +511,23 @@ A single SpatialEntity can have multiple Attestations with different:
 **Example: Constantinople through time**
 
 ```
-SpatialEntity(constantinople) ←[subject_of]← Attestation(att-ancient)
-                                           ↓ [attests_name]
-                                        Name(byzantion)
-                                           ↓ [attests_timespan]
-                                        Timespan(667-BCE-330-CE)
+SpatialEntity(constantinople) ←[attests_about]─ Attestation(att-ancient)
+                                              ↓ [attests_name]
+                                           Name(byzantion)
+                                              ↓ [attests_timespan]
+                                           Timespan(667-BCE-330-CE)
 
-SpatialEntity(constantinople) ←[subject_of]← Attestation(att-byzantine)
-                                           ↓ [attests_name]
-                                        Name(konstantinoupolis)
-                                           ↓ [attests_timespan]
-                                        Timespan(330-1453-CE)
+SpatialEntity(constantinople) ←[attests_about]─ Attestation(att-byzantine)
+                                              ↓ [attests_name]
+                                           Name(konstantinoupolis)
+                                              ↓ [attests_timespan]
+                                           Timespan(330-1453-CE)
 
-SpatialEntity(constantinople) ←[subject_of]← Attestation(att-ottoman)
-                                           ↓ [attests_name]
-                                        Name(istanbul)
-                                           ↓ [attests_timespan]
-                                        Timespan(1453-present)
+SpatialEntity(constantinople) ←[attests_about]─ Attestation(att-ottoman)
+                                              ↓ [attests_name]
+                                           Name(istanbul)
+                                              ↓ [attests_timespan]
+                                           Timespan(1453-present)
 ```
 
 Each attestation is independent, with its own:
@@ -578,8 +577,6 @@ FOR thing IN things
             certainty: att.certainty
           }
 ```
-
-**Note:** This query uses `end_latest` in the filter. Remember that internally WHG stores this as `stop_latest`, so adjust field names based on your implementation context.
 
 ### Find all SpatialEntities connected via a specific relation type
 
@@ -656,7 +653,7 @@ The v3 attestation model embedded relationships within attestation records. The 
 **v4 Pattern:**
 ```
 Attestation node (metadata only)
-  + Edge to SpatialEntity (subject_of)
+  + Edge to SpatialEntity (attests_about)
   + Edge to Name (attests_name)
   + Edge to Timespan (attests_timespan)
   + Edge to Authority (sourced_by)
