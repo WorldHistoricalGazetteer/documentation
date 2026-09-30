@@ -515,11 +515,10 @@ from a place's spatial relations. They are not how a route or journey is entered
 
 ## Next steps
 
-% TODO(0.7.0-doi): add the 0.7.0 version DOI
 
 - [Routes, Itineraries, Networks, Groups and Periods](../data-model/patterns.md): the model in
   full, with diagrams.
 - [PLATO 0.7.0](https://github.com/pelagios/place-attestation-ontology/releases/tag/v0.7.0)
-  ([doi:10.5281/zenodo.21688313](https://doi.org/10.5281/zenodo.21688313), the DOI for PLATO, all
-  versions): the ontology, the spreadsheet
+  ([doi:10.5281/zenodo.23056873](https://doi.org/10.5281/zenodo.23056873); all
+  versions: [doi:10.5281/zenodo.21688313](https://doi.org/10.5281/zenodo.21688313)): the ontology, the spreadsheet
   table definitions and the examples.

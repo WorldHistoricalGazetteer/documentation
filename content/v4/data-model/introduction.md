@@ -1,13 +1,12 @@
 # Introduction
 
-% TODO(0.7.0-doi): add the 0.7.0 version DOI
 This page introduces the idea on which the WHG v4 data model rests: that what we know about a place
 is a set of **attestations**, each a claim made by a particular source, rather than a record with
 one value per field. The model is [PLATO](https://w3id.org/plato), the Place Attestation Ontology,
 and the terms on this page are PLATO's, as of [PLATO
 0.7.0](https://github.com/pelagios/place-attestation-ontology/releases/tag/v0.7.0)
-([doi:10.5281/zenodo.21688313](https://doi.org/10.5281/zenodo.21688313), the DOI for PLATO, all
-versions). The [Overview](overview.md) lists the entities and their properties in full.
+([doi:10.5281/zenodo.23056873](https://doi.org/10.5281/zenodo.23056873); all
+versions: [doi:10.5281/zenodo.21688313](https://doi.org/10.5281/zenodo.21688313)). The [Overview](overview.md) lists the entities and their properties in full.
 
 ## Many names, many shapes, many dates, many sources
 

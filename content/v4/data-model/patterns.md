@@ -6,11 +6,10 @@ places in order), an **itinerary** (a journey along a way, dated stop by stop) a
 earlier drafts modelled in the same way now sit instead: a **gazetteer group**, which is a group of
 Gazetteers, and a **period**, which is an Authority. Neither of those is a SpatialEntity.
 
-% TODO(0.7.0-doi): add the 0.7.0 version DOI
 The model is PLATO's, as released in [PLATO
 0.7.0](https://github.com/pelagios/place-attestation-ontology/releases/tag/v0.7.0)
-([doi:10.5281/zenodo.21688313](https://doi.org/10.5281/zenodo.21688313), the DOI for PLATO, all
-versions). A route, an itinerary or a network is a SpatialEntity, typed as such, and everything
+([doi:10.5281/zenodo.23056873](https://doi.org/10.5281/zenodo.23056873); all
+versions: [doi:10.5281/zenodo.21688313](https://doi.org/10.5281/zenodo.21688313)). A route, an itinerary or a network is a SpatialEntity, typed as such, and everything
 about it (its members, their order, its connections and the figures a source gives for them) is an
 attestation with its own source, date and certainty.
 
