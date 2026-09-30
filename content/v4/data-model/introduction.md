@@ -1,12 +1,12 @@
 # Introduction
 
+% TODO(0.7.1-doi): add the 0.7.1 version DOI
 This page introduces the idea on which the WHG v4 data model rests: that what we know about a place
 is a set of **attestations**, each a claim made by a particular source, rather than a record with
 one value per field. The model is [PLATO](https://w3id.org/plato), the Place Attestation Ontology,
 and the terms on this page are PLATO's, as of [PLATO
-0.7.0](https://github.com/pelagios/place-attestation-ontology/releases/tag/v0.7.0)
-([doi:10.5281/zenodo.23056873](https://doi.org/10.5281/zenodo.23056873); all
-versions: [doi:10.5281/zenodo.21688313](https://doi.org/10.5281/zenodo.21688313)). The [Overview](overview.md) lists the entities and their properties in full.
+0.7.1](https://github.com/pelagios/place-attestation-ontology/releases/tag/v0.7.1)
+(all versions: [doi:10.5281/zenodo.21688313](https://doi.org/10.5281/zenodo.21688313)). The [Overview](overview.md) lists the entities and their properties in full.
 
 ## Many names, many shapes, many dates, many sources
 
@@ -173,8 +173,8 @@ The values are PLATO's own.
       ],
       "certainty": 1.0,
       "certaintyNote": "The source names the city: Megabazus was 'at Byzantion' (ἐν Βυζαντίῳ). It gives no location, so no geometry is attested.",
-      "notes": "The timespan is the date of the source, not the span in which the name Byzantion was used. The Histories are usually dated about 440 BC; nothing in them can be dated with certainty after 430 BC, and Herodotus is thought to have died about 425 BC. The bounds are set wide enough to cover both.",
-      "created": "2026-02-16T10:00:00Z"
+      "notes": "The timespan is when this source witnesses the name Byzantion in use. A source witnesses only its own time, so that is the source's date, not the whole span in which the name was used. The Histories are usually dated about 440 BC; nothing in them can be dated with certainty after 430 BC, and Herodotus is thought to have died about 425 BC. The bounds are set wide enough to cover both.",
+      "created": "2026-02-15T10:00:00Z"
     },
     {
       "@id": "https://whgazetteer.org/example/attestation/constantinopolis-notitia",
@@ -208,8 +208,8 @@ The values are PLATO's own.
       ],
       "certainty": 1.0,
       "certaintyNote": "The preface names the city 'urbis Constantinopolitanae'. The source describes the city's fourteen regions but gives no coordinates, so no geometry is attested.",
-      "notes": "The timespan is the date of the source, not the span in which the name Constantinopolis was used. The Notitia was written under Theodosius II, who died in 450, and whom its preface praises; proposed dates run from about 425 to 447-450.",
-      "created": "2026-02-16T10:00:00Z"
+      "notes": "The timespan is when this source witnesses the name Constantinopolis in use. A source witnesses only its own time, so that is the source's date, not the whole span in which the name was used. The Notitia was written under Theodosius II, who died in 450, and whom its preface praises; proposed dates run from about 425 to 447-450.",
+      "created": "2026-02-15T10:00:00Z"
     }
   ]
 }
@@ -221,7 +221,8 @@ Points to notice:
   location comes from another attestation, with its own source.
 - The Type names the AAT concept in `identifier`. The Type node stands for this dataset's use of
   that concept, so it never takes the concept's IRI as its own `@id`.
-- Each timespan is the date its source witnesses (the `notes` say how it was set), not the span in
+- Each timespan is when its source witnesses the name in use (the `notes` say how it was set).
+  These sources witness only their own time, so it is the source's date, not the whole span in
   which the name was used. "The Byzantine period, 330–1453" would be a further attestation, sourced
   from the scholarly work that says so.
 - A third source that disagrees, or a fourth name, is simply another attestation. Nothing is

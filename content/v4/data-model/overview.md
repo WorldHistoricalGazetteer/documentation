@@ -1,10 +1,10 @@
 # Overview
 
+% TODO(0.7.1-doi): add the 0.7.1 version DOI
 This page is a reference to the entities of the WHG v4 data model and their properties. The model is
 [PLATO](https://w3id.org/plato), the Place Attestation Ontology, as of [PLATO
-0.7.0](https://github.com/pelagios/place-attestation-ontology/releases/tag/v0.7.0)
-([doi:10.5281/zenodo.23056873](https://doi.org/10.5281/zenodo.23056873); all
-versions: [doi:10.5281/zenodo.21688313](https://doi.org/10.5281/zenodo.21688313)); the [Introduction](introduction.md) explains the ideas behind it. Each table gives the
+0.7.1](https://github.com/pelagios/place-attestation-ontology/releases/tag/v0.7.1)
+(all versions: [doi:10.5281/zenodo.21688313](https://doi.org/10.5281/zenodo.21688313)); the [Introduction](introduction.md) explains the ideas behind it. Each table gives the
 **JSON key** used in PLATO JSON (the keys of PLATO's JSON Schema, `plato.schema.json`) and the **RDF
 property** in PLATO's ontology, where they differ. Anything on this page that is WHG's own practice
 rather than PLATO's is marked as such.
@@ -101,7 +101,7 @@ what it links to; the attestation itself carries metadata about the claim.
 
 | JSON key | RDF property | Target |
 |---|---|---|
-| `about` | `plato:attests_about` | The SpatialEntity (exactly one). Implicit when nested in a place-centric document |
+| `about` | `plato:attests_about` | The SpatialEntity (exactly one). Implicit when nested in a place-centric document; not needed on a meta-attestation (`meta`), which is about its target |
 | `names` | `plato:attests_name` | Names |
 | `geometries` | `plato:attests_geometry` | Geometries |
 | `timespans` | `plato:attests_timespan` | Timespans: when the claim applies |

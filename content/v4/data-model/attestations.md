@@ -1,12 +1,12 @@
 # Attestations and Relations
 
+% TODO(0.7.1-doi): add the 0.7.1 version DOI
 In WHG v4 everything known about a place, apart from its identifier, is an **attestation**: a bundle
 of evidence saying that a SpatialEntity had a name, a location, a type, a relation to something else
 or some other attribute, at some time, according to some source, as recorded by someone. The model
 is [PLATO](https://w3id.org/plato), the Place Attestation Ontology, at [PLATO
-0.7.0](https://github.com/pelagios/place-attestation-ontology/releases/tag/v0.7.0)
-([doi:10.5281/zenodo.23056873](https://doi.org/10.5281/zenodo.23056873); all
-versions: [doi:10.5281/zenodo.21688313](https://doi.org/10.5281/zenodo.21688313)). This page describes what an attestation can hold, how relations and identity are
+0.7.1](https://github.com/pelagios/place-attestation-ontology/releases/tag/v0.7.1)
+(all versions: [doi:10.5281/zenodo.21688313](https://doi.org/10.5281/zenodo.21688313)). This page describes what an attestation can hold, how relations and identity are
 expressed, how one attestation comments on another, and how a Gazetteer attests about places that
 other Gazetteers define. The controlled values it mentions are listed in
 [Vocabularies](vocabularies.md).
@@ -27,12 +27,13 @@ An attestation is about exactly one SpatialEntity (`plato:attests_about`). In a
 [place-centric](https://w3id.org/plato/schemas/place-centric.schema.json) document it is nested
 under that SpatialEntity; in an
 [attestation-centric](https://w3id.org/plato/schemas/attestation-centric.schema.json) document its
-`about` gives the SpatialEntity's IRI. Everything else is optional, and an attestation carries as
-much or as little as its source says.
+`about` gives the SpatialEntity's IRI. A [meta-attestation](#meta-attestations) need not say: it
+is about its target attestation. Everything else is optional, and an attestation carries as much or
+as little as its source says.
 
 | What | PLATO property | JSON key | Notes |
 |------|----------------|----------|-------|
-| The SpatialEntity | `attests_about` | `about` | Implicit when nested under the SpatialEntity. |
+| The SpatialEntity | `attests_about` | `about` | Implicit when nested under the SpatialEntity. Not needed on a meta-attestation, which is about its target. |
 | Names | `attests_name` | `names` | A `toponym`, with `language`, `script`, `romanized`, `nameType` and more. |
 | Geometries | `attests_geometry` | `geometries` | GeoJSON or WKT, with `role`, `spatialPrecision` and `precisionKm`. |
 | Timespans | `attests_timespan` | `timespans` | Four dates (`startEarliest`, `startLatest`, `endEarliest`, `endLatest`) with their precision. |
@@ -105,16 +106,17 @@ date was set.
   ],
   "certainty": 1.0,
   "certaintyNote": "The preface names the city 'urbis Constantinopolitanae'. The source describes the city's fourteen regions but gives no coordinates, so no geometry is attested.",
-  "notes": "The timespan is the date of the source, not the span in which the name Constantinopolis was used. The Notitia was written under Theodosius II, who died in 450, and whom its preface praises; proposed dates run from about 425 to 447-450.",
-  "created": "2026-02-16T10:00:00Z"
+  "notes": "The timespan is when this source witnesses the name Constantinopolis in use. A source witnesses only its own time, so that is the source's date, not the whole span in which the name was used. The Notitia was written under Theodosius II, who died in 450, and whom its preface praises; proposed dates run from about 425 to 447-450.",
+  "created": "2026-02-15T10:00:00Z"
 }
 ```
 
 The same SpatialEntity has two more attestations in that file: Βυζάντιον, from Herodotus (dated
 to the Histories, about 440 to 420 BC), and İstanbul, from GeoNames (dated to the day GeoNames was
 consulted, and the only one of the three with a geometry). Each keeps its own source, dates and
-certainty, and they need not agree. Each timespan is when its source witnesses the name, not the
-span in which the name was used: that is a conclusion drawn from many attestations.
+certainty, and they need not agree. Each timespan is when its source witnesses the name in use.
+These sources witness only their own time, so it is the source's date, not the whole span in which
+the name was used: that is a conclusion drawn from many attestations.
 
 ---
 
@@ -576,7 +578,10 @@ An attestation can comment on another attestation. A **meta-attestation** points
 `plato:meta_attestation_about` and says what kind of comment it is with `plato:has_meta_type`, a
 concept in PLATO's meta-type scheme or a project's own. In JSON both go in the attestation's `meta`
 object, as `targetAttestation` (the target's `@id`) and `metaType` (the concept's IRI). A
-meta-attestation is an ordinary attestation otherwise: it has its own source, contributor, date,
+meta-attestation need not say which SpatialEntity it is about (`about`, `plato:attests_about`): it
+is about its target, and through it about the target's SpatialEntity. Where it does say, as when it
+is nested under a place in a place-centric document, that is the target's. A meta-attestation is an
+ordinary attestation otherwise: it has its own source, contributor, date,
 certainty and notes, and may itself be the target of another.
 
 | Meta type | Meaning (PLATO) |

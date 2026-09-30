@@ -1,10 +1,10 @@
 # Contributions: What Arrives and What It Becomes
 
+% TODO(0.7.1-doi): add the 0.7.1 version DOI
 This page describes how data comes into WHG v4 and what it becomes in the data model. The model is
 [PLATO](https://w3id.org/plato), the Place Attestation Ontology, at [PLATO
-0.7.0](https://github.com/pelagios/place-attestation-ontology/releases/tag/v0.7.0)
-([doi:10.5281/zenodo.23056873](https://doi.org/10.5281/zenodo.23056873); all
-versions: [doi:10.5281/zenodo.21688313](https://doi.org/10.5281/zenodo.21688313)). For which format to choose, see [Data formats in and out](../guide/formats.md); for a
+0.7.1](https://github.com/pelagios/place-attestation-ontology/releases/tag/v0.7.1)
+(all versions: [doi:10.5281/zenodo.21688313](https://doi.org/10.5281/zenodo.21688313)). For which format to choose, see [Data formats in and out](../guide/formats.md); for a
 step-by-step route entered in spreadsheets, see [Routes, itineraries and
 networks](../guide/routes-and-networks.md).
 
@@ -124,7 +124,7 @@ The next version of LPF is coordinated by ISHI and the Pelagios Place Working Gr
 towards it are recorded in
 [LPF discussion #53](https://github.com/LinkedPasts/linked-places-format/discussions/53).
 
-% TODO(release): check this table against the LPF importer as shipped. PLATO tools (0.7.0, 8a518ed) still
+% TODO(release): check this table against the LPF importer as shipped. PLATO tools (0.7.1, 1ffcf65) still
 % writes an LPF file's `links[]` as standalone identityRelations, not bundled in an
 % attestation; WHG's LPF import should bundle them as the table says.
 

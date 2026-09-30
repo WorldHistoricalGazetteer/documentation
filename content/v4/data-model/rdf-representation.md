@@ -1,6 +1,6 @@
 # RDF Representation
 
-% Every plato: term on this page is defined in PLATO's ontology.ttl at tag v0.7.0 (238d4f2).
+% Every plato: term on this page is defined in PLATO's ontology.ttl at tag v0.7.1 (8b37c18).
 % Every Turtle excerpt is verbatim from that tag, and every SPARQL query was run with rdflib 7.6 against
 % the tag's twelve examples/*.ttl files (2026-09-30).
 
@@ -127,7 +127,7 @@ attestations. The attestation itself carries only metadata: `plato:certainty`,
 An attestation is a node of its own, not a reified triple: it bundles one SpatialEntity with the
 names, geometries, timespans and types a source gives for it, and says who recorded that and on
 what evidence. PLATO's Constantinople example has one SpatialEntity and three attestations, one
-per source. The third of them, from `examples/constantinople.ttl` (lines 218–230):
+per source. The third of them, from `examples/constantinople.ttl` (lines 219–231):
 
 ```turtle
 whgx:attestation\/istanbul-geonames
@@ -146,7 +146,7 @@ whgx:attestation\/istanbul-geonames
 ```
 
 The SpatialEntity itself says almost nothing: its identity is the point on which attestations
-converge (lines 42–46):
+converge (lines 43–47):
 
 ```turtle
 whgx:entity\/constantinople
@@ -167,7 +167,7 @@ that it gives the w3id identifier.
 ### Names
 
 A Name is a node that attestations point to, so the same form can be attested for several
-entities, by several sources (lines 57–65):
+entities, by several sources (lines 58–66):
 
 ```turtle
 whgx:name\/byzantion-grc
@@ -191,7 +191,7 @@ attestation.
 
 `plato:Geometry` is a subclass of GeoSPARQL's `geo:Geometry`, and its WKT is `plato:geo_wkt`, a
 subproperty of `geo:asWKT` with the range `geo:wktLiteral`. Only GeoNames, of the example's three
-sources, gives a location; from the same file (lines 91–95):
+sources, gives a location; from the same file (lines 92–96):
 
 ```turtle
 whgx:geometry\/geonames-point
@@ -229,7 +229,7 @@ What this means for spatial queries:
 
 A Timespan has four bounds, so that uncertainty about when something began and ended can be said
 exactly; a bound that is not known is left out. Herodotus's Histories are dated only to within a
-couple of decades (lines 105–110):
+couple of decades (lines 106–111):
 
 ```turtle
 whgx:timespan\/herodotus-histories
@@ -272,7 +272,7 @@ A Type node stands for **one dataset's use** of a classification, not for the vo
 concept. Its IRI, if it has one, is the dataset's own; the concept's IRI goes in
 `plato:type_identifier`. Were the Type node the concept itself, every dataset's label and version
 would pile up on one shared node in any combined graph. In `examples/constantinople.ttl`
-(lines 133–136), the Type has the dataset's IRI:
+(lines 134–137), the Type has the dataset's IRI:
 
 ```turtle
 whgx:type\/inhabited-place
@@ -314,7 +314,7 @@ queries below compare `STR(?identifier)`, so that they also find data that write
 A relation between two entities is an attestation about one of them that `plato:relates_to` the
 other, with `plato:has_relation_type` naming the kind of relation. So a relation has a source, a
 timespan and a certainty like any other claim. PLATO declares its relation types as individuals of
-`plato:RelationType`, an Authority. Containment, from `ontology.ttl` (lines 3221–3235, comment
+`plato:RelationType`, an Authority. Containment, from `ontology.ttl` (lines 3230–3244, comment
 left out):
 
 ```turtle
@@ -436,10 +436,10 @@ whgx:identity\/river-upland-1
 Within this attestation, and only here, software may conclude that Newton Mill and Newton Upland
 are the same place. The editor later withdraws this act (see [Meta-attestations](#meta-attestations)),
 restates the correct matches, one attestation each, and records that the gazetteer's two Newtons
-are different places (lines 202–215):
+are different places (lines 206–219):
 
 ```turtle
-whgx:attestation\/newtons-distinct
+whgx:attestation\/newtons-distinct-2026-09-12
     a plato:Attestation ;
     plato:attests_about whgx:entity\/newton-on-the-hill ;
     plato:negated true ;
@@ -457,7 +457,7 @@ whgx:identity\/hill-river-denied
 
 An identity relation asserted on its own, not bundled, carries its provenance itself
 (`plato:identity_basis`, `plato:identity_asserted_by`, `plato:identity_sourced_by`). From
-`examples/constantinople.ttl` (lines 241–246):
+`examples/constantinople.ttl` (lines 242–247):
 
 ```turtle
 whgx:identity\/constantinople-geonames
@@ -511,7 +511,7 @@ whgx:attestation\/bunsty-bunstowe-normalised
 Once a gazetteer is published its attestations are never deleted or changed. A correction is a new
 attestation that supersedes or contradicts the old one; a withdrawal is one that retracts it. Each
 carries `plato:created`, so the state of the data at any date can be worked out from the data
-itself (query 6 below). From `examples/identity-judgements.ttl` (lines 145–152), the editor
+itself (query 6 below). From `examples/identity-judgements.ttl` (lines 149–156), the editor
 withdraws the act above, both its matches together, after finding one of them wrong:
 
 ```turtle
@@ -524,6 +524,10 @@ whgx:attestation\/newton-cluster-1-retracted
     plato:notes "The tithe maps put Newton Upland on the hill, not by the river: the second match was wrong. The first is restated below." ;
     plato:created "2026-09-12T09:00:00Z"^^xsd:dateTime .
 ```
+
+The retraction carries no `plato:attests_about`. A meta-attestation need not: it is about its
+target, and through it about the target's SpatialEntity. Where one does carry it, as the
+normalised form above does, it should be the target's.
 
 ---
 
@@ -570,11 +574,11 @@ marked `plato:computed true`, and is not evidence (see
 
 ## Querying with SPARQL
 
+% TODO(0.7.1-doi): add the 0.7.1 version DOI
 These queries use only PLATO terms. Each was run with rdflib against PLATO's twelve example Turtle
 files, as released in [PLATO
-0.7.0](https://github.com/pelagios/place-attestation-ontology/releases/tag/v0.7.0)
-([doi:10.5281/zenodo.23056873](https://doi.org/10.5281/zenodo.23056873); all
-versions: [doi:10.5281/zenodo.21688313](https://doi.org/10.5281/zenodo.21688313)), and the results shown are what they returned. Replace the example IRIs with WHG
+0.7.1](https://github.com/pelagios/place-attestation-ontology/releases/tag/v0.7.1)
+(all versions: [doi:10.5281/zenodo.21688313](https://doi.org/10.5281/zenodo.21688313)), and the results shown are what they returned. Replace the example IRIs with WHG
 identifiers to use them on WHG data.
 
 ### 1. The names of a place, with their dates and sources
@@ -600,8 +604,8 @@ ORDER BY ?from
 
 Returns Βυζάντιον (grc, -0440 to -0420, Herodotus, Histories IV.144, 1.0), Constantinopolis (la,
 0425 to 0450, Notitia Urbis Constantinopolitanae, 1.0) and İstanbul (tr, 2026-09-30 to 2026-09-30,
-GeoNames, 1.0). Each date is when its source witnesses the name, not the span in which the name
-was used.
+GeoNames, 1.0). Each date is when its source witnesses the name in use. These sources witness only their own
+time, so it is the source's date, not the whole span in which the name was used.
 
 ### 2. Routes, itineraries, networks and segments
 
@@ -685,8 +689,8 @@ SELECT ?subject ?object ?identityType ?bundledIn ?denied WHERE {
 
 Returns six: Constantinople `closeMatch` GeoNames 745044 (asserted on its own); the two
 `exactMatch` relations bundled in the retracted act (`newton-cluster-1`); the two corrected matches,
-each in an attestation of its own; and the two Newtons `exactMatch`, bundled in `newtons-distinct`
-and denied. This query does not leave out retracted attestations (query 6 shows how). Each row is
+each in an attestation of its own; and the two Newtons `exactMatch`, bundled in
+`newtons-distinct-2026-09-12` and denied. This query does not leave out retracted attestations (query 6 shows how). Each row is
 one contributor's claim; do not chain rows from different attestations together.
 
 ### 6. The current state: attestations not withdrawn or replaced
