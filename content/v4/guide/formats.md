@@ -35,16 +35,25 @@ is the formal expression of WHG's data model. It suits richer data: where severa
 different claims about one place, each with its own dates, certainty and citation, and where you
 want to keep them apart rather than flatten them into one record.
 
-- PLATO has a JSON form and an RDF form, and converts between them without loss.
+- PLATO has a JSON form and an RDF form; PLATO's JSON-LD context turns one into the other.
 - LPF is PLATO's single-object profile, so LPF data is valid PLATO. The two are designed to
   coexist, and neither replaces the other.
+- WHG v4.0 accepts PLATO in two forms for upload: **PLATO JSON** (place-centric or
+  attestation-centric) and **PLATO spreadsheet tables** (PLATO's template, one sheet for each kind
+  of statement). The tables are the easiest way to enter a route, itinerary or network (see
+  [Routes, itineraries and networks](./routes-and-networks.md)).
+- WHG v4.0 does not accept RDF (Turtle, say) for upload directly. Convert it to PLATO JSON first.
 - The [PLATO tools](https://pelagios.org/plato-tools/) check and convert PLATO data in your browser.
 
 ## Linked Data
 
 Because PLATO is defined in RDF, WHG's data can be published as Linked Data and queried with
-standard tools. Individual records are already available as JSON-LD through their identifiers
-(see [Identifiers and citation](./identifiers.md)).
+standard tools. Each record is available through its identifier (see
+[Identifiers and citation](./identifiers.md)):
+
+- **Today**, as JSON-LD in Linked Places Format. Turtle is not served.
+- **At the v4 launch**, as PLATO JSON-LD or Turtle, by content negotiation, with LPF still offered
+  for existing clients.
 
 % TODO(release): add the SPARQL endpoint here if it has shipped; otherwise keep it out of the text.
 
@@ -54,4 +63,6 @@ standard tools. Individual records are already available as JSON-LD through thei
 |---|---|
 | A list or table of place names | Map your Data (CSV, Excel, Google Sheet) |
 | A gazetteer with one description per place | LPF |
-| Several sources' claims per place, kept apart with their own dates and citations | PLATO |
+| Several sources' claims per place, kept apart with their own dates and citations | PLATO (JSON or spreadsheet tables) |
+| A route, itinerary or network | PLATO spreadsheet tables |
+| Data already held as RDF | Convert to PLATO JSON, then upload |

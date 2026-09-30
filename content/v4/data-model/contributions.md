@@ -1,746 +1,455 @@
-# Contribution Types & Data Formats
+# Contributions: What Arrives and What It Becomes
 
-## Overview
+% TODO(0.7.0-doi): add the 0.7.0 version DOI
+This page describes how data comes into WHG v4 and what it becomes in the data model. The model is
+[PLATO](https://w3id.org/plato), the Place Attestation Ontology, at [PLATO
+0.7.0](https://github.com/pelagios/place-attestation-ontology/releases/tag/v0.7.0)
+([doi:10.5281/zenodo.21688313](https://doi.org/10.5281/zenodo.21688313), the DOI for PLATO, all
+versions). For which format to choose, see [Data formats in and out](../guide/formats.md); for a
+step-by-step route entered in spreadsheets, see [Routes, itineraries and
+networks](../guide/routes-and-networks.md).
 
-WHG accepts contributions representing different types of historical datasets. All contribution types are mapped to the internal graph data model upon ingestion using the SpatialEntity-Attestation-Timespan-Name-Geometry architecture with edges connecting these entities.
+In short:
 
----
-
-## Contribution Types
-
-### Gazetteer
-
-A dataset of places sourced from a common historical or geographical context.
-
-**Characteristics in the model:**
-- Each place becomes a SpatialEntity
-- Places may have classification via `attests_type` edges to Types (GeoNames feature classes or custom classifications)
-- The gazetteer itself is a Gazetteer (`plato:Gazetteer`, a `dcat:Dataset`): the workspace that holds its contributed SpatialEntities and their attestations. It is not a SpatialEntity, and its places are not `member_of` it
-- Dataset-level metadata (DOI, title, description) stored in AUTHORITY documents with `authority_type: "dataset"`
-- Names, Geometries, and Timespans linked via Attestation nodes and edges
-
-**Examples:**
-- **Saxton County Maps**: Places from 16th-century English/Welsh maps
-- **Pleiades**: Authoritative ancient Mediterranean places
-- **GeoNames**: Global contemporary place names
-- **Wikidata**: Structured place entities
-- **Getty TGN**: Historical and contemporary curated places
-- **DARMC**: Digital Atlas of Roman and Medieval Civilizations
-- **CHGIS**: China Historical GIS
-
-**Contribution formats accepted:** LPF JSON, CSV/TSV, spreadsheets
-
-**Mapping to model:**
-```
-LPF place → SpatialEntity
-  ├─ properties.title → Name (via Attestation + attests_name edge)
-  ├─ names[] → Multiple Name entities (via separate Attestations)
-  ├─ geometry/geometries[] → Geometry entities (via Attestations + attests_geometry edges)
-  ├─ types[] → Classification (via Attestation + attests_type edge to a Type)
-  ├─ when → Timespan entity (via Attestation + attests_timespan edge)
-  └─ relations[] → member_of/same_as (via Attestation + has_relation_type + relates_to edges)
-```
+- **A contribution is a Gazetteer**: the contributor's own workspace, which defines its own places
+  and holds the evidence for them.
+- **Every statement in it is an attestation**: a name, location, date, type or relation, each with
+  its source.
+- **Links to places WHG already holds are identity attestations**, never merges.
+- **A published Gazetteer is append-only**: corrections and withdrawals are new attestations, so
+  that every earlier state can be reproduced and cited.
 
 ---
 
-### Route
+## Formats WHG accepts
 
-A sequentially-ordered set of places, typically without specific temporal traversal information.
+These are the formats listed in [Data formats in and out](../guide/formats.md).
 
-**Characteristics in the model:**
-- Container SpatialEntity classified via `attests_type` edge to Type(`plato:TypeRoute`)
-- Member SpatialEntities (waypoints/segments) linked via Attestations with `sequence` field and `member_of` relation type
-- Timespan attestations optional or represent when route existed (not traversal)
-- May include path Geometries as separate SpatialEntities with LineString geometries
+% TODO(release): keep this list in step with guide/formats.md, which is the authority for what is
+% accepted; confirm there which PLATO import paths have shipped.
 
-**Examples:**
-- **Silk Road Dataset**: Ancient trade route locations across Central Asia
-- **Roman Roads (ORBIS)**: Roman road network segments with distances
-- **Maritime Route Databases**: Historical sea lanes and shipping routes
-- **Hajj Route Maps**: Documented pilgrimage paths to Mecca
-- **Camino de Santiago**: Medieval pilgrimage route network
-- **Via Francigena**: Historic route from Canterbury to Rome
+| Format | What it is | Suits |
+|---|---|---|
+| **Map your Data** | CSV and TSV, Excel, JSON, GeoJSON and Google Sheets, and place names picked out of free text. The tool matches the rows to WHG in your browser and contributes the result. See [Map your Data](../../v3-3/map-your-data.md). | A list or table of place names |
+| **Linked Places Format (LPF)** | The GeoJSON-LD interchange format for historical places, developed with the Pelagios community. It is PLATO's single-object profile, so LPF data is valid PLATO. | A gazetteer with one description per place |
+| **PLATO** | PLATO's JSON (place-centric or attestation-centric) or its spreadsheet tables, both accepted for upload at v4.0. | Several sources' claims per place, each kept apart with its own dates, certainty and citation |
 
-**Contribution formats accepted:**
-- LPF JSON (with sequence in relations)
-- CSV/TSV with sequence column
-- GPX/KML for geometric routes
-
-**Mapping to model:**
-```
-Route contribution → SpatialEntity (attests_type Type[plato:TypeRoute])
-  ├─ Route name → Name (via Attestation + edges)
-  ├─ Waypoint 1 → SpatialEntity with Attestation(sequence: 1) + has_relation_type(member_of) + relates_to(Route)
-  ├─ Waypoint 2 → SpatialEntity with Attestation(sequence: 2) + has_relation_type(member_of) + relates_to(Route)
-  ├─ Path geometry (optional) → Geometry (LineString via Attestation)
-  └─ Route existence period (optional) → Timespan (via Attestation)
-```
+PLATO also has an RDF form, and PLATO's JSON-LD context turns one into the other. WHG v4.0 does not
+accept RDF (Turtle, say) for upload directly: convert it to PLATO JSON with the
+[PLATO tools](https://pelagios.org/plato-tools/) first, and contribute that.
 
 ---
 
-### Itinerary
+## What a contribution becomes
 
-A route with temporal dimensions indicating when segments were traversed.
+### A Gazetteer
 
-**Characteristics in the model:**
-- Container SpatialEntity classified via `attests_type` edge to Type(`plato:TypeItinerary`)
-- Member SpatialEntities linked via Attestations with `sequence` field and `member_of` relation type
-- **Each segment Attestation has its own Timespan attestation** (via attests_timespan edge)
-- Overall itinerary Timespan computed from segment bounds (or explicitly overridden)
+Every contribution becomes a **Gazetteer** (`plato:Gazetteer`, a `dcat:Dataset`). In WHG v4 this
+one concept replaces v3's datasets and place collections; v3's dataset collections become
+[gazetteer groups](#gazetteer-groups). The Gazetteer is titled, licensed and described in the vocabularies that data catalogues already read: its title, its
+licence, the people to cite (`creator`), and a version. Its status is either `draft` or `published`.
+A Gazetteer cannot be published until it states its licence.
 
-**Examples:**
-- **Travel Diaries**: Ibn Battuta's Rihla, Marco Polo's travels, Xuanzang's journey to India
-- **Military Campaigns**: Napoleon's marches, Alexander the Great's conquests, Crusader routes
-- **Voyage Data**: Ships' logs from 18th-19th century (Royal Navy, merchant vessels)
-- **Migration Pathways**: Great Atlantic Migration, Bantu migrations, Polynesian expansion
-- **Diplomatic Missions**: Embassy journeys, tribute missions, papal legations
-- **Scientific Expeditions**: Darwin's Beagle voyage, Humboldt's Americas journey
+A Gazetteer **defines its own SpatialEntities** (`plato:contains_entity`). A place in a contributed
+table or file becomes a SpatialEntity of that Gazetteer, with its own identifier. Anything the source
+says about the place (a name, a location, a date, a type, a relation to another place, a figure)
+becomes an **attestation** about it, citing where it comes from. How attestations work is described in
+[Attestations and Relations](attestations.md).
 
-**Contribution formats accepted:**
-- LPF JSON (with when in relations)
-- CSV/TSV with date columns for each segment
-- Annotated GPX with timestamps
+A Gazetteer **may also hold attestations about places other Gazetteers define**, referring to them by
+their identifiers. Examples are a correction to another project's place, a link from a record to an
+existing place, and a curator's choice of places for a collection. Such an attestation adds
+evidence. It does not change the place's identity or make the new Gazetteer its owner. In PLATO JSON
+these attestations go in an attestation-centric document, whose `about` gives the place's identifier.
 
-**Mapping to model:**
-```
-Itinerary contribution → SpatialEntity (attests_type Type[plato:TypeItinerary])
-├─ Itinerary name → Name (via Attestation + edges)
-├─ Segment 1 → SpatialEntity
-│   ├─ Attestation document (sequence: 1, certainty: ...) in attestations collection
-│   ├─ Edge: attestations/att-seg-1 → things/segment-1 (attests_about)
-│   ├─ Edge: attestations/att-seg-1 → authorities/member-of (has_relation_type)
-│   ├─ Edge: attestations/att-seg-1 → things/itinerary (relates_to)
-│   └─ Edge: attestations/att-seg-1 → timespans/seg-1-dates (attests_timespan)
-├─ Segment 2 → SpatialEntity (similar structure with sequence: 2)
-└─ Overall timespan (computed or explicit via Attestation + edges)
-```
+Every place record in WHG has a persistent identifier, which resolves through w3id.org (see
+[Identifiers and citation](../guide/identifiers.md)).
+
+### What a contribution does not become
+
+- **A merged record.** A contributed place is never folded into a place WHG already holds, and no
+  new "master" identifier is minted from the two. How the two are linked is described under
+  [Linking to places WHG already holds](#linking-to-places-whg-already-holds).
+- **A place in its own right.** The Gazetteer is a dataset, not a SpatialEntity. Its places are not
+  `MemberOf` it: membership is for routes, itineraries and networks.
 
 ---
 
-### Network
+## From each format
 
-A dataset indicating geospatial connections between places that may not follow a sequence.
+### Map your Data
 
-**Characteristics in the model:**
-- Container SpatialEntity classified via `attests_type` edge to Type(`plato:TypeNetwork`)
-- Connections between member SpatialEntities via Attestations with `connected_to` relation type
-- Multiple instances of same connection over time represented by multiple Attestations with different Timespan attestations
-- Can reference route Geometries if available, but not required
+Map your Data works on your table in your browser. When the table is ready, the tool contributes it
+to WHG (today it does so by building and checking a Linked Places file). Each row becomes a
+SpatialEntity of your Gazetteer, and each filled-in value becomes an attestation about it.
 
-**Examples:**
-- **Communication Networks**: Postal routes, telegraph lines, Pony Express stations
-- **Commercial Links**: Sound Toll Registers (Baltic trade), Hanseatic League, Indian Ocean trade
-- **Administrative Networks**: Imperial courier systems, colonial governance structures
-- **Social/Political Networks**: Treaty networks, dynastic marriage alliances, embassy exchanges
-- **Religious Networks**: Monastery networks, diocese connections, pilgrimage site relationships
-- **Scholarly Networks**: Medieval universities, Islamic House of Wisdom connections, Republic of Letters
+- **Containment columns.** If you tell the tool how columns nest (a county contains a parish, a
+  parish contains a place), each row's place is `contained_in` the place named in the column above
+  it (`plato:ContainedIn`).
+- **Accepted matches** arrive in v4 as bundled identity attestations (`attests_identity`, JSON
+  `identities`), not as LPF links. Each is attributed to the user who accepted it, and each identity
+  relation records the Candidate it was confirmed from (`promoted_from`, JSON `promotedFrom`). See
+  [Linking to places WHG already holds](#linking-to-places-whg-already-holds).
+- **A location taken from a match** becomes a geometry attestation that cites the matched record
+  (see [Geometry is always attributed](#geometry-is-always-attributed)).
 
-**Contribution formats accepted:**
-- LPF JSON with custom relations for connections
-- CSV/TSV with source-target pairs and metadata columns
-- Edge list formats (from, to, attributes)
-- Graph ML/GML formats
+### Linked Places Format
 
-**Mapping to model:**
-```
-Network contribution → SpatialEntity (attests_type Type[plato:TypeNetwork])
-  ├─ Network name → Name (via Attestation)
-  ├─ Connection 1:
-  │   ├─ SpatialEntity A ←[attests_about]─ Attestation
-  │   │                                      ├─[has_relation_type]→ RelationType(connected_to)
-  │   │                                      └─[relates_to]→ SpatialEntity B
-  │   └─ Timespan via attests_timespan edge (when connection existed)
-  ├─ Connection 2:
-  │   └─ ...
-  └─ Network overall timespan (optional via Attestation)
-```
+LPF describes each place as one object. Each part of that object becomes an attestation of its own:
+
+| LPF | PLATO |
+|---|---|
+| The Feature's `@id` | The SpatialEntity's identifier |
+| `properties.title` | The SpatialEntity's label |
+| `properties.ccodes` | Its `ccodes`: modern country codes, a finding aid for search, not evidence |
+| `properties.fclasses` | A Type attestation for each GeoNames feature class |
+| Each of `names[]` | A name attestation, with that name's `when` and `citations` |
+| `geometry` (each member of a `GeometryCollection`) | A geometry attestation for each, with its own `when`, `citations` and `certainty` |
+| Each of `types[]` | A Type attestation. The identifier is the concept's full IRI, and the source's own wording is its `sourceLabel` |
+| The Feature's `when` | A timespan attestation. A PeriodO period becomes the timespan's `periodoUri` |
+| A relation of type `gvp:broaderPartitive` | A `ContainedIn` relation attestation. PLATO records Getty's `broaderPartitive` as the same relation, so the two align |
+| Any other of `relations[]` | A relation attestation with that relation type |
+| `links[]` of type `exactMatch` or `closeMatch` | Identity relations of that strength, bundled in an attestation. They are **not** a relation type |
+| LPF's certainty words (`certain`, `less-certain`, `uncertain`) | PLATO's certainty levels `Certain`, `LessCertain` and `Uncertain` |
+
+Some things cannot be said in LPF, so they cannot arrive by it:
+
+- **Order.** LPF has no way to give a member's position on a route, so a route contributed as LPF
+  arrives without its sequence. Enter routes and itineraries as PLATO instead (see
+  [Routes, itineraries and networks](#routes-itineraries-and-networks)).
+- **Denials.** LPF cannot say that a source denies something (PLATO's `negated`).
+- **Comments on other evidence.** LPF has no meta-attestations, such as one source contradicting
+  another.
+
+The next version of LPF is coordinated by ISHI and the Pelagios Place Working Group. Working notes
+towards it are recorded in
+[LPF discussion #53](https://github.com/LinkedPasts/linked-places-format/discussions/53).
+
+% TODO(release): check this table against the LPF importer as shipped. PLATO tools (0.7.0, 8a518ed) still
+% writes an LPF file's `links[]` as standalone identityRelations, not bundled in an
+% attestation; WHG's LPF import should bundle them as the table says.
+
+### PLATO JSON and spreadsheet tables
+
+PLATO data needs no mapping: it arrives in the model's own terms.
+
+- **Place-centric JSON** describes your own places, with each place carrying its attestations.
+- **Attestation-centric JSON** adds evidence about places that already exist elsewhere, referring
+  to them by identifier.
+- **Spreadsheet tables** (PLATO's template, with one sheet each for places, names, locations, types,
+  relations, properties, connections, identities and sources) hold the same statements in rows.
+  They are the easiest way to enter a route, itinerary or network.
+
+Check PLATO data before contributing it. The [PLATO tools](https://pelagios.org/plato-tools/) check
+JSON and tables in the browser or from the command line. A project's own relation types ("flows
+into") can be declared only in JSON (see
+[Project relation types](patterns.md#project-relation-types-platobroader_relation)). A value marked
+`computed` is never taken in as evidence: WHG works it out again (see
+[Computed values](patterns.md#computed-values-platocomputed)).
 
 ---
 
-### Gazetteer Group
+## Routes, itineraries and networks
 
-A thematic or organisational grouping of Gazetteers (not of places) sharing common characteristics.
+A route, an itinerary or a network is contributed like any other place: it is a SpatialEntity of the
+Gazetteer, with a Type attestation that says what kind it is (`TypeRoute`, `TypeItinerary` or
+`TypeNetwork`). Each station, stop or member has a `MemberOf` attestation that relates it to the
+whole, with a `sequence` where the source gives an order. An itinerary's stops carry their dates on
+those same attestations. Connections between places are `ConnectedTo` (either way) or `LeadsTo`
+(one way). A leg or reach with an existence of its own is a segment, joined to its ends with
+`BeginsAt` and `EndsAt`.
 
-**Characteristics in the model:**
-- A Gazetteer Group (`plato:GazetteerGroup`), not a SpatialEntity: it has no name, type, geometry or timespan attestations, and it does not appear among places
-- Each member Gazetteer is linked to the group directly with `plato:member_of_group` (Gazetteer → GazetteerGroup), not with `member_of` attestations
-- Anything the group appears to cover in space or time is worked out from its Gazetteers' contents and, if shown, is computed
-- See [Gazetteer groups](patterns.md#gazetteer-groups)
+The model is set out in full, with PLATO's four worked examples, in
+[Routes, Itineraries, Networks, Groups and Periods](patterns.md): the
+[Antonine Itinerary](patterns.md#route) (a route), [King John in 1215](patterns.md#itinerary) (an
+itinerary), and the lower River Idle and the Datini letters (physical and relational
+[networks](patterns.md#network)). How to enter one in spreadsheets is in
+[Routes, itineraries and networks](../guide/routes-and-networks.md).
+
+---
+
+## Linking to places WHG already holds
+
+Reconciliation finds places in WHG that may be the same as a contributed place. It has two steps,
+and PLATO keeps them apart.
+
+**1. Suggestions are Candidates.** Software suggests matches, as Map your Data does when it ranks
+records by name, sound, location, type and country (see
+[Sounds-alike search](../guide/sounds-alike.md)). Each suggestion is a **Candidate**
+(`plato:Candidate`) for a person to review. It has a similarity score, the algorithm's version,
+optionally the settings that produced the score (`match_parameters`), and a review status:
+`suggested`, `confirmed` or `rejected`. A Candidate is not an attestation and not evidence.
+
+**2. An accepted match is an identity attestation.** When a person confirms a Candidate, it becomes
+an **IdentityRelation** (`plato:IdentityRelation`), which may record the Candidate it came from
+(`promoted_from`). Its strength is one of `exactMatch`, `closeMatch`, `related` or `unspecified`
+(where the source links the two but does not say how strongly). Identity relations accepted in one
+act are bundled in **one attestation** (`attests_identity`, JSON `identities`). That attestation
+carries their shared source, contributor and date, and it can be withdrawn as a unit.
+
+Self-written example (valid against PLATO's attestation-centric schema): a contributor accepts
+Pleiades' Durobrivae as the same place as their own.
+
+```json
+{
+  "$schema": "https://w3id.org/plato/schemas/attestation-centric.schema.json",
+  "profile": "attestation-centric",
+  "gazetteer": {
+    "@id": "https://example.org/kent-ports/",
+    "title": "Kent ports in the Antonine Itinerary"
+  },
+  "attestations": [
+    {
+      "about": "https://example.org/kent-ports/place/durobrivae",
+      "identities": [
+        {
+          "subject": "https://example.org/kent-ports/place/durobrivae",
+          "object": "https://pleiades.stoa.org/places/79433",
+          "identityType": "exactMatch",
+          "basis": "Accepted in Map your Data: name, location and type agree",
+          "promotedFrom": "https://example.org/kent-ports/candidate/durobrivae-pleiades-79433"
+        }
+      ],
+      "citations": [
+        {
+          "source": {
+            "@id": "https://example.org/kent-ports/source/reconciliation-review",
+            "title": "Reconciliation review, September 2026",
+            "authorityType": "source"
+          }
+        }
+      ],
+      "contributor": "https://orcid.org/0000-0002-1234-5678",
+      "created": "2026-09-30T10:00:00Z"
+    }
+  ]
+}
+```
+
+What an identity attestation is not:
+
+- **It is not a merge.** Both places keep their own records, identifiers and evidence. PLATO forbids
+  a platform to turn identity relations into merged records or new identifiers.
+- **It is not canonical.** It is one attributed claim among many, weighed like any other evidence.
+  Someone else may say the opposite: an attestation with `negated: true` that bundles one
+  `exactMatch` says that two places are **not** the same.
+- **It does not chain across claims.** If one person says A is B and another says B is C, nobody has
+  said that A is C. A consumer may follow `exactMatch` links only within one attestation, and never
+  follows `closeMatch`, `related` or `unspecified` links onwards.
+
+How WHG groups records that seem to describe the same place, and why those groups are not stored,
+is described in [Atlas](../../atlas.md) and under [Use cases](usecases.md).
+
+---
+
+## Geometry is always attributed
+
+A place need not have a location: lost, imagined and unlocated places are all admissible. A place
+has only the geometries that attestations give it, and each of those cites its source.
+
+- **Linking a place to a match does not give it the match's geometry.** An identity attestation says
+  nothing about location, and nothing is inherited through it.
+- **A location taken from a match is an attestation that cites the match.** Map your Data can copy a
+  matched record's location into your data. The result is a geometry attestation whose source is
+  that record, so the location keeps its origin and its licence terms. In PLATO's Antonine example,
+  Londinium's location comes from Pleiades in exactly this way, citing Pleiades and its licence:
+
+```jsonrelaxed
+{
+  "timespans": [
+    {
+      "sourceLabel": "undated"
+    }
+  ],
+  "citations": [
+    {
+      "source": {
+        "@id": "https://whgazetteer.org/example/antonine/source/pleiades",
+        "title": "Pleiades",
+        // …
+        "licence": "https://creativecommons.org/licenses/by/3.0/"
+      },
+      "locator": "places/79574",
+      "citationFunction": "http://purl.org/spar/cito/citesAsDataSource"
+    }
+  ],
+  "geometries": [
+    {
+      "reprPoint": [
+        -0.088949,
+        51.513335
+      ],
+      "geojson": {
+        "type": "Point",
+        "coordinates": [
+          -0.088949,
+          51.513335
+        ]
+      },
+      "role": "https://w3id.org/plato#RepresentativePoint"
+    }
+  ]
+}
+```
+
+From PLATO's worked example [the Antonine Itinerary](https://pelagios.org/place-attestation-ontology/guide/routes/antonine.html)
+(`schemas/examples/place-centric-antonine.json`).
+
+- **A drawn location** is an attestation that cites the contributor's own work. Its precision can
+  be stated with `spatialPrecision` (`exact`, `approximate`, `uncertain` or
+  `historical_approximate`) and an estimate in kilometres (`precisionKm`).
+- **A route's line or a network's hull that WHG works out** from its members is marked `computed`.
+  It is not an attestation (see [Computed extents](patterns.md#computed-extents)).
+
+---
+
+## Gazetteer groups
+
+A **gazetteer group** (`plato:GazetteerGroup`) groups **Gazetteers**, not places: an example is
+"EMEW — Gazetteer of Early Modern England and Wales". A Gazetteer joins a group with
+`plato:member_of_group`. The group is not a SpatialEntity and has no attestations of its own. What
+it seems to cover in space or time is worked out from its Gazetteers. See
+[Gazetteer groups](patterns.md#gazetteer-groups).
 
 % TODO(v4): say what a gazetteer group's own metadata is in WHG (title, description, curators), once decided; PLATO declares only the class and member_of_group.
 
-**Examples:**
-- **Ancient World Gazetteers**: Pleiades + DARMC + Barrington Atlas + ANE Placemarks
-- **Colonial Gazetteers**: British India + French Indochina + Dutch East Indies gazetteers
-- **Environmental History Gazetteers**: Historical landscapes, deforestation records, climate-related migrations
-- **Religious Networks**: Pilgrimage sites, monasteries, churches, sacred mountains
-- **Historical Urban Gazetteers**: Medieval cities + Renaissance cities + Industrial revolution urban centers
-- **Maritime Gazetteers**: Ports, lighthouses, naval bases, shipwreck locations
+---
 
-**Contribution formats accepted:**
-- Metadata file referencing existing gazetteer IDs
-- JSON descriptor with member list
-- CSV with gazetteer identifiers and metadata
+## Place collections
 
-**Mapping to model:**
-```
-Gazetteer 1 ─[member_of_group]→ GazetteerGroup
-Gazetteer 2 ─[member_of_group]→ GazetteerGroup
-```
+A WHG **place collection** is a curatorial act: someone selects places from other Gazetteers and
+says something about them. It is therefore a **Gazetteer**, not a SpatialEntity.
+
+- The places stay in their own Gazetteers. The collection holds **attestations about them**,
+  referring to them by identifier, each attributed to the curator.
+- **Selecting a place is attesting about it.** A place is in the collection when the collection's
+  Gazetteer contains an attestation about that place. The attestation may carry the curator's
+  annotation, or it may be the selection alone, with nothing more to say.
+- A collection's annotations appear alongside a place's other evidence only if the collection is
+  declared public.
+- A collection may also define places of its own, like any other Gazetteer.
+
+Teaching and class groups are features of the WHG application, not part of PLATO.
 
 ---
 
-## Accepted Formats for All Types
+## Changing a contribution
 
-### Linked Places Format (LPF) - JSON
+### Draft and published
 
-**Primary structured format** following the Linked Places specification.
+While a Gazetteer is a **draft**, its owner may edit its attestations freely, and an edit is
+recorded as that attestation's `modified` time.
 
-**Best for:**
-- Complex temporality (multiple time periods, uncertain dates)
-- Multiple names in different languages/scripts
-- Multiple geometries (changing boundaries, uncertain locations)
-- Rich relationships between places
-- Detailed provenance and source citations
+Once it is **published**, its attestations are **append-only**, and PLATO makes this normative: an
+attestation is never deleted or changed.
 
-**LPF to Model Mapping:**
-- `@id` → SpatialEntity `_id`
-- `properties.title` → Primary Name entity + Attestation
-- `names[]` → Multiple Name entities + Attestations with Timespan linkages
-- `geometry` / `geometries[]` → Geometry entities + Attestations
-- `types[]` → Classifications via attests_type edges to Types
-- `when` → Timespan entities + attests_timespan edges
-- `relations[]` → Attestations with has_relation_type + relates_to edges
-- `descriptions[]` → SpatialEntity `description` field
+- **A correction** is a new attestation, with a meta-attestation that `Supersedes` or `Contradicts`
+  the old one.
+- **A withdrawal** is a meta-attestation of type `Retracts`. The retracted attestation no longer
+  holds, but it is kept so that earlier states can be reproduced. Retracting a retraction restores
+  its target.
+- **Every attestation carries its `created` time**, so the Gazetteer's state on any date can be
+  worked out from the data itself.
 
----
+A place is cited by its identifier together with its Gazetteer's version (see
+[Identifiers and citation](../guide/identifiers.md)).
 
-### Delimited Text (CSV/TSV)
+From PLATO's example of judgements: a bad import put Littleworth at 0°, 0°, and the import's own
+source withdraws it.
 
-**Tabular format** with predefined column mappings.
-
-**Best for:**
-- Simple gazetteers with single names/locations
-- Bulk imports of straightforward place data
-- Spreadsheet-based data entry
-
-**Required columns:**
-- `id` or auto-generated
-- `name` or `title`
-- `latitude`, `longitude` or `geometry` (WKT)
-
-**Optional columns:**
-- `name_language`, `name_script`, `name_type[]`
-- `start_date`, `end_date`, `temporal_precision`
-- `type` or `feature_class`
-- `source`, `source_type`, `certainty`
-- For routes: `sequence`
-- For networks: `target_id`
-
----
-
-### Spreadsheets
-
-**Excel/Google Sheets** with template structures.
-
-**Best for:**
-- Collaborative data entry
-- Projects with non-technical contributors
-- Iterative dataset development
-
-**Template types:**
-- Gazetteer template: one row per place
-- Route template: one row per waypoint with sequence
-- Itinerary template: includes date columns
-- Network template: edge list with source/target columns
-
----
-
-### RDF/Turtle Format
-
-For contributors working with semantic web technologies or existing RDF datasets,
-WHG may in future accept contributions in Turtle (`.ttl`) format. See the complete
-[RDF Representation guide](rdf-representation.md) for details, examples, and validation requirements.
-
-### Geographic Formats
-
-**GPX, KML, GeoJSON** with WHG extensions.
-
-**Best for:**
-- Route geometries with waypoints
-- Itineraries with GPS tracks
-- Modern field-collected data
-
-**Mapping:**
-- Track/path → Route SpatialEntity with LineString Geometry
-- Waypoints → Member SpatialEntities with Point Geometries
-- Timestamps → Timespan attestations (for itineraries)
-- Metadata → Attestation fields
-
----
-
-### URL-Referenced Datasets
-
-**Remote dataset URLs** pointing to publicly accessible files.
-
-**Best for:**
-- Large datasets hosted in institutional repositories
-- Cloud storage contributions (Google Drive, Dropbox with public links, S3 buckets)
-- Datasets that update periodically at source
-- Integration with existing research infrastructure
-
-**Supported URL targets:**
-- Direct file links (CSV, JSON, GeoJSON files)
-- Repository URLs (Zenodo, Figshare, institutional repos)
-- GitHub raw file URLs
-- Cloud storage public links
-
-**Process:**
-1. Contributor submits URL with format specification
-2. WHG fetches file from URL
-3. Validates format and content
-4. Processes as standard contribution
-5. Optionally monitors URL for updates (contributor can enable periodic re-fetch)
-
-**Example URLs:**
-- `https://zenodo.org/record/1234567/files/places.csv`
-- `https://raw.githubusercontent.com/org/repo/main/data/gazetteer.json`
-- `https://drive.google.com/uc?export=download&id=FILEID`
-
-**Requirements:**
-- URL must be publicly accessible (no authentication)
-- File format must match declared type
-- Recommended: versioned URLs for reproducibility
-- Contributor receives DOI for WHG-indexed version
-
----
-
-## Relationship to Linked Places Format (LPF)
-
-### LPF as Interchange Format
-
-**Linked Places Format (LPF)** is a GeoJSON-based format designed for contributing and exchanging historical place data. It serves as the **interchange format** between WHG and external contributors/consumers.
-
-**Key distinctions:**
-
-| Aspect | LPF | Internal Data Model |
-|--------|-----|---------------------|
-| Purpose | Data contribution, exchange, export | Internal storage and querying |
-| Structure | Document-oriented (places as standalone objects) | Graph-oriented (SpatialEntities linked via Attestations and edges) |
-| Temporality | Embedded in feature properties | Separate Timespan entities connected via edges |
-| Optimization | Human readability, ease of contribution | Query performance, analytical capabilities |
-| Format | GeoJSON-LD | PLATO (JSON or RDF); held in PostgreSQL |
-
----
-
-### Bidirectional Transformation
-
-**Ingestion (LPF/CSV → Internal Model):**
-- LPF `properties.title` → Name entity + Attestation document + edges (attests_about from Attestation to SpatialEntity, attests_name from Attestation to Name)
-- LPF `names[]` array → Multiple Name entities + Attestation documents + edges for each name
-- LPF `geometry` or `geometries[]` → Geometry entities + Attestations with attests_geometry edges
-- LPF `types[]` → Attestations with attests_type edges to Types
-- LPF `when` → Timespan entities + Attestations with attests_timespan edges
-- LPF `relations[]` → Attestations with has_relation_type + relates_to edges (member_of, same_as, connected_to)
-- CSV rows → SpatialEntities with derived Attestations from column values
-- Network edge lists → Attestations with connected_to relation
-
-**Export (Internal Model → LPF):**
-- SpatialEntity + Attestations + edges → Reconstructed LPF place document
-- Timespan Attestations → LPF `when` timespan arrays
-- Name Attestations → LPF `names[]` with temporal qualification
-- Classification Attestations → LPF `types[]`
-- Relationship Attestations → LPF `relations[]`
-- Network connections → LPF relations with custom properties
-
-**Key principle**: The internal model is more granular and temporally precise than LPF, allowing for richer querying while maintaining the ability to export back to LPF for interchange.
-
----
-
-### Data Transformation Layer
-
-The WHG application includes a **transformation layer** that:
-- Validates incoming LPF/CSV/GPX against schemas
-- Normalizes names, dates, and geographic coordinates
-- Creates SpatialEntity, Name, Geometry, and Timespan documents
-- Generates Attestation nodes and Edge documents connecting them
-- Creates AUTHORITY documents for sources and datasets
-- Assigns DOIs to contributed datasets (format: `doi:10.83427/whg-{type}-{id}`)
-- Stores DOIs in AUTHORITY documents referenced by attestations
-- Handles updates and conflicts with existing data
-- Provides audit trails in the Django changelog
-- Maps contribution types to appropriate SpatialEntity classifications via Types
-- Extracts sequence information for routes/itineraries into Attestation nodes
-- Computes vector embeddings for Name entities
-- Derives geometric fields (bbox, representative_point, hull) for Geometry entities
-
-This layer is distinct from the core data model and handles the complexity of mapping between interchange formats and the internal optimized graph structure.
-
-**Transformation Architecture:**
-
-The transformation from contribution formats to internal graph structure creates three types of documents:
-
-1. **Entity documents** (in entity collections):
-   - SpatialEntities, Names, Geometries, Timespans, Authorities
-
-2. **Attestation documents** (in attestations collection):
-   - Contain only metadata: certainty, notes, sequence, timestamps
-   - No embedded relationships or references to other entities
-
-3. **Edge documents** (in edges collection):
-   - Connect attestations to entities with `edge_type` field
-   - Enable graph traversal and relationship queries
-
-**Example transformation:**
-```javascript
-// LPF input
-{
-  "type": "Feature",
-  "properties": {
-    "title": "Constantinople"
+```jsonrelaxed
+[
+  {
+    "@id": "https://whgazetteer.org/example/attestation/littleworth-bad-import",
+    "geometries": [
+      {
+        "geojson": {
+          "type": "Point",
+          "coordinates": [
+            0.0,
+            0.0
+          ]
+        }
+      }
+    ],
+    "sources": [
+      {
+        "title": "Batch import, 2026-09-01"
+      }
+    ],
+    "created": "2026-09-01T09:00:00Z",
+    "notes": "A bad import put Littleworth at 0°, 0°. In a published gazetteer it is not deleted: the next attestation retracts it."
   },
-  "geometry": {...},
-  "when": {...}
-}
-
-// Creates in graph database:
-
-// 1. SpatialEntity document
-{ "_id": "things/constantinople" }
-
-// 2. Name document
-{ "_id": "names/constantinople-en", "toponym": "Constantinople" }
-
-// 3. Geometry document
-{ "_id": "geometries/const-geom", "geojson": {...} }
-
-// 4. Timespan document
-{ "_id": "timespans/byzantine", "startEarliest": ..., "endLatest": ... }
-
-// 5. Attestation document (junction node)
-{ "_id": "attestations/att-001", "certainty": 0.95 }
-
-// 6. Edge documents (relationships)
-{ "_from": "attestations/att-001", "_to": "things/constantinople", "edge_type": "attests_about" }
-{ "_from": "attestations/att-001", "_to": "names/constantinople-en", "edge_type": "attests_name" }
-{ "_from": "attestations/att-001", "_to": "geometries/const-geom", "edge_type": "attests_geometry" }
-{ "_from": "attestations/att-001", "_to": "timespans/byzantine", "edge_type": "attests_timespan" }
+  {
+    "meta": {
+      "targetAttestation": "https://whgazetteer.org/example/attestation/littleworth-bad-import",
+      "metaType": "https://w3id.org/plato#Retracts"
+    },
+    "sources": [
+      {
+        "title": "Batch import, 2026-09-01"
+      }
+    ],
+    "created": "2026-09-02T10:00:00Z",
+    "notes": "Withdrawn by whoever made it. The state as of 1 September still shows the point; the state from 2 September on does not."
+  }
+]
 ```
 
----
+From PLATO's `schemas/examples/place-centric-judgements.json`.
 
-## Editing Contributions
+### Places are not deleted or merged
 
-The WHG V4 platform provides comprehensive editing capabilities for both contributors and staff, with all changes tracked in the Django changelog.
+- **No place is silently removed.** PLATO has no term for deleting a SpatialEntity. To withdraw a
+  place, its Gazetteer retracts the attestations it made about it. The identifier stays, so that
+  citations of earlier versions still resolve.
+- **A withdrawn place keeps its page.** In v4, a place whose attestations have all been retracted is
+  shown as "withdrawn by its contributor", with the reason the retraction gives. Its identifier
+  never answers 404: the page stays as a tombstone.
+- **Duplicates are linked, not merged.** Two places that turn out to be the same are linked with an
+  identity attestation, as above. Each keeps its own record.
 
-### Manual Attestation Creation
+### A revised upload
 
-**Single attestation creation**:
-Contributors and staff can manually create individual Attestation nodes and their connecting edges for existing data through the web interface.
+A contributor may upload a revised version of a Gazetteer that is already published. WHG will not
+replace the old data with the new: it compares the two, claim by claim, and records the difference
+as attestations.
 
-**Use cases:**
-- Adding `same_as` attestations to reconcile contributed places with authority gazetteers
-- Linking newly discovered relationships between places
-- Correcting or adding temporal information
-- Adding missing source attributions
+| In the revised upload | Becomes |
+|---|---|
+| A claim that has changed | A new attestation, with a meta-attestation that `Supersedes` the old one |
+| A claim that has gone | A meta-attestation that `Retracts` the old one |
+| A claim that is new | A new attestation |
+| A claim that is unchanged | Nothing: the existing attestation stands |
 
-**Workflow:**
-1. Navigate to SpatialEntity record in web interface
-2. Click "Add Attestation" button
-3. Select relation type from AUTHORITY(relation_type) vocabulary
-4. Select or create target entity (Name, Geometry, Timespan, or SpatialEntity)
-5. Fill in source, certainty, notes
-6. Save - creates:
-   - Attestation document in attestations collection
-   - Edge document from Attestation to SpatialEntity (attests_about)
-   - Edge document from Attestation to target entity (attests_name/geometry/timespan or relates_to)
-   - Edge document from Attestation to relation type Authority (has_relation_type, if SpatialEntity-to-SpatialEntity relationship)
-   - Edge document from Attestation to Source Authority (sourced_by)
-7. All documents immediately indexed for querying
+The published Gazetteer therefore stays append-only, and its earlier state can still be reproduced.
 
-**Graph operations created:**
-```javascript
-// Documents created:
+### Corrections from others
 
-// 1. Attestation document (in attestations collection)
-{
-  "_id": "attestations/att-new-001",
-  "certainty": 0.9,
-  "notes": "User-added attestation",
-  "created": "2025-01-15T10:30:00Z",
-  "contributor": "user@example.com"
-}
-
-// 2. Edge documents (in edges collection)
-{
-  "_from": "attestations/att-new-001",
-  "_to": "things/some-thing",
-  "edge_type": "attests_about"
-}
-
-{
-  "_from": "attestations/att-new-001",
-  "_to": "authorities/relation-member-of",
-  "edge_type": "has_relation_type"
-}
-
-{
-  "_from": "attestations/att-new-001",
-  "_to": "things/target-thing",
-  "edge_type": "relates_to"
-}
-
-{
-  "_from": "attestations/att-new-001",
-  "_to": "authorities/source-xyz",
-  "edge_type": "sourced_by"
-}
-```
-
-**Access control:**
-- Contributors can add attestations to their own contributed data
-- Staff can add attestations to any data
-- All additions require source citation (AUTHORITY reference)
+Anyone signed in may suggest a correction to a record in a Gazetteer whose owners invite
+suggestions. The owners review each suggestion, and an accepted correction enters the Gazetteer as
+an attributed attestation. See [Suggesting corrections](../guide/corrections.md).
 
 ---
 
-### Contributor Self-Editing
+## Taking data out
 
-**New in V4**: Contributors can edit their own contributions directly (not possible in V3).
+A Gazetteer can be exported again, with everything added since it was contributed: identity
+attestations, locations, corrections. [Data formats in and out](../guide/formats.md) lists the
+formats.
 
-**Editable elements:**
-- SpatialEntity descriptions
-- Name metadata (language, script, transliteration) in Name documents
-- Geometry precision assessments in Geometry documents
-- Source citations via AUTHORITY references in attestations
-- Certainty scores in Attestation nodes
-- Temporal bounds (via Timespan document modifications)
+- **LPF export** keeps what LPF can say. Order, denials and meta-attestations cannot be written in
+  LPF. PLATO requires a tool that cannot express a denial to leave it out and report it, never to
+  write it as an assertion.
+- **Computed values** (a route's line, an itinerary's span) are exported marked `computed`, so that
+  nobody takes them in as evidence.
 
-**Workflow:**
-1. Contributor logs in and navigates to their dataset
-2. Selects record to edit
-3. Makes changes in web form
-4. Changes validated and saved to appropriate graph documents
-5. Updates propagated through the graph
-6. Change-logged with contributor attribution
+### DOIs
 
-**Constraints:**
-- Cannot delete documents created by others
-- Cannot modify Attestations created by staff or other contributors
-- Cannot change core identifiers (DOIs in AUTHORITY, external IDs)
+WHG has minted a DataCite DOI for each published dataset and collection since v3, and continues to
+do so for each published Gazetteer in v4. The DOI is minted when the Gazetteer is published, and is
+hidden if it is unpublished. There is **one DOI per Gazetteer, not one per version**: to cite a
+Gazetteer as it stood at a particular time, give its DOI together with its version (see
+[Identifiers and citation](../guide/identifiers.md)).
 
----
-
-### Whole-Record Editing
-
-Using the same dataset format as their original contribution, contributors can perform bulk operations:
-
-**Replace entire dataset:**
-- Upload new version with same DOI
-- All records replaced (old version archived)
-- Use case: Major revision or correction
-
-**Delete records:**
-- Submit CSV/JSON with record IDs to delete
-- SpatialEntity documents removed (archived in changelog)
-- Attestations and edges referencing deleted SpatialEntities handled appropriately
-
-**Add new records:**
-- Submit file with new records (must have unique IDs)
-- Processed as incremental contribution
-- Added to existing dataset under same DOI in AUTHORITY
-
-**Update existing records:**
-- Submit file with modified records (matching existing IDs)
-- Updated fields replace old values in appropriate graph documents
-- Original values archived in changelog
-
-**Example workflow:**
-1. Contributor exports current dataset from WHG
-2. Makes changes in spreadsheet/text editor
-3. Uploads modified file with operation type selected
-4. WHG validates changes (IDs must match for updates)
-5. Applies changes to graph documents and re-indexes
-6. Sends confirmation email with change summary
-
-**Supported operations per format:**
-- **LPF JSON**: All operations (replace, delete, add, update)
-- **CSV/TSV**: Add, update, delete (structured format required)
-- **Spreadsheets**: Add, update (easiest for non-technical users)
-
----
-
-### Granular Editing
-
-Focused editing of specific aspects of place records through the web interface.
-
-#### Reconciliation
-
-**What it is:**
-Assessment and selection of potential matches to other indexed places.
-
-**Process:**
-1. WHG automatically suggests potential matches based on:
-    - Feature class similarity (via attests_type edges)
-    - Toponym similarity (using Name embeddings)
-    - Country code matches
-    - Geometric proximity
-2. Contributor reviews suggestions
-3. Selects matches that represent the same historical entity
-4. Creates `same_as` attestations (via AUTHORITY[same_as relation])
-5. Can reject suggestions explicitly
-
-**Graph operations created:**
-```
-SpatialEntity A ←[attests_about]─ Attestation ─[has_relation_type]→ RelationType(same_as)
-                                      ├─[relates_to]→ SpatialEntity B
-                                      └─[sourced_by]→ AUTHORITY(reconciliation_source)
-```
-
-**Contributor guidance:**
-- Select at least one match if good candidates exist
-- Do not link to places that are clearly different entities
-- Consider temporal context (same place name, different periods)
-- Use certainty scores in Attestation to indicate confidence
-
-**Impact:**
-- Creates Attestations with same_as relationships
-- Enables cross-gazetteer queries via graph traversal
-- Improves discovery through authority linkage
-- Reflected in LPF export (relations section)
-
-**Automated trigger:**
-- Records lacking links trigger reconciliation workflow on contribution
-- Can be re-run later if new matches become available
-
----
-
-#### Geometry Editing
-
-**Default behavior:**
-If geometry not provided in original contribution, place inherits geometry from first linked place (via reconciliation).
-
-**Contributor options:**
-
-**Select from reconciled places:**
-- Choose geometry from any single linked place
-- Use combined geometries of all linked places (union)
-- Use automatically-generated representative point (centroid of union)
-
-**Manual drawing:**
-Contributor can draw custom geometry using map interface:
-- **Points**: Mark specific locations
-- **Lines**: Draw routes, boundaries, features
-- **Polygons**: Delineate territories, regions, extents
-- **Mixed**: Combine point, line, polygon features
-
-**Map interface features:**
-- Selectable basemaps:
-    - Modern (OpenStreetMap, satellite imagery)
-    - Historical (georeferenced historical maps where available)
-    - Topographic, political, blank canvases
-- Drawing tools: point, line, polygon, circle, rectangle
-- Snapping to existing features
-- Coordinate display and manual entry
-- Measurement tools (distance, area)
-- Layer management (show/hide reference data)
-
-**Precision documentation:**
-When drawing manually, contributor prompted to specify:
-- `precision`: "exact", "approximate", "representative"
-- `precision_km`: Estimated uncertainty in kilometers
-- Source for geometry (stored in AUTHORITY, referenced via sourced_by edge)
-
-**Graph operations:**
-- Creates new Geometry document
-- Creates new Attestation node
-- Creates edges: attests_about, attests_geometry, sourced_by
-- Replaces inherited geometry with explicit geometry
-
-**Impact:**
-- Updates reflected in LPF export
-- Enables downloads of augmented datasets
-
----
-
-### Staff Editing
-
-**Extended permissions for WHG staff:**
-
-**All contributor capabilities plus:**
-- Edit any contributor's data (with attribution in changelog)
-- Merge duplicate SpatialEntities (combining Attestations)
-- Bulk operations across datasets
-- Create network/route/itinerary structures from existing places
-- Modify classification attestations (attests_type edges)
-- Correct errors in any attestation or edge
-
-**Quality assurance workflows:**
-- Review flagged records (community reports)
-- Validate suspect geometry
-- Resolve conflicting attestations via meta-attestations
-- Standardize inconsistent metadata
-
-**Curation operations:**
-- Import PeriodO periods as Period authorities (`plato:Period`)
-- Build gazetteer groups (`plato:GazetteerGroup`)
-- Link major authority gazetteers
-- Maintain namespace mappings in AUTHORITY
-
----
-
-### Change Logging
-
-**All editing operations** (manual attestations, self-edits, bulk updates, granular edits, staff changes) are recorded in the Django changelog.
-
-**Logged information:**
-- Timestamp of change
-- User ID (contributor or staff)
-- Operation type (create, update, delete)
-- Entity affected (SpatialEntity, Name, Geometry, Timespan, Attestation, Edge, Authority)
-- Collection affected (things, names, geometries, timespans, attestations, edges, authorities)
-- Old values (for updates/deletes)
-- New values (for creates/updates)
-- Rationale (optional free-text note)
-
-**Changelog uses:**
-- Audit trail for accountability
-- Revert capability for error correction
-- Contributor attribution for citations
-- Quality metrics (edit frequency, types)
-- Research on data evolution
-
-**Access:**
-- Contributors can view their own changelog
-- Staff can view all changes
-- Public changelog available for transparency (user IDs anonymized)
-
----
-
-### Augmented Dataset Downloads
-
-**Key feature**: Edits made through the web interface are reflected in downloadable datasets.
-
-**Download options:**
-- **Original format**: As originally uploaded
-- **Augmented LPF**: Original data + added attestations/geometry
-- **Full LPF**: Complete representation with all relationships
-- **CSV**: Simplified tabular format
-- **GeoJSON**: Geographic features for mapping
-
-**Augmentation includes:**
-- Reconciliation links (same_as relations via Attestations)
-- Added or corrected geometry
-- Manual attestations created via UI
-- Temporal data added post-contribution
-- Source citations added by staff (AUTHORITY references)
-
-**Versioning:**
-- Each download stamped with version date
-- Original submission always available
-- Diffs available showing augmentations
-
-**Citation:**
-- Downloads include DOI from AUTHORITY(dataset)
-- Augmentations attributed to contributors/staff
-- Encourage citation of both original and augmented versions
+% TODO(release): confirm which PLATO export paths have shipped.

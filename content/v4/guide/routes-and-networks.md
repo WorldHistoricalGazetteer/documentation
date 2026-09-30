@@ -4,7 +4,6 @@
 Part of the [Draft v4 User Guide](../userguide_index.md): under review during beta testing.
 ```
 
-% Spreadsheet-first guide to PLATO v0.6.0 (1597e67) routes, itineraries and networks.
 % TODO(release): confirm the upload steps (Step 8) against the shipped WHG v4 interface.
 
 This tutorial walks through entering a historical **route** in a spreadsheet, in the shape WHG v4
@@ -38,7 +37,7 @@ source, and a spreadsheet program.
 
 The same sheets hold three kinds of thing. Decide which yours is before you start:
 
-| If your source gives… | it is a… | Type to give it |
+| If your source gives… | it is a… | PLATO kind to name in its Type |
 |---|---|---|
 | a way through places in order, with no dates of travel | **route** | `https://w3id.org/plato#TypeRoute` |
 | a journey through places, dated stop by stop | **itinerary** | `https://w3id.org/plato#TypeItinerary` |
@@ -98,7 +97,10 @@ From PLATO's worked example [the Antonine Itinerary](https://pelagios.org/place-
 
 ## Step 4: The types sheet
 
-Give the route its Type, and each leg the segment Type, by putting PLATO's IRI in `type_uri`:
+Type the route as a route, and each leg as a segment, by putting the IRI of PLATO's kind (a concept
+in `plato:EntityKindScheme`) in `type_uri`. Each row of the types sheet is one Type as your dataset
+uses it: the concept's IRI goes in `type_uri`, which becomes the Type's `identifier`, never its own
+address; a vocabulary and its version may be given in `type_scheme` and `type_scheme_version`.
 
 | Row for | `type_label` | `type_uri` |
 |---|---|---|
@@ -106,17 +108,17 @@ Give the route its Type, and each leg the segment Type, by putting PLATO's IRI i
 | each leg | segment | `https://w3id.org/plato#TypeSegment` |
 
 Stations get whatever Types your source gives them (a town, a fort), as usual. The route may also
-have a Type of its own from a vocabulary such as the AAT; the PLATO Type is what tells WHG to treat
+have a Type of its own from a vocabulary such as the AAT; the PLATO kind is what tells WHG to treat
 it as a route.
 
 Legs are typed as segments so that WHG can leave them out of lists and searches of places, where
 "one station to the next" would read as a pseudo-place.
 
 ```csv
-place_id,type_label,type_uri,date,from,to,source_id,locator,attribution,citation_function,certainty,certainty_level,denied,stance,notes
-iter-iii,route,https://w3id.org/plato#TypeRoute,undated,,,parthey-pinder-1848,"p. 225, Wess. 473",,citesAsEvidence,,,,,
-iter-iv,route,https://w3id.org/plato#TypeRoute,undated,,,parthey-pinder-1848,"p. 225, Wess. 473",,citesAsEvidence,,,,,
-leg-londinium-durobrivae,segment,https://w3id.org/plato#TypeSegment,undated,,,parthey-pinder-1848,"p. 225, Wess. 473",,citesAsEvidence,,,,,
+place_id,type_label,type_uri,type_scheme,type_scheme_version,date,from,to,source_id,locator,attribution,citation_function,certainty,certainty_level,denied,stance,notes
+iter-iii,route,https://w3id.org/plato#TypeRoute,,,undated,,,parthey-pinder-1848,"p. 225, Wess. 473",,citesAsEvidence,,,,,
+iter-iv,route,https://w3id.org/plato#TypeRoute,,,undated,,,parthey-pinder-1848,"p. 225, Wess. 473",,citesAsEvidence,,,,,
+leg-londinium-durobrivae,segment,https://w3id.org/plato#TypeSegment,,,undated,,,parthey-pinder-1848,"p. 225, Wess. 473",,citesAsEvidence,,,,,
 …
 ```
 
@@ -351,7 +353,7 @@ are published as CSV on the Web, so any CSVW validator can check the tables too.
 
 An itinerary uses the same sheets, with two differences:
 
-- its Type is `https://w3id.org/plato#TypeItinerary`;
+- its Type names the kind `https://w3id.org/plato#TypeItinerary`;
 - each stop's `MemberOf` row carries the **stay**, from arrival to departure, in `from` and `to`
   (with the source's wording in `date`), and its length in `duration` where the source states one.
 
@@ -429,9 +431,9 @@ reach-04,"River Idle, reach 4 of 10",GB
 ```
 
 ```csv
-place_id,type_label,type_uri,date,from,to,source_id,locator,attribution,citation_function,certainty,certainty_level,denied,stance,notes
+place_id,type_label,type_uri,type_scheme,type_scheme_version,date,from,to,source_id,locator,attribution,citation_function,certainty,certainty_level,denied,stance,notes
 …
-reach-04,segment,https://w3id.org/plato#TypeSegment,undated,,,rewt-v020,os:link/69644DBA-6A53-4C18-8F60-4BB916A36F57,,citesAsDataSource,,,,,
+reach-04,segment,https://w3id.org/plato#TypeSegment,,,undated,,,rewt-v020,os:link/69644DBA-6A53-4C18-8F60-4BB916A36F57,,citesAsDataSource,,,,,
 …
 ```
 
@@ -489,7 +491,9 @@ From PLATO's worked example [the Datini letters](https://pelagios.org/place-atte
 The relations sheet can also say that a place was where a person was born, an object was found or
 an event took place. Such a row puts the person, object or event's web address in `related_uri`,
 leaves `related_place_id` empty, and names it in `related_label`, with one of `BirthplaceOf`,
-`DeathplaceOf`, `ResidenceOf`, `FindspotOf`, `SettingOf` or `WorkplaceOf`. WHG shows these apart
+`DeathplaceOf`, `ResidenceOf`, `FindspotOf`, `SettingOf` or `WorkplaceOf`. In the same way, a
+photograph, map or drawing that shows the place takes `DepictedIn`, and an archival file, report or
+publication about it takes `SubjectOf` (both new in PLATO 0.7.0). WHG shows these apart
 from a place's spatial relations. They are not how a route or journey is entered.
 
 ---
@@ -511,8 +515,11 @@ from a place's spatial relations. They are not how a route or journey is entered
 
 ## Next steps
 
+% TODO(0.7.0-doi): add the 0.7.0 version DOI
+
 - [Routes, Itineraries, Networks, Groups and Periods](../data-model/patterns.md): the model in
   full, with diagrams.
-- [PLATO](https://github.com/pelagios/place-attestation-ontology)
-  ([doi:10.5281/zenodo.21688313](https://doi.org/10.5281/zenodo.21688313)): the ontology, the spreadsheet
+- [PLATO 0.7.0](https://github.com/pelagios/place-attestation-ontology/releases/tag/v0.7.0)
+  ([doi:10.5281/zenodo.21688313](https://doi.org/10.5281/zenodo.21688313), the DOI for PLATO, all
+  versions): the ontology, the spreadsheet
   table definitions and the examples.

@@ -7,24 +7,17 @@
 :caption: Entity–relationship diagram for the WHG v4 data model.
 ```
 ```{note}
-**The model, its formal expression, and its storage.** This section describes the WHG v4 data model
-as a graph: SpatialEntities, Attestations, and the Names, Geometries, Timespans, Types and Authorities
-that attestations bundle together. The model is formalised as
-[PLATO](https://github.com/pelagios/place-attestation-ontology), the Place Attestation Ontology,
+**The model, its formal expression, and its storage.** This section describes the WHG v4 data model:
+SpatialEntities, the Attestations made about them, and the Names, Geometries, Timespans, Types,
+relations and identity claims that attestations bundle, each resting on Authorities such as
+Sources and Periods. The model is [PLATO](https://w3id.org/plato), the Place Attestation Ontology,
 which also defines its JSON and RDF serialisations. The Linked Places Format (LPF) is PLATO's
-single-object-attestation profile, and remains a supported input and output format.
+single-object profile, and remains a supported input and output format.
 
-A graph *model* does not require a graph *database*. In WHG the attestation model is held in
-PostgreSQL/PostGIS, with Elasticsearch serving search. That choice was tested against ArangoDB and
-an RDF triplestore on real and production-scale data, as set out in the
-[database assessment addendum](./architecture/database.md#addendum-2026-reassessment).
-
-Where these pages speak of "collections", "edges" or "nodes", read them as describing the logical
-structure, not a storage layout. **AUTHORITY** reference data (datasets, sources, relation types,
-periods, certainty levels) is still unified behind one `authority_type` discriminator, and
-**Attestations** remain first-class: each has its own identifier, carries certainty, notes and
-provenance, and links a SpatialEntity to what it attests.
+These pages describe the model, not a storage layout. WHG holds it in PostgreSQL/PostGIS, with
+Elasticsearch serving search.
 ```
+
 <br>
 
 ```{toctree}

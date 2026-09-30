@@ -1,17 +1,18 @@
 # Routes, Itineraries, Networks, Groups and Periods
 
-% Aligned with PLATO v0.6.0 (1597e67). Every term on this page is defined in PLATO's ontology.ttl.
-
 This page describes how WHG models things that are made of other places: a **route** (a way through
 places in order), an **itinerary** (a journey along a way, dated stop by stop) and a **network**
 (places and the connections between them, in no single order). It also says where two things that
 earlier drafts modelled in the same way now sit instead: a **gazetteer group**, which is a group of
 Gazetteers, and a **period**, which is an Authority. Neither of those is a SpatialEntity.
 
-The model is PLATO's, as released in version 0.6.0
-([doi:10.5281/zenodo.23047592](https://doi.org/10.5281/zenodo.23047592)). A route, an itinerary or a network is a SpatialEntity, typed as such, and
-everything about it (its members, their order, its connections and the figures a source gives for
-them) is an attestation with its own source, date and certainty.
+% TODO(0.7.0-doi): add the 0.7.0 version DOI
+The model is PLATO's, as released in [PLATO
+0.7.0](https://github.com/pelagios/place-attestation-ontology/releases/tag/v0.7.0)
+([doi:10.5281/zenodo.21688313](https://doi.org/10.5281/zenodo.21688313), the DOI for PLATO, all
+versions). A route, an itinerary or a network is a SpatialEntity, typed as such, and everything
+about it (its members, their order, its connections and the figures a source gives for them) is an
+attestation with its own source, date and certainty.
 
 The excerpts on this page come from PLATO's
 [worked examples of routes, journeys and networks](https://pelagios.org/place-attestation-ontology/guide/routes/):
@@ -24,20 +25,23 @@ network) and the Datini letters (a relational network).
 
 ### Typing: routes, itineraries, networks and segments
 
-What kind of entity a SpatialEntity is, is a Type attestation (`attests_type`). PLATO declares four
-Types that a platform's behaviour depends on, so that any consumer can tell these entities from
-places:
+What kind of entity a SpatialEntity is, is a Type attestation (`attests_type`). A Type node stands
+for one dataset's use of a concept: its `@id`, if it has one, is the dataset's own address, never
+the concept's IRI, which goes in its `identifier`; a Type may also say its vocabulary (`scheme`) and
+that vocabulary's version (`schemeVersion`). PLATO declares four kinds of entity that a platform's
+behaviour depends on, as concepts in the scheme `plato:EntityKindScheme`, so that any consumer can
+tell these entities from places:
 
-| Type | What it is (PLATO's definition) |
+| Kind | What it is (PLATO's definition) |
 |------|---------------------------------|
 | `plato:TypeRoute` | An ordered set of places making a way: a road, a sea lane, a pilgrimage route. Its timespan, if any, is when it was in use, not when anyone travelled it. |
 | `plato:TypeItinerary` | A journey made through places in order, each stop with its own timespan: a traveller's tour, a royal progress, a ship's voyage. |
 | `plato:TypeNetwork` | A set of places and the connections between them, in no single order: a river system, a canal network, a correspondence network. |
 | `plato:TypeSegment` | A physical link with an existence of its own: a leg of a route between two stations, a reach of a river between confluences. |
 
-A Type attestation points at one of these with its IRI as the type identifier. A route may also carry
-other Type attestations (an AAT term for a Roman road, say); the PLATO Type is what tells WHG to
-treat it as a route.
+A Type attestation names one of these concepts by its IRI in the Type's `identifier`. A route may
+also carry other Type attestations (an AAT term for a Roman road, say); the PLATO kind is what tells
+WHG to treat it as a route.
 
 ```{note}
 `plato:TypeItinerary` is not `plato:Itinerary`. The second is a **geometry role**: a line tracing a
@@ -116,7 +120,7 @@ from spreadsheets, a project uses `LeadsTo` itself, as the River Idle example do
 ### Segments: `BeginsAt`, `EndsAt` and `HasEnd`
 
 A physical link with its own existence (a leg of a road, a reach of a river) is a **segment**: a
-SpatialEntity with a Type attestation to `plato:TypeSegment`. It is a member of its route or network
+SpatialEntity with a Type attestation naming `plato:TypeSegment`. It is a member of its route or network
 (`MemberOf`, with a sequence where the source orders it), and it is joined to its end places with
 relation types of its own:
 
@@ -192,7 +196,7 @@ timespan, if it has one, is when it was in use, not when anyone travelled it.
 ```
 Route SpatialEntity
   ←[attests_about]─ Attestation ─[attests_name]→ Name(…)
-  ←[attests_about]─ Attestation ─[attests_type]→ Type(plato:TypeRoute)
+  ←[attests_about]─ Attestation ─[attests_type]→ Type(identifier: plato:TypeRoute)
   ←[attests_about]─ Attestation ─[attests_timespan]→ Timespan(when in use)        (optional)
 
   Stations, in the source's order:
@@ -320,7 +324,7 @@ and an itinerary is a journey made along one, dated stop by stop.**
 ```
 Itinerary SpatialEntity
   ←[attests_about]─ Attestation ─[attests_name]→ Name(…)
-  ←[attests_about]─ Attestation ─[attests_type]→ Type(plato:TypeItinerary)
+  ←[attests_about]─ Attestation ─[attests_type]→ Type(identifier: plato:TypeItinerary)
 
   Stops, each with its stay:
   SpatialEntity(stop 1) ←[attests_about]─ Attestation(sequence: 1)
@@ -648,9 +652,11 @@ is not evidence. (This attestation is not part of
 [PLATO's King John example](https://pelagios.org/place-attestation-ontology/guide/routes/king-john.html);
 added to a copy of it, the document still passes plato-tools.)
 
-**Several geometries:** where sources differ, or one source gives different geometries for
-different dates, record each as its own geometry attestation, so each keeps its source, dates and
-certainty. Where one source asserts a single heterogeneous shape, a `GeometryCollection` is fine.
+**Several geometries:** PLATO does not accept a GeoJSON `GeometryCollection`; each geometry is its
+own Geometry node. When one source gives several geometries together (a point and a polygon for the
+same thing, say), they may sit in one attestation, each with a `role` where they depict different
+things. A geometry from another source, or for another date, goes in its own attestation, because
+provenance belongs to the attestation.
 
 ---
 
@@ -681,6 +687,13 @@ of these relation types:
 | `plato:FindspotOf` | `findspot_of` / `found_at` | object |
 | `plato:SettingOf` | `setting_of` / `took_place_at` | event |
 | `plato:WorkplaceOf` | `workplace_of` / `worked_at` | person or group |
+| `plato:DepictedIn` | `depicted_in` / `depicts` | image, map or drawing |
+| `plato:SubjectOf` | `subject_of` / `about` | record, document or publication |
+
+The last two, new in PLATO 0.7.0, link a place to images and records held elsewhere: a photograph
+or plan that shows it (`DepictedIn`), or an archival file, site record or publication about it
+(`SubjectOf`). Each is a statement of its own, usually sourced from the catalogue that identified
+it, not a citation of evidence for another statement (which is `has_citation`).
 
 The target is usually not a SpatialEntity, and PLATO deliberately gives `relates_to` no range so
 that it is not inferred to be one. PLATO's comment on `relates_to` says:

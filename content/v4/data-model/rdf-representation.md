@@ -1,791 +1,739 @@
 # RDF Representation
 
-## Overview
+% Every plato: term on this page is defined in PLATO's ontology.ttl at tag v0.7.0 (238d4f2).
+% Every Turtle excerpt is verbatim from that tag, and every SPARQL query was run with rdflib 7.6 against
+% the tag's twelve examples/*.ttl files (2026-09-30).
 
-The World Historical Gazetteer data model can be fully expressed in RDF (Resource Description Framework), providing interoperability with semantic web technologies and linked open data initiatives. This document explains how the graph-based attestation model maps to RDF triples.
+WHG's data model is [PLATO](https://w3id.org/plato), the Place Attestation Ontology, and PLATO is
+an OWL ontology. So WHG's RDF is PLATO RDF: its classes and properties are PLATO's, in the namespace
+`https://w3id.org/plato#`, together with a few standard vocabularies that PLATO itself uses
+(GeoSPARQL, Dublin Core, DCAT, SKOS). WHG has no RDF vocabulary of its own.
 
-### Why RDF?
+You do not need RDF to use WHG: PLATO's JSON formats and Linked Places Format serve most uses. This
+page is for people who want to load WHG data into a triple store, query it with SPARQL, or link to
+it from their own linked data.
 
-RDF enables:
+The Turtle excerpts on this page are quoted from PLATO's own example files (in the
+[`examples/`](https://github.com/pelagios/place-attestation-ontology/tree/main/examples) folder of
+the PLATO repository), shortened with `# …` where lines are left out. Their `whgx:` IRIs are
+illustrative; PLATO's examples use them in place of real WHG identifiers.
 
-- **Interoperability** with other gazetteers and linked data resources
-- **Semantic queries** using SPARQL across distributed datasets
-- **Formal semantics** for reasoning and inference
-- **Standard vocabularies** (GeoSPARQL, Time, PROV) for spatial/temporal data
-- **Linked Open Data** publication and consumption
+---
 
-You can use WHG data without knowing RDF (JSON/LPF works fine), but RDF export provides powerful integration options.
+## What WHG serves, and how
 
-## Core Ontology Classes
+Every place record has a persistent identifier that resolves through w3id.org (see
+[Identifiers and citation](../guide/identifiers.md)):
 
-### whg:SpatialEntity
+```text
+https://w3id.org/whg/id/place:<source>:<id>
+```
 
-Any entity that can be attested in historical sources. This includes places, people, events, polities, and any other entities of historical interest. Periods are not SpatialEntities: a period is an Authority (see `whg:Authority` below).
+The same address answers people and software differently, by content negotiation on the request's
+`Accept` header. What it serves **today** and what it will serve **at the v4 launch** differ:
 
-**Extends:** `owl:SpatialEntity`
+| `Accept` header | Today | At the v4 launch |
+|---|---|---|
+| `text/html` | the record's page on WHG | the record's page on WHG |
+| `application/ld+json`, `application/json` or `*/*` | the record as JSON-LD in Linked Places Format | the record as PLATO JSON-LD |
+| `text/turtle` | not served (404) | the record as PLATO Turtle |
 
-**Properties:**
-- `dcterms:identifier` - Unique identifier
-- `dcterms:description` - Textual description
+**Today**, the JSON-LD answer is in **Linked Places Format** (LPF), with LPF's own JSON-LD context,
+so it is already RDF. LPF is PLATO's single-object profile: each LPF element corresponds to one
+attestation linking one entity to one name, type, geometry or related entity, so existing LPF data
+remains valid PLATO. Turtle and other RDF serialisations are not served.
 
-What kind of thing a SpatialEntity is is not a property of the SpatialEntity: it is asserted by Type attestations
-(`attests_type`), and routes, itineraries, networks and segments are typed with `plato:TypeRoute`,
-`plato:TypeItinerary`, `plato:TypeNetwork` and `plato:TypeSegment`.
+**At the v4 launch**, WHG will serve PLATO JSON-LD and Turtle by content negotiation, and will go on
+serving LPF for existing clients.
 
-### whg:Name
+% TODO(release): say how a client asks for LPF once PLATO JSON-LD is the default answer, and confirm
+% the media types in the table against the shipped service.
+% TODO(release): add the SPARQL endpoint here if it has shipped; otherwise keep it out of the text
+% (same TODO as guide/formats.md).
 
-A name variant for a thing (toponym, chrononym, personal name, etc.). Names can be in different languages, scripts, and may have temporal scope.
+### From PLATO JSON to RDF
 
-**Properties:**
-- `whg:nameString` - The actual name text with language tag
-- `whg:language` - ISO 639-3 language code
-- `whg:script` - ISO 15924 script code
-- `whg:variant` - Relationship to other forms (official, colloquial, historical, etc.)
-- `whg:transliteration` - Romanization or transliteration
-- `whg:ipa` - International Phonetic Alphabet representation
-- `whg:nameType` - Array of classifications (toponym, chrononym, ethnonym, etc.)
-- `whg:embedding` - Vector representation for phonetic similarity search
+PLATO JSON (the place-centric and attestation-centric formats) becomes RDF by adding PLATO's
+JSON-LD context, `https://w3id.org/plato/schemas/plato.context.jsonld`, and expanding the document
+with any JSON-LD 1.1 processor. The [PLATO tools](https://pelagios.org/plato-tools/) do the same
+conversion to N-Triples, in the browser or from the command line.
 
-### whg:Geometry
+The context maps each JSON key to its PLATO term (JSON keys are camelCase, `startEarliest`; the
+ontology's properties are snake_case, `plato:start_earliest`). A context cannot do everything, and
+the context file lists what a converter must add itself. The points that matter most for RDF users:
 
-A spatial representation of a thing. Extends GeoSPARQL geometry to support temporal scoping and uncertainty.
+- No `rdf:type` is added to attestations, names, geometries, timespans, types or entities; the
+  ontology's domains and ranges let a reasoner infer them.
+- Timespan bounds stay untyped strings. Type them by shape (`xsd:gYear`, `xsd:date`,
+  `xsd:dateTime`) if a store is to index and compare them.
+- A geometry's `reprPoint` and `bbox` become RDF lists of numbers, not the WKT literals the ontology
+  declares.
+- Name strings carry no language tag.
+- A key the context does not name is dropped silently.
 
-**Extends:** `geo:Geometry`
+So RDF produced from JSON by the context alone is correct PLATO, but not everything the ontology
+can say; a store that relies on types or typed dates should add them.
 
-**Properties:**
-- `geo:asWKT` - Well-Known Text representation
-- `geo:asGeoJSON` - GeoJSON representation (alternative to WKT)
-- `whg:representativePoint` - Centroid or representative point for mapping/search
-- `whg:hull` - Convex hull of the geometry
-- `whg:bbox` - Bounding box array [min_lon, min_lat, max_lon, max_lat]
-- `whg:precision` - Spatial precision descriptor (exact, approximate, uncertain)
-- `whg:precisionKm` - Precision uncertainty radius in kilometers
-- `whg:sourceCRS` - Source coordinate reference system (EPSG code or historical CRS)
+---
 
-### whg:Timespan
+## Namespaces
 
-A temporal extent with support for uncertainty bounds. Based on the W3C Time Ontology but extended to handle historical imprecision.
+| Prefix | Namespace | Used for |
+|---|---|---|
+| `plato:` | `https://w3id.org/plato#` | every PLATO class, property and concept |
+| `geo:` | `http://www.opengis.net/ont/geosparql#` | `geo:wktLiteral`; `plato:Geometry` is a `geo:Geometry` |
+| `dcterms:` | `http://purl.org/dc/terms/` | a gazetteer's title and licence; a source's licence |
+| `dcat:` | `http://www.w3.org/ns/dcat#` | a gazetteer's version (`dcat:version`) and other catalogue metadata |
+| `skos:` | `http://www.w3.org/2004/02/skos/core#` | a Type's scheme (`skos:inScheme`); PLATO's concept schemes |
+| `cito:` | `http://purl.org/spar/cito/` | why a source is cited (`plato:citation_function`) |
+| `xsd:` | `http://www.w3.org/2001/XMLSchema#` | datatypes |
+| `rdfs:` | `http://www.w3.org/2000/01/rdf-schema#` | labels |
 
-**Extends:** `time:ProperInterval`
+PLATO aligns its classes with PROV-O: `plato:SpatialEntity` and `plato:Attestation` are
+subclasses of `prov:Entity`, and `plato:Contributor` of `prov:Agent`.
 
-**Properties:**
-- `whg:startEarliest` - Earliest possible start date
-- `whg:startLatest` - Latest possible start date
-- `whg:endEarliest` - Earliest possible end date
-- `whg:endLatest` - Latest possible end date
-- `whg:label` - Human-readable period name
-- `whg:precision` - Temporal precision (year, decade, century, era, geological_period)
-- `whg:precisionValue` - Numeric precision indicator
+---
 
-### whg:Attestation
+## The classes and properties
 
-### whg:Attestation
+| PLATO class | What it is | Linked from an attestation by | JSON key |
+|---|---|---|---|
+| `plato:SpatialEntity` | the identity that attestations are about | `plato:attests_about` | `about` (or nesting in a place-centric document) |
+| `plato:Name` | a name form | `plato:attests_name` | `names` |
+| `plato:Geometry` | a location or extent | `plato:attests_geometry` | `geometries` |
+| `plato:Timespan` | when the attested facts held | `plato:attests_timespan` | `timespans` |
+| `plato:Type` | one dataset's use of a classification | `plato:attests_type` | `types` |
+| `plato:PropertyValue` | any other attribute (a population, a length) | `plato:attests_property` | `properties` |
+| `plato:Source`, `plato:Dataset` | what the attestation rests on | `plato:sourced_by` | `sources` |
+| `plato:Citation` | one use of one source, with a locator | `plato:has_citation` | `citations` |
+| `plato:IdentityRelation` | a claim that two entities are the same | `plato:attests_identity` | `identities` |
+| `plato:Contributor` | who recorded the attestation | `plato:contributed_by` | `contributor` |
 
-A node that bundles together claims about a SpatialEntity, linking it to Names, Geometries, Timespans, and other SpatialEntities, all grounded in primary sources. This is the foundational unit of the WHG model, capturing not just facts but provenance, certainty, and temporal context.
+A SpatialEntity is an entity whose identity is bound up with space: a settlement, a region, a
+route, a river network. A person, an event or a period is not a SpatialEntity. A period is an
+Authority (`plato:Period`), and a place's part in the life of a person or the history of an object
+is a relation from the place to that thing's own IRI (see [Relations](#relations) below).
 
-**Extends:** `prov:Entity`
+Everything else hangs off the attestation too: `plato:relates_to` and `plato:has_relation_type`
+for relations, `plato:meta_attestation_about` and `plato:has_meta_type` for comments on other
+attestations. The attestation itself carries only metadata: `plato:certainty`,
+`plato:certainty_note`, `plato:notes`, `plato:sequence`, `plato:negated`, `plato:computed`,
+`plato:created`.
 
-**Critical Clarification:** In the RDF representation, attestations are nodes (resources) that connect to other entities through predicates. This mirrors the internal graph database structure where attestations are documents in a document collection, with edges in a separate edge collection connecting them to other entities.
+---
 
-**Properties:**
-- `whg:sequence` - Ordering for routes and itineraries
-- `whg:certainty` - Confidence value (0.0-1.0)
-- `whg:certaintyNote` - Explanation of uncertainty
-- `whg:notes` - Additional context or commentary
-- `dcterms:created` - Timestamp of attestation creation
-- `dcterms:modified` - Timestamp of last modification
-- `dcterms:contributor` - User or system that created attestation
+## An attestation in Turtle
 
-**Outgoing relationships** (expressed as predicates):
-- `whg:attests` - Links to the SpatialEntity being attested (attests_about in graph)
-- `whg:attestsName` - Links to Name entity (attests_name in graph)
-- `whg:attestsGeometry` - Links to Geometry entity (attests_geometry in graph)
-- `whg:attestsTimespan` - Links to Timespan entity (attests_timespan in graph)
-- `whg:relatesTo` - Links to another SpatialEntity via custom relation (relates_to in graph)
-- `whg:typedBy` - Links to Authority defining relation type (has_relation_type in graph)
-- `prov:hadPrimarySource` - Links to Source Authority (sourced_by in graph)
-
-### whg:Authority
-
-Reference data for sources, datasets, relation types, periods, and certainty levels. Uses single table inheritance pattern via `whg:authorityType`.
-
-**Properties:**
-- `whg:authorityType` - Discriminator: "dataset", "source", "relation_type", "period", "certainty_level"
-- `dcterms:title` - For datasets
-- `dcterms:bibliographicCitation` - For sources
-- `whg:recordId` - Source's ID in original dataset
-- `rdfs:label` - For relation_types, periods, certainty_levels
-- `owl:inverseOf` - For relation_types (bidirectional navigation)
-- `rdfs:domain` - For relation_types: valid subject types
-- `rdfs:range` - For relation_types: valid object types
-- `dcterms:hasVersion` - For datasets
-- `dcterms:publisher` - For datasets
-- `dcterms:license` - For datasets
-- `dcterms:identifier` - External URI (PeriodO, source URL, etc.)
-- Timespan properties for periods (startEarliest, startLatest, endEarliest, endLatest)
-- `whg:level` - For certainty_levels (0.0-1.0)
-- `dcterms:description` - General description
-
-## The Attestation Pattern in RDF
-
-The key innovation in WHG's RDF model is representing **Attestations as nodes** rather than as reified statements. This is the same structure PLATO defines: Attestations are resources linked to the entities, names, geometries and timespans they attest.
-
-**Architecture note:** inside WHG, attestations are rows in PostgreSQL tables, not graph vertices. The RDF representation is generated from them, and it round-trips losslessly through PLATO.
-
-### Graph-Based RDF Structure
-
-In the WHG model, an Attestation is not just metadata about a triple—it's a first-class entity that acts as a hub connecting multiple resources:
+An attestation is a node of its own, not a reified triple: it bundles one SpatialEntity with the
+names, geometries, timespans and types a source gives for it, and says who recorded that and on
+what evidence. PLATO's Constantinople example has one SpatialEntity and three attestations, one
+per source. The third of them, from `examples/constantinople.ttl` (lines 218–230):
 
 ```turtle
-# The Attestation as a node (document in attestations collection)
-ex:attestation_001 a whg:Attestation ;
-    whg:certainty 0.95 ;
-    whg:certaintyNote "Well-documented in multiple sources" ;
-    dcterms:created "2024-01-15T10:30:00Z"^^xsd:dateTime ;
-    dcterms:contributor "researcher@example.edu" .
-
-# Edges connecting attestation to other entities
-# (In RDF, these are predicates; in ArangoDB, these are edge documents)
-
-# SpatialEntity to Attestation
-ex:baghdad whg:attestedBy ex:attestation_001 .
-# Or reverse direction:
-ex:attestation_001 whg:attests ex:baghdad .
-
-# Attestation to Name (via predicate/edge)
-ex:attestation_001 whg:attestsName ex:name_baghdad .
-
-# Attestation to Geometry (via predicate/edge)
-ex:attestation_001 whg:attestsGeometry ex:geometry_762ce .
-
-# Attestation to Timespan (via predicate/edge)
-ex:attestation_001 whg:attestsTimespan ex:timespan_abbasid .
-
-# Attestation to Source (via predicate/edge)
-ex:attestation_001 prov:hadPrimarySource ex:source_al_tabari .
+whgx:attestation\/istanbul-geonames
+    a plato:Attestation ;
+    plato:attests_about whgx:entity\/constantinople ;
+    plato:attests_name whgx:name\/istanbul-tr ;
+    plato:attests_geometry whgx:geometry\/geonames-point ;
+    plato:attests_timespan whgx:timespan\/geonames-consulted ;
+    plato:attests_type whgx:type\/inhabited-place ;
+    plato:sourced_by whgx:source\/geonames ;
+    plato:contributed_by whgx:contributor\/historian ;
+    plato:certainty 1.0 ;
+    plato:certainty_note "GeoNames gives İstanbul as the official Turkish name, and a single point for the city; the point stands for the whole city and marks no boundary." ;
+    plato:notes "The timespan is the day GeoNames was consulted. A modern gazetteer witnesses the current name, not when the name came into use." ;
+    plato:created "2026-02-15T10:00:00Z"^^xsd:dateTime .
 ```
 
-This pattern allows WHG to:
-
-- Bundle multiple claims together (Name + Geometry + Timespan)
-- Track multiple, potentially conflicting sources
-- Represent scholarly uncertainty
-- Model change over time
-- Enable historiographical analysis
-
-### Relation Types via Authority
-
-For SpatialEntity-to-SpatialEntity relationships, the semantic meaning is expressed through Authority entities:
+The SpatialEntity itself says almost nothing: its identity is the point on which attestations
+converge (lines 42–46):
 
 ```turtle
-# Member-of relationship via Authority
-ex:attestation_005 a whg:Attestation ;
-    whg:attests ex:changan ;
-    whg:typedBy ex:authority_member_of ;
-    whg:relatesTo ex:tang_dynasty .
-
-ex:authority_member_of a whg:Authority ;
-    whg:authorityType "relation_type" ;
-    rdfs:label "member_of" ;
-    owl:inverseOf ex:authority_contains ;
-    rdfs:domain whg:SpatialEntity ;
-    rdfs:range whg:SpatialEntity .
+whgx:entity\/constantinople
+    a plato:SpatialEntity ;
+    plato:entity_identifier "constantinople" ;
+    plato:namespace "whg" ;
+    plato:ccodes "TR" .
 ```
 
-## Relation Type Vocabulary
+A WHG place's IRI in RDF (its `@id` in JSON-LD) is its persistent identifier,
+`https://w3id.org/whg/id/place:<source>:<id>`. The API address,
+`https://whgazetteer.org/entity/place:<source>:<id>/api`, is only where the data is served; it is not
+the place's identity. Use the w3id identifier when you refer to a WHG place from your own RDF.
 
-Standard relation types (system-defined edges in the graph):
+Today's LPF answer still gives the API address as the place's `"@id"`. That will be corrected so
+that it gives the w3id identifier.
 
-| RDF Predicate | Graph Edge Type | Description |
-|--------------|----------------|-------------|
-| `whg:attestsName` | `attests_name` | Attestation claims this Name |
-| `whg:attestsGeometry` | `attests_geometry` | Attestation claims this Geometry |
-| `whg:attestsTimespan` | `attests_timespan` | Attestation claims this Timespan |
+### Names
 
-Custom relation types (via Authority with `authorityType: "relation_type"`):
-
-| Authority Label | CIDOC-CRM | Description |
-|----------------|-----------|-------------|
-| `member_of` | P46_is_composed_of (inverse) | SpatialEntity is part of another SpatialEntity |
-| `contains` | P46_is_composed_of | SpatialEntity contains another SpatialEntity |
-| `same_as` | P130_shows_features_of | Equivalence between SpatialEntities |
-| `succeeds` | P134_continued | SpatialEntity succeeded another SpatialEntity |
-| `connected_to` | P122_borders_with (extended) | SpatialEntity connected to another SpatialEntity |
-| `coextensive_with` | P121_overlaps_with | SpatialEntity spatially coextensive with another |
-
-## Complete Example
-
-The following example demonstrates the graph-based attestation model using Medieval Baghdad:
+A Name is a node that attestations point to, so the same form can be attested for several
+entities, by several sources (lines 57–65):
 
 ```turtle
-@prefix whg: <http://whgazetteer.org/ontology/> .
-@prefix geo: <http://www.opengis.net/ont/geosparql#> .
-@prefix time: <http://www.w3.org/2006/time#> .
-@prefix prov: <http://www.w3.org/ns/prov#> .
-@prefix dcterms: <http://purl.org/dc/terms/> .
-@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
-@prefix owl: <http://www.w3.org/2002/07/owl#> .
-@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
-@prefix ex: <http://whgazetteer.org/place/> .
-@prefix exa: <http://whgazetteer.org/attestation/> .
-@prefix exn: <http://whgazetteer.org/name/> .
-@prefix exg: <http://whgazetteer.org/geometry/> .
-@prefix ext: <http://whgazetteer.org/timespan/> .
-@prefix exauth: <http://whgazetteer.org/authority/> .
-
-# SpatialEntity: Baghdad
-ex:baghdad a whg:SpatialEntity ;
-    dcterms:identifier "whg:baghdad" ;
-    dcterms:description "Historical city, capital of Abbasid Caliphate" .
-
-# Names
-exn:baghdad_arabic a whg:Name ;
-    whg:nameString "بغداد"@ar ;
-    whg:language "ara" ;
-    whg:script "Arab" ;
-    whg:nameType "toponym" .
-
-exn:baghdad_latin a whg:Name ;
-    whg:nameString "Bagdad"@la ;
-    whg:language "lat" ;
-    whg:script "Latn" ;
-    whg:nameType "toponym" .
-
-exn:baghdad_madinat a whg:Name ;
-    whg:nameString "Madinat al-Salam"@ar ;
-    whg:language "ara" ;
-    whg:script "Arab" ;
-    whg:nameType "toponym" ;
-    whg:variant "ceremonial" .
-
-# Geometries
-exg:baghdad_762 a geo:Geometry ;
-    geo:asWKT "POINT(44.4 33.3)"^^geo:wktLiteral ;
-    whg:precision "approximate" ;
-    whg:precisionKm 5 .
-
-exg:baghdad_1200 a geo:Geometry ;
-    geo:asWKT "POLYGON((44.35 33.25, 44.45 33.25, 44.45 33.35, 44.35 33.35, 44.35 33.25))"^^geo:wktLiteral ;
-    whg:precision "approximate" ;
-    whg:precisionKm 2 .
-
-# Timespans
-ext:founding a whg:Timespan ;
-    whg:startEarliest "0762-01-01"^^xsd:date ;
-    whg:startLatest "0762-12-31"^^xsd:date ;
-    whg:endEarliest "0762-01-01"^^xsd:date ;
-    whg:endLatest "0762-12-31"^^xsd:date ;
-    whg:label "Founding of Baghdad" ;
-    whg:precision "year" .
-
-ext:abbasid a whg:Timespan ;
-    whg:startEarliest "0750-01-01"^^xsd:date ;
-    whg:startLatest "0750-12-31"^^xsd:date ;
-    whg:endEarliest "1258-01-01"^^xsd:date ;
-    whg:endLatest "1258-12-31"^^xsd:date ;
-    whg:label "Abbasid Caliphate period" ;
-    whg:precision "year" .
-
-# Sources (Authorities)
-exauth:al_tabari a whg:Authority ;
-    whg:authorityType "source" ;
-    dcterms:bibliographicCitation "Al-Tabari, History of the Prophets and Kings" ;
-    whg:recordId "tabari-vol-27" .
-
-exauth:yaqut a whg:Authority ;
-    whg:authorityType "source" ;
-    dcterms:bibliographicCitation "Yaqut al-Hamawi, Mu'jam al-Buldan" ;
-    whg:recordId "yaqut-baghdad" .
-
-exauth:dataset_islamic a whg:Authority ;
-    whg:authorityType "dataset" ;
-    dcterms:title "Islamic Cities Database" ;
-    dcterms:hasVersion "1.0" ;
-    dcterms:identifier "doi:10.83427/whg-dataset-123" .
-
-# Attestation 1: Arabic name with founding timespan
-exa:att_001 a whg:Attestation ;
-    whg:attests ex:baghdad ;
-    whg:attestsName exn:baghdad_arabic ;
-    whg:attestsTimespan ext:founding ;
-    whg:certainty 0.95 ;
-    whg:certaintyNote "Well-documented in multiple chronicles" ;
-    prov:hadPrimarySource exauth:al_tabari ;
-    dcterms:created "2024-01-15T10:30:00Z"^^xsd:dateTime ;
-    dcterms:contributor "researcher@whg.org" .
-
-# Attestation 2: Ceremonial name during Abbasid period
-exa:att_002 a whg:Attestation ;
-    whg:attests ex:baghdad ;
-    whg:attestsName exn:baghdad_madinat ;
-    whg:attestsTimespan ext:abbasid ;
-    whg:certainty 0.9 ;
-    whg:certaintyNote "Ceremonial name used in official documents" ;
-    prov:hadPrimarySource exauth:yaqut ;
-    dcterms:created "2024-01-15T10:35:00Z"^^xsd:dateTime .
-
-# Attestation 3: Geometry at founding (762 CE)
-exa:att_003 a whg:Attestation ;
-    whg:attests ex:baghdad ;
-    whg:attestsGeometry exg:baghdad_762 ;
-    whg:attestsTimespan ext:founding ;
-    whg:certainty 0.7 ;
-    whg:certaintyNote "Location known, exact boundaries uncertain" ;
-    prov:hadPrimarySource exauth:al_tabari ;
-    dcterms:created "2024-01-15T10:40:00Z"^^xsd:dateTime .
-
-# Attestation 4: Expanded geometry (1200 CE)
-exa:att_004 a whg:Attestation ;
-    whg:attests ex:baghdad ;
-    whg:attestsGeometry exg:baghdad_1200 ;
-    whg:certainty 0.6 ;
-    whg:certaintyNote "City expanded, boundaries approximate" ;
-    prov:hadPrimarySource exauth:yaqut ;
-    dcterms:created "2024-01-15T10:45:00Z"^^xsd:dateTime .
-
-# SpatialEntity-to-SpatialEntity relationship: Baghdad connected to Basra
-ex:basra a whg:SpatialEntity ;
-    dcterms:identifier "whg:basra" .
-
-exauth:connected_to a whg:Authority ;
-    whg:authorityType "relation_type" ;
-    rdfs:label "connected_to" ;
-    rdfs:domain whg:SpatialEntity ;
-    rdfs:range whg:SpatialEntity ;
-    dcterms:description "Places connected by trade or communication" .
-
-exa:att_005 a whg:Attestation ;
-    whg:attests ex:baghdad ;
-    whg:typedBy exauth:connected_to ;
-    whg:relatesTo ex:basra ;
-    whg:certainty 0.85 ;
-    prov:hadPrimarySource exauth:yaqut .
-
-# Meta-attestation: One attestation contradicts another
-exa:att_meta_001 a whg:Attestation ;
-    whg:attests exa:att_001 ;
-    whg:typedBy exauth:contradicts ;
-    whg:relatesTo exa:att_002 ;
-    whg:notes "Sources disagree on which name was used officially in 762 CE" ;
-    prov:hadPrimarySource exauth:modern_scholarship .
-
-# Meta-attestation connecting two attestations
-exauth:contradicts a whg:Authority ;
-    whg:authorityType "relation_type" ;
-    rdfs:label "contradicts" .
-
-exa:att_meta_001 a whg:Attestation ;
-    whg:attests exa:att_001 ;
-    whg:typedBy exauth:contradicts ;
-    whg:relatesTo exa:att_002 ;
-    whg:notes "Sources disagree on which name was used officially in 762 CE" ;
-    prov:hadPrimarySource exauth:modern_scholarship .  
-
-exauth:modern_scholarship a whg:Authority ;
-    whg:authorityType "source" ;
-    dcterms:bibliographicCitation "Kennedy, Hugh. Baghdad: City of Peace, City of Blood" .
-
-# External links
-ex:baghdad owl:sameAs <http://www.wikidata.org/entity/Q1530> ,
-                      <http://vocab.getty.edu/tgn/7001896> ,
-                      <http://sws.geonames.org/98182/> .
+whgx:name\/byzantion-grc
+    a plato:Name ;
+    plato:toponym "Βυζάντιον" ;
+    plato:language "grc" ;
+    plato:script "Grek" ;
+    plato:romanized "Byzantion" ;
+    plato:transliteration_system "ISO 843" ;
+    plato:name_type "toponym" ;
+    plato:source_label "Βυζαντίῳ" .
 ```
 
-**Note:** Meta-attestations in RDF use the same pattern as other attestations. The `whg:typedBy` predicate links to an authority that defines the meta-relationship type (contradicts, supports, supersedes, etc.). In the internal graph database, this is represented as an edge with `edge_type: "meta_attestation"` and a `properties.meta_type` field.
+`plato:source_label` keeps the form exactly as the source writes it, here the dative in
+Herodotus's "at Byzantion"; the toponym is the normalised form. Another name property is
+`plato:ipa`. Whether a form is attested, a headword or an editor's normalisation is not a property
+of the Name, since one Name can be all three in different places: it is `plato:form_status` on the
+attestation.
 
-**Key features demonstrated:**
+### Geometries
 
-1. **Attestations as nodes** - Not reified statements, but first-class entities
-2. **Multiple names over time** - Each with separate attestations
-3. **Changing geometries** - City extent in 762 CE vs. 1200 CE
-4. **Uncertainty modeling** - Varying certainty values with explanatory notes
-5. **Complex timespans** - Separate timespan entities
-6. **SpatialEntity-to-SpatialEntity relationships** - Via Authority-based relation types
-7. **Meta-attestations** - Documenting contradictions between sources
-8. **External links** - Connections to Wikidata, Getty TGN, GeoNames
-
-## Temporal Scoping
-
-Attestations link to Timespan entities to indicate when relationships held:
+`plato:Geometry` is a subclass of GeoSPARQL's `geo:Geometry`, and its WKT is `plato:geo_wkt`, a
+subproperty of `geo:asWKT` with the range `geo:wktLiteral`. Only GeoNames, of the example's three
+sources, gives a location; from the same file (lines 91–95):
 
 ```turtle
-ext:timespan_001 a whg:Timespan ;
-    whg:startEarliest "1200-01-01"^^xsd:date ;
-    whg:startLatest "1250-12-31"^^xsd:date ;
-    whg:endEarliest "1400-01-01"^^xsd:date ;
-    whg:endLatest "1450-12-31"^^xsd:date ;
-    whg:label "Roughly 13th-14th centuries" ;
-    whg:precision "quarter-century" .
-
-exa:att_temporal a whg:Attestation ;
-    whg:attests ex:some_thing ;
-    whg:attestsName ex:some_name ;
-    whg:attestsTimespan ext:timespan_001 .
+whgx:geometry\/geonames-point
+    a plato:Geometry ;
+    plato:geo_wkt "POINT(28.94966 41.01384)"^^<http://www.opengis.net/ont/geosparql#wktLiteral> ;
+    plato:repr_point "POINT(28.94966 41.01384)"^^<http://www.opengis.net/ont/geosparql#wktLiteral> ;
+    plato:source_crs "EPSG:4326" .
 ```
 
-The four-point timespan model accommodates historical uncertainty about when periods begin and end.
+What this means for spatial queries:
 
-## Certainty and Provenance
+- **WKT is the RDF geometry.** Coordinates are longitude then latitude, in WGS 84 unless
+  `plato:source_crs` says otherwise. `plato:geo_json` carries a GeoJSON geometry object as a
+  string, for web mapping and LPF export; it is an alternative serialisation, not a second
+  geometry.
+- **There is no `geo:hasGeometry`.** A geometry belongs to an attestation, not to the entity:
+  one source's extent and another's are different claims, each with its own date and source. To
+  find an entity's geometries, go through its attestations (`plato:attests_about`, then
+  `plato:attests_geometry`).
+- **GeoSPARQL stores.** A store with RDFS inference sees every `plato:geo_wkt` as `geo:asWKT`;
+  without inference, apply GeoSPARQL functions (such as `geof:sfWithin`) to `plato:geo_wkt`
+  directly.
+- **`plato:repr_point`** is a WKT point for indexing and distance queries; **`plato:hull`** and
+  **`plato:bbox`** are for fast filtering.
+- **How precisely, and what it depicts, are separate.** `plato:spatial_precision` (`exact`,
+  `approximate`, `uncertain`, `historical_approximate`) and `plato:precision_km` say how well the
+  location is known. `plato:geometry_role` says what the geometry depicts: an extent, a feature
+  point, a representative point, a label anchor, an itinerary line (`plato:Extent`,
+  `plato:FeaturePoint`, `plato:RepresentativePoint`, `plato:LabelAnchor`, `plato:Itinerary`).
+  PLATO's `examples/geometry-roles.ttl` shows four geometries for one town, each with its role.
+- **Heterogeneous geometries.** Rather than a GeometryCollection, give each geometry its own node,
+  and where they differ by source or date, its own attestation, so that each keeps its provenance.
 
-Every attestation includes:
+### Timespans
 
-- **certainty** - Float value 0.0-1.0 indicating confidence level
-- **certaintyNote** - Optional text explanation of uncertainty
-- **prov:hadPrimarySource** - Link to Source Authority
-- Authority's `authorityType` indicates source classification
-
-Example:
+A Timespan has four bounds, so that uncertainty about when something began and ended can be said
+exactly; a bound that is not known is left out. Herodotus's Histories are dated only to within a
+couple of decades (lines 105–110):
 
 ```turtle
-exa:att_002 a whg:Attestation ;
-    whg:certainty 0.6 ;
-    whg:certaintyNote "Two chronicles give different dates; split the difference" ;
-    prov:hadPrimarySource exauth:chronicle_a, exauth:chronicle_b .
-
-exauth:chronicle_a a whg:Authority ;
-    whg:authorityType "source" ;
-    dcterms:bibliographicCitation "Chronicle A, 12th century manuscript" .
+whgx:timespan\/herodotus-histories
+    a plato:Timespan ;
+    plato:start_earliest "-0440" ;
+    plato:end_latest "-0420" ;
+    plato:start_precision "decade" ;
+    plato:end_precision "decade" .
 ```
 
-## Meta-Attestations
-
-Attestations can themselves be subjects of other attestations, enabling documentation of:
-
-- Contradictions between sources
-- Scholarly debates
-- Corrections and updates
-- Relationships between evidence
+Years have at least four digits, and as many as they need (`"-12000"`); a day is an ISO 8601
+date. The bounds may be plain strings, as here; a producer that can should type them as
+`xsd:gYear`, `xsd:date` or `xsd:dateTime`, so that a store can compare them. The precision values
+are `day`, `month`, `year`, `decade`, `century`, `era` and `geological_period`. Other properties:
+`plato:duration` (a length the source states, as an `xsd:duration`), `plato:open_start` and
+`plato:open_end`, `plato:periodo_uri`, `plato:edtf_string`, and `plato:source_label` for the date
+as the source writes it. The King John example shows that last in use (from
+`examples/king-john-itinerary.ttl`, lines 87–97):
 
 ```turtle
-exauth:contradicts a whg:Authority ;
-    whg:authorityType "relation_type" ;
-    rdfs:label "contradicts" .
-
-exa:att_099 a whg:Attestation ;
-    whg:attests exa:att_001 ;
-    whg:typedBy exauth:contradicts ;
-    whg:relatesTo exa:att_002 ;
-    whg:notes "Source A claims founding in 762, Source B claims 765" ;
-    prov:hadPrimarySource exauth:modern_analysis .
+whgx:king-john\/attestation\/windsor-1
+    a plato:Attestation ;
+    plato:attests_about whgx:king-john\/place\/windsor ;
+    plato:relates_to whgx:king-john\/place\/itinerary-1215 ;
+    plato:has_relation_type plato:MemberOf ;
+    plato:sequence 1 ;
+    plato:attests_timespan [ a plato:Timespan ;
+        plato:source_label "from the 1st to the 3d of June 1215" ;
+        plato:start_earliest "1215-06-01" ;
+        plato:end_latest "1215-06-03" ] ;
+    plato:has_citation whgx:king-john\/citation\/p108 .
 ```
 
-## Integration with Existing Ontologies
+A named period is not a Timespan but an Authority, `plato:Period`, with its own timespan and,
+where it has one, a PeriodO identifier (see [Periods](patterns.md#periods)).
 
-The WHG RDF model builds on standard semantic web vocabularies:
+### Types
 
-| Ontology | Purpose |
-|----------|---------|
-| **GeoSPARQL** | Spatial representations and geometric relationships |
-| **W3C Time** | Temporal modeling with intervals and instants |
-| **W3C PROV** | Provenance and attribution |
-| **Dublin Core** | Basic metadata (title, creator, date, etc.) |
-| **SKOS** | Concept schemes and controlled vocabularies |
-| **OWL** | Ontology structure and logical relationships |
-
-This ensures interoperability with existing linked data systems.
-
-## Geometry Representation
-
-WHG supports both WKT (Well-Known Text) and GeoJSON for geometry representation to ensure maximum interoperability with different tools and systems.
-
-**GeometryCollection:** supported. Where a geometry claim differs by source or date, prefer separate geometry attestations so each keeps its own provenance.
-
-### Standard Prefixes and Context
-
-**Turtle prefixes:**
+A Type node stands for **one dataset's use** of a classification, not for the vocabulary's
+concept. Its IRI, if it has one, is the dataset's own; the concept's IRI goes in
+`plato:type_identifier`. Were the Type node the concept itself, every dataset's label and version
+would pile up on one shared node in any combined graph. In `examples/constantinople.ttl`
+(lines 133–136), the Type has the dataset's IRI:
 
 ```turtle
-@prefix geo: <http://www.opengis.net/ont/geosparql#> .
-@prefix geojson: <https://purl.org/geojson/vocab#> .
-@prefix dcterms: <http://purl.org/dc/terms/> .
-@prefix lpf: <http://linkedpasts.org/vocab#> .
-@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+whgx:type\/inhabited-place
+    a plato:Type ;
+    plato:type_identifier "http://vocab.getty.edu/aat/300008347"^^xsd:anyURI ;
+    plato:type_label "inhabited place" .
 ```
 
-**JSON-LD context:**
-
-```json
-{
-  "@context": {
-    "@version": 1.1,
-    "type": "@type",
-    "id": "@id",
-    "geojson": "https://purl.org/geojson/vocab#",
-    "Feature": "geojson:Feature",
-    "FeatureCollection": "geojson:FeatureCollection",
-    "geometry": {
-      "@id": "geojson:geometry",
-      "@type": "@json"
-    },
-    "properties": "geojson:properties",
-    "geo": "http://www.opengis.net/ont/geosparql#",
-    "hasGeometry": {
-      "@id": "geo:hasGeometry",
-      "@type": "@id"
-    },
-    "asWKT": {
-      "@id": "geo:asWKT",
-      "@type": "geo:wktLiteral"
-    },
-    "asGeoJSON": {
-      "@id": "geo:asGeoJSON",
-      "@type": "geo:geoJSONLiteral"
-    },
-    "dcterms": "http://purl.org/dc/terms/",
-    "lpf": "http://linkedpasts.org/vocab#"
-  }
-}
-```
-
-### Dual Geometry Representation
-
-To support both web mapping tools (which expect GeoJSON) and GeoSPARQL spatial queries (which expect WKT), WHG uses parallel geometry representations:
-
-**JSON-LD format:**
-
-```json
-{
-  "@context": "http://whgazetteer.org/contexts/lpf-geosparql.jsonld",
-  "@id": "http://whgazetteer.org/place/12345",
-  "type": "Feature",
-  "properties": {
-    "title": "Baghdad"
-  },
-  "geometry": {
-    "type": "Point",
-    "coordinates": [44.4, 33.3]
-  },
-  "hasGeometry": {
-    "@id": "http://whgazetteer.org/geom/12345",
-    "@type": "geo:Geometry",
-    "asWKT": "POINT(44.4 33.3)",
-    "asGeoJSON": "{\"type\":\"Point\",\"coordinates\":[44.4,33.3]}"
-  }
-}
-```
-
-**Equivalent Turtle format:**
+and in `examples/antonine-routes.ttl` (lines 78–83) it is a blank node:
 
 ```turtle
-ex:12345 a geojson:Feature ;
-    dcterms:title "Baghdad" ;
-    geojson:geometry "{\"type\":\"Point\",\"coordinates\":[44.4,33.3]}" ;
-    geo:hasGeometry exg:12345 .
-
-exg:12345 a geo:Geometry ;
-    geo:asWKT "POINT(44.4 33.3)"^^geo:wktLiteral ;
-    geo:asGeoJSON "{\"type\":\"Point\",\"coordinates\":[44.4,33.3]}"^^geo:geoJSONLiteral .
+whgx:antonine\/attestation\/iter-iii-type
+    a plato:Attestation ;
+    plato:attests_about whgx:antonine\/place\/iter-iii ;
+    plato:attests_type [ a plato:Type ; plato:type_label "route" ;
+                         plato:type_identifier "https://w3id.org/plato#TypeRoute"^^xsd:anyURI ] ;
+    plato:has_citation whgx:antonine\/citation\/wess-473 .
 ```
 
-**Benefits of this approach:**
+Type identifiers are full IRIs, never bare codes such as `PPL`; an OpenStreetMap tag's IRI keeps
+its key (`https://wiki.openstreetmap.org/wiki/Tag:waterway=stream`). Where a vocabulary has no
+IRIs of its own, or changes what its terms mean between versions, the Type gives its scheme with
+`skos:inScheme` and the version used with `plato:scheme_version` (JSON `scheme` and
+`schemeVersion`).
 
-- ✅ **GeoJSON tools** see valid GeoJSON in the `geometry` property
-- ✅ **GeoSPARQL engines** find proper `geo:hasGeometry` with WKT literals
-- ✅ **No transformation needed** - both representations coexist
-- ✅ **Standards compliant** - doesn't violate GeoJSON or GeoSPARQL specifications
-- ⚠️ **Minor redundancy** - geometry stored twice, but storage cost is minimal
+The second excerpt is also how a route is typed. `plato:TypeRoute`, `plato:TypeItinerary`,
+`plato:TypeNetwork` and `plato:TypeSegment` are concepts in PLATO's `plato:EntityKindScheme`,
+named in a Type's identifier like any other concept (see
+[Typing](patterns.md#typing-routes-itineraries-networks-and-segments)).
 
-Contributors may submit data using either format (or both). WHG will ensure both representations are maintained for maximum interoperability.
+Both write the identifier as a literal typed `xsd:anyURI`, never as an IRI object: the ontology
+asks for that form, and it is what PLATO's JSON-LD context and spreadsheet tables produce. The
+queries below compare `STR(?identifier)`, so that they also find data that writes it as an IRI.
 
-## Comparison with Other Models
+---
 
-### vs. Linked Places Format (LPF)
+## Relations
 
-LPF is already RDF! It uses JSON-LD syntax, which means it's both:
+A relation between two entities is an attestation about one of them that `plato:relates_to` the
+other, with `plato:has_relation_type` naming the kind of relation. So a relation has a source, a
+timespan and a certainty like any other claim. PLATO declares its relation types as individuals of
+`plato:RelationType`, an Authority. Containment, from `ontology.ttl` (lines 3221–3235, comment
+left out):
 
-- Valid JSON (easy for developers)
-- Valid RDF (semantic web compatible)
+```turtle
+plato:ContainedIn
+    a plato:RelationType ;
+    rdfs:isDefinedBy <https://w3id.org/plato> ;
+    plato:authority_title "contained in"@en ;
+    plato:relation_label "contained_in" ;
+    plato:inverse_label "contains" ;
+    plato:relation_domain "SpatialEntity" ;
+    plato:relation_range "SpatialEntity" ;
+    plato:authority_uri "http://vocab.getty.edu/ontology#broaderPartitive"^^xsd:anyURI ;
+    # …
+```
 
-**WHG's approach:**
+| Relation type | Meaning |
+|---|---|
+| `plato:ContainedIn` | the subject is contained in the target: a parish in a hundred (inverse label `contains`) |
+| `plato:MemberOf` | the subject is a member of a route, itinerary or network, ordered by `plato:sequence` where the source orders it |
+| `plato:ConnectedTo` | the subject and target are directly connected, in no direction |
+| `plato:LeadsTo` | a connection running one way, from the subject to the target |
+| `plato:BeginsAt`, `plato:EndsAt`, `plato:HasEnd` | the end places of a segment |
+| `plato:BirthplaceOf`, `plato:DeathplaceOf`, `plato:ResidenceOf`, `plato:FindspotOf`, `plato:SettingOf`, `plato:WorkplaceOf` | the place's part in the life of a person, the history of an object or the course of an event, whose own IRI is the target, with `plato:related_label` naming it |
 
-- **Accept LPF contributions** - JSON-LD with GeoJSON geometries
-- **Accept Turtle contributions** - Native RDF with WKT or GeoJSON geometries
-- **Export in multiple formats** - JSON-LD (LPF), Turtle, RDF/XML, N-Triples
-- **GeoSPARQL-compliant export** - Proper `geo:Feature` patterns with WKT for triplestore compatibility
+Membership is not containment: a town on a road is not inside the road. A member attestation from
+`examples/antonine-routes.ttl` (lines 98–106):
 
-The attestation pattern can be expressed in any RDF serialization, and geometries can use either WKT or GeoJSON depending on the target system's needs.
+```turtle
+whgx:antonine\/attestation\/durobrivae-in-iter-iii
+    a plato:Attestation ;
+    plato:attests_about whgx:antonine\/place\/durobrivae ;
+    plato:relates_to whgx:antonine\/place\/iter-iii ;
+    plato:has_relation_type plato:MemberOf ;
+    plato:sequence 3 ;
+    plato:has_citation [ a plato:Citation ;
+        plato:cites whgx:antonine\/source\/parthey-pinder-1848 ;
+        plato:locator "p. 225, Wess. 473.3" ] .
+```
+
+A project may declare a narrower relation type of its own, with `plato:broader_relation` pointing
+at the PLATO type it narrows ("flows into" narrowing `plato:LeadsTo`), so that software that knows
+only PLATO's types still follows it. Routes, itineraries, networks and segments are described in
+full in [Routes, Itineraries, Networks, Groups and Periods](patterns.md), and associations in
+[Associations](patterns.md#associations-places-in-the-histories-of-people-objects-and-events).
+
+---
+
+## Denials
+
+When a source says that something was *not* so, the attestation says what it denies and carries
+`plato:negated true`. It is neither low certainty nor a meta-attestation. From
+`examples/king-john-itinerary.ttl` (lines 184–197):
+
+```turtle
+whgx:king-john\/attestation\/isle-of-wight-denied
+    a plato:Attestation ;
+    plato:attests_about whgx:king-john\/place\/isle-of-wight ;
+    plato:relates_to whgx:king-john\/place\/itinerary-1215 ;
+    plato:has_relation_type plato:MemberOf ;
+    plato:negated true ;
+    plato:attests_timespan [ a plato:Timespan ;
+        plato:source_label "then" ;
+        plato:start_earliest "1215-06-15" ;
+        plato:end_latest "1215-07-17" ] ;
+    plato:notes "\"it is unquestionable that the King did not then visit the Isle of Wight\"" ;
+    plato:has_citation [ a plato:Citation ;
+        plato:cites whgx:king-john\/source\/hardy-1835 ;
+        plato:locator "pp. 109-110" ] .
+```
+
+A query that ignores `plato:negated` reads a denial as an assertion, the opposite of what the
+source says. Every query below that lists facts excludes negated attestations.
+
+---
+
+## Identity
+
+That two records describe the same place is a claim like any other, never a settled fact. It is a
+`plato:IdentityRelation`, with `plato:identity_subject`, `plato:identity_object` and a
+`plato:identity_type` of `exactMatch`, `closeMatch`, `related` or `unspecified`. WHG does not merge
+records or mint new identifiers because of one. `owl:sameAs`, which would make the two IRIs
+interchangeable for every reasoner, is not used for it.
+
+Identity relations asserted together, as when someone accepts a set of suggested matches, are
+bundled in one attestation with `plato:attests_identity`, which gives them one source, date and
+contributor and lets them be withdrawn together. Software may chain `exactMatch` relations (A is
+B, B is C, so A is C) only within one such attestation, never across attestations and never for
+the other identity types. The same attestation with `plato:negated`, bundling one `exactMatch`,
+says that two records are *not* the same place.
+
+PLATO's `examples/identity-judgements.ttl` shows both. An editor accepts two suggested matches in
+one act, so one attestation bundles both `exactMatch` relations, each recording the candidate it
+was promoted from (lines 113–133):
+
+```turtle
+whgx:attestation\/newton-cluster-1
+    a plato:Attestation ;
+    plato:attests_about whgx:entity\/newton-by-the-river ;
+    plato:attests_identity whgx:identity\/river-mill-1 , whgx:identity\/river-upland-1 ;
+    plato:sourced_by whgx:source\/review-2026-09-10 ;
+    plato:contributed_by whgx:contributor\/editor ;
+    plato:created "2026-09-10T11:00:00Z"^^xsd:dateTime .
+
+whgx:identity\/river-mill-1
+    a plato:IdentityRelation ;
+    plato:identity_subject whgx:entity\/newton-by-the-river ;
+    plato:identity_object whgx:county-survey\/newton-mill ;
+    plato:identity_type "exactMatch" ;
+    plato:promoted_from whgx:candidate\/c1 .
+
+whgx:identity\/river-upland-1
+    a plato:IdentityRelation ;
+    plato:identity_subject whgx:entity\/newton-by-the-river ;
+    plato:identity_object whgx:county-survey\/newton-upland ;
+    plato:identity_type "exactMatch" ;
+    plato:promoted_from whgx:candidate\/c2 .
+```
+
+Within this attestation, and only here, software may conclude that Newton Mill and Newton Upland
+are the same place. The editor later withdraws this act (see [Meta-attestations](#meta-attestations)),
+restates the correct matches, one attestation each, and records that the gazetteer's two Newtons
+are different places (lines 202–215):
+
+```turtle
+whgx:attestation\/newtons-distinct
+    a plato:Attestation ;
+    plato:attests_about whgx:entity\/newton-on-the-hill ;
+    plato:negated true ;
+    plato:attests_identity whgx:identity\/hill-river-denied ;
+    plato:sourced_by whgx:source\/review-2026-09-12 ;
+    plato:contributed_by whgx:contributor\/editor ;
+    plato:created "2026-09-12T09:10:00Z"^^xsd:dateTime .
+
+whgx:identity\/hill-river-denied
+    a plato:IdentityRelation ;
+    plato:identity_subject whgx:entity\/newton-on-the-hill ;
+    plato:identity_object whgx:entity\/newton-by-the-river ;
+    plato:identity_type "exactMatch" .
+```
+
+An identity relation asserted on its own, not bundled, carries its provenance itself
+(`plato:identity_basis`, `plato:identity_asserted_by`, `plato:identity_sourced_by`). From
+`examples/constantinople.ttl` (lines 241–246):
+
+```turtle
+whgx:identity\/constantinople-geonames
+    a plato:IdentityRelation ;
+    plato:identity_subject whgx:entity\/constantinople ;
+    plato:identity_object <https://sws.geonames.org/745044/> ;
+    plato:identity_type "closeMatch" ;
+    plato:identity_basis "GeoNames describes the modern city: the same settlement, with a different extent." .
+```
+
+A **candidate** match, as suggested by an algorithm (for instance during Map your Data
+reconciliation), is a `plato:Candidate`, not an identity relation. It is a suggestion awaiting
+review, with its own score and `plato:match_parameters`; an identity relation made from one
+records it with `plato:promoted_from`.
+
+---
+
+## Meta-attestations
+
+An attestation can comment on another attestation. It points at its target with
+`plato:meta_attestation_about` and says how with `plato:has_meta_type`, whose values are concepts
+in PLATO's `plato:MetaTypeScheme`:
+
+| Meta type | The meta-attestation… |
+|---|---|
+| `plato:Contradicts` | says the target is wrong |
+| `plato:Supports` | gives further evidence for the target |
+| `plato:Supersedes` | replaces the target with newer information |
+| `plato:Refines` | gives more precise information than the target |
+| `plato:Challenges` | questions the target |
+| `plato:Bundles` | groups the target with related attestations |
+| `plato:DerivedFrom` | has a value derived from the target's (a normalised form from an attested spelling) |
+| `plato:Annotates` | adds a remark, in its `plato:notes`, without supporting or contradicting |
+| `plato:AlternativeTo` | is another reading of the same evidence; at most one of the two is right |
+| `plato:Retracts` | withdraws the target, which is kept so that earlier states can be reproduced |
+
+From `examples/survey-attestations.ttl` (lines 233–240), a normalised search form derived from an
+attested spelling:
+
+```turtle
+whgx:attestation\/bunsty-bunstowe-normalised
+    a plato:Attestation ;
+    plato:attests_about whgx:entity\/bunsty ;
+    plato:attests_name whgx:name\/bunstowe ;
+    plato:sourced_by whgx:dataset\/deep ;
+    plato:form_status plato:Normalised ;
+    plato:meta_attestation_about whgx:attestation\/bunsty-bunstowe-attested ;
+    plato:has_meta_type plato:DerivedFrom .
+```
+
+Once a gazetteer is published its attestations are never deleted or changed. A correction is a new
+attestation that supersedes or contradicts the old one; a withdrawal is one that retracts it. Each
+carries `plato:created`, so the state of the data at any date can be worked out from the data
+itself (query 6 below). From `examples/identity-judgements.ttl` (lines 145–152), the editor
+withdraws the act above, both its matches together, after finding one of them wrong:
+
+```turtle
+whgx:attestation\/newton-cluster-1-retracted
+    a plato:Attestation ;
+    plato:meta_attestation_about whgx:attestation\/newton-cluster-1 ;
+    plato:has_meta_type plato:Retracts ;
+    plato:sourced_by whgx:source\/review-2026-09-12 ;
+    plato:contributed_by whgx:contributor\/editor ;
+    plato:notes "The tithe maps put Newton Upland on the hill, not by the river: the second match was wrong. The first is restated below." ;
+    plato:created "2026-09-12T09:00:00Z"^^xsd:dateTime .
+```
+
+---
+
+## Provenance
+
+Every attestation says what it rests on and who recorded it:
+
+- **`plato:sourced_by`** points to an Authority, usually a `plato:Source` or `plato:Dataset`. It
+  means what PROV-O's `prov:wasDerivedFrom` means, but is not declared as its subproperty.
+- **`plato:has_citation`** points to a `plato:Citation`, where there is something to say about the
+  citation itself: the page or folio (`plato:locator`), whether the attribution was stated or
+  inferred, and why the source is cited (`plato:citation_function`, a CiTO property such as
+  `cito:citesAsEvidence`). The ontology derives `sourced_by` from `has_citation` and `cites`;
+  data meant for consumers without a reasoner should state both. The queries below follow either
+  path.
+- **`plato:contributed_by`** points to a `plato:Contributor`, identified by ORCID where possible,
+  and **`plato:created`** says when the attestation was made.
+- A source's own date is `plato:source_timespan`, and an edition or derived table points to what
+  it was made from with `plato:derived_from`.
+
+From `examples/antonine-routes.ttl` (lines 85–89), a citation shared by several attestations:
+
+```turtle
+whgx:antonine\/citation\/wess-473
+    a plato:Citation ;
+    plato:cites whgx:antonine\/source\/parthey-pinder-1848 ;
+    plato:locator "p. 225, Wess. 473" ;
+    plato:citation_function cito:citesAsEvidence .
+```
+
+A **Gazetteer** (a WHG dataset or collection) is a `plato:Gazetteer`, a subclass of
+`dcat:Dataset`. It is titled with `dcterms:title`, licensed with `dcterms:license`, versioned with
+`dcat:version`, and lists what it holds with `plato:contains_entity`,
+`plato:contains_attestation` and `plato:contains_identity_relation`. A group of gazetteers is a
+`plato:GazetteerGroup`, joined with `plato:member_of_group` (see
+[Gazetteer groups](patterns.md#gazetteer-groups)). Cite a place as its IRI plus the gazetteer
+version.
+
+A value that software worked out from other data (an itinerary's span from its stops' dates) is
+marked `plato:computed true`, and is not evidence (see
+[Computed values](patterns.md#computed-values-platocomputed)).
+
+---
 
 ## Querying with SPARQL
 
-The RDF representation enables powerful SPARQL queries:
+% TODO(0.7.0-doi): add the 0.7.0 version DOI
+These queries use only PLATO terms. Each was run with rdflib against PLATO's twelve example Turtle
+files, as released in [PLATO
+0.7.0](https://github.com/pelagios/place-attestation-ontology/releases/tag/v0.7.0)
+([doi:10.5281/zenodo.21688313](https://doi.org/10.5281/zenodo.21688313), the DOI for PLATO, all
+versions), and the results shown are what they returned. Replace the example IRIs with WHG
+identifiers to use them on WHG data.
 
-### Find all names for Baghdad across all sources
+### 1. The names of a place, with their dates and sources
 
 ```sparql
-PREFIX whg: <http://whgazetteer.org/ontology/>
-PREFIX prov: <http://www.w3.org/ns/prov#>
+PREFIX plato: <https://w3id.org/plato#>
 
-SELECT ?name ?source ?certainty WHERE {
-    ?attestation whg:attests <http://whgazetteer.org/place/baghdad> ;
-                whg:attestsName ?name_entity ;
-                whg:certainty ?certainty ;
-                prov:hadPrimarySource ?source .
-    ?name_entity whg:nameString ?name .
+SELECT ?name ?language ?from ?to ?source ?certainty WHERE {
+  ?att plato:attests_about <https://whgazetteer.org/example/entity/constantinople> ;
+       plato:attests_name ?n .
+  ?n plato:toponym ?name .
+  OPTIONAL { ?n plato:language ?language }
+  OPTIONAL { ?att plato:attests_timespan ?ts .
+             OPTIONAL { ?ts plato:start_earliest ?from }
+             OPTIONAL { ?ts plato:end_latest ?to } }
+  OPTIONAL { ?att plato:sourced_by|(plato:has_citation/plato:cites) ?src .
+             ?src plato:authority_title ?source }
+  OPTIONAL { ?att plato:certainty ?certainty }
+  FILTER NOT EXISTS { ?att plato:negated true }
+}
+ORDER BY ?from
+```
+
+Returns Βυζάντιον (grc, -0440 to -0420, Herodotus, Histories IV.144, 1.0), Constantinopolis (la,
+0425 to 0450, Notitia Urbis Constantinopolitanae, 1.0) and İstanbul (tr, 2026-09-30 to 2026-09-30,
+GeoNames, 1.0). Each date is when its source witnesses the name, not the span in which the name
+was used.
+
+### 2. Routes, itineraries, networks and segments
+
+```sparql
+PREFIX plato: <https://w3id.org/plato#>
+
+SELECT ?entity ?kind WHERE {
+  ?att plato:attests_about ?entity ;
+       plato:attests_type/plato:type_identifier ?id .
+  VALUES (?kindIRI ?kind) {
+    ("https://w3id.org/plato#TypeRoute"     "route")
+    ("https://w3id.org/plato#TypeItinerary" "itinerary")
+    ("https://w3id.org/plato#TypeNetwork"   "network")
+    ("https://w3id.org/plato#TypeSegment"   "segment")
+  }
+  FILTER (STR(?id) = ?kindIRI)
+  FILTER NOT EXISTS { ?att plato:negated true }
+}
+ORDER BY ?kind ?entity
+```
+
+Returns four: King John's itinerary, the River Idle (a network), Iter III (a route) and the road
+from Londinium to Durobrivae (a segment). The Datini network is not among them because the
+Datini Turtle excerpt includes no Type attestation for it.
+
+### 3. The members of an itinerary, in order
+
+```sparql
+PREFIX plato: <https://w3id.org/plato#>
+PREFIX rdfs:  <http://www.w3.org/2000/01/rdf-schema#>
+
+SELECT ?seq ?member ?label ?from ?to WHERE {
+  ?att plato:attests_about ?member ;
+       plato:has_relation_type plato:MemberOf ;
+       plato:relates_to <https://whgazetteer.org/example/king-john/place/itinerary-1215> .
+  OPTIONAL { ?att plato:sequence ?seq }
+  OPTIONAL { ?member rdfs:label ?label }
+  OPTIONAL { ?att plato:attests_timespan ?ts .
+             OPTIONAL { ?ts plato:start_earliest ?from }
+             OPTIONAL { ?ts plato:end_latest ?to } }
+  FILTER NOT EXISTS { ?att plato:negated true }
+}
+ORDER BY (!BOUND(?seq)) ?seq ?from
+```
+
+Returns Windsor (1), Runnymede (7), Windsor again (8), Marlborough (12), and Runnymede with no
+sequence ("every day both at Windsor and at Runnemead", 18 to 23 June). The Isle of Wight, which
+the source denies, is left out; without the `negated` filter it would be listed as a stop.
+
+### 4. Meta-attestations: what comments on what
+
+```sparql
+PREFIX plato: <https://w3id.org/plato#>
+
+SELECT ?meta ?metaType ?target ?note WHERE {
+  ?meta plato:meta_attestation_about ?target ;
+        plato:has_meta_type ?metaType .
+  OPTIONAL { ?meta plato:notes ?note }
+}
+ORDER BY ?metaType
+```
+
+Returns three: a `DerivedFrom` (the normalised form "Bunstowe"), a `Refines` (the date at which
+Karakorum ceased to be the Mongol capital) and a `Retracts` (the Newtons editor withdrawing the
+matches accepted above).
+
+### 5. Identity claims, and whether they were denied
+
+```sparql
+PREFIX plato: <https://w3id.org/plato#>
+
+SELECT ?subject ?object ?identityType ?bundledIn ?denied WHERE {
+  ?ir plato:identity_subject ?subject ;
+      plato:identity_object ?object ;
+      plato:identity_type ?identityType .
+  OPTIONAL { ?bundledIn plato:attests_identity ?ir .
+             OPTIONAL { ?bundledIn plato:negated ?negated } }
+  BIND (COALESCE(?negated, false) AS ?denied)
 }
 ```
 
-### Find contradictions between sources
+Returns six: Constantinople `closeMatch` GeoNames 745044 (asserted on its own); the two
+`exactMatch` relations bundled in the retracted act (`newton-cluster-1`); the two corrected matches,
+each in an attestation of its own; and the two Newtons `exactMatch`, bundled in `newtons-distinct`
+and denied. This query does not leave out retracted attestations (query 6 shows how). Each row is
+one contributor's claim; do not chain rows from different attestations together.
+
+### 6. The current state: attestations not withdrawn or replaced
 
 ```sparql
-PREFIX whg: <http://whgazetteer.org/ontology/>
+PREFIX plato: <https://w3id.org/plato#>
 
-SELECT ?att1 ?att2 ?note WHERE {
-    ?source_auth whg:authorityType "source" ;
-                rdfs:label "contradicts" .
-    ?meta_att whg:attests ?att1 ;
-             whg:typedBy ?source_auth ;
-             whg:relatesTo ?att2 ;
-             whg:notes ?note .
+SELECT ?att ?created WHERE {
+  ?att plato:attests_about <https://whgazetteer.org/example/entity/newton-by-the-river> .
+  OPTIONAL { ?att plato:created ?created }
+  FILTER NOT EXISTS { ?att plato:meta_attestation_about ?any }
+  FILTER NOT EXISTS {
+    ?withdrawal plato:meta_attestation_about ?att ;
+                plato:has_meta_type ?t .
+    FILTER (?t IN (plato:Retracts, plato:Supersedes))
+  }
 }
 ```
 
-### Find things with uncertain locations
+Returns one attestation, `newton-river-mill`, the corrected match of Newton (by the river) to
+Newton Mill. The act that first accepted two matches is left out because it is retracted; the
+retraction is about that act, not the place, and would in any case be left out as a
+meta-attestation. For the state
+at a past date, also keep only attestations, and withdrawals, whose `plato:created` is on or
+before that date. This simple form does not handle a retraction that is itself retracted.
 
-```sparql
-PREFIX whg: <http://whgazetteer.org/ontology/>
+---
 
-SELECT ?thing ?geometry ?certainty ?note WHERE {
-    ?attestation whg:attests ?thing ;
-                whg:attestsGeometry ?geometry ;
-                whg:certainty ?certainty ;
-                whg:certaintyNote ?note .
-    FILTER (?certainty < 0.8)
-}
-```
+## Checking RDF
 
-### Spatial query with GeoSPARQL
+PLATO publishes no SHACL shapes. To check PLATO RDF:
 
-```sparql
-PREFIX geo: <http://www.opengis.net/ont/geosparql#>
-PREFIX geof: <http://www.opengis.net/def/function/geosparql/>
-PREFIX whg: <http://whgazetteer.org/ontology/>
+- parse it with any Turtle or N-Triples parser (rdflib, Apache Jena's `riot`);
+- check it against the terms the ontology declares with the
+  [PLATO tools](https://pelagios.org/plato-tools/), in the browser or with
+  `npx github:pelagios/plato-tools check <file>`.
 
-SELECT ?place ?geom WHERE {
-    ?attestation whg:attests ?place ;
-                whg:attestsGeometry ?geom .
-    ?geom geo:asWKT ?wkt .
-    FILTER(geof:sfWithin(?wkt, "POLYGON(...)"^^geo:wktLiteral))
-}
-```
+The RDF form of the ontology itself is at <https://w3id.org/plato> (Turtle, JSON-LD, RDF/XML and
+N-Triples), and its reference documentation at <https://pelagios.org/place-attestation-ontology/>.
 
-### Find all members of a route, itinerary or network
+## See also
 
-```sparql
-PREFIX whg: <http://whgazetteer.org/ontology/>
-
-SELECT ?member ?container WHERE {
-    ?member_auth whg:authorityType "relation_type" ;
-                rdfs:label "member_of" .
-    ?attestation whg:attests ?member ;
-                whg:typedBy ?member_auth ;
-                whg:relatesTo ?container .
-}
-```
-
-## Implementation Notes
-
-### Internal Storage vs. Export
-
-Our recommended architecture:
-
-1. **Store data internally** in PostgreSQL/PostGIS, with Elasticsearch for search
-2. **Provide RDF export** in multiple serializations (JSON-LD, Turtle, RDF/XML)
-3. **Support SPARQL endpoint** for semantic web integration
-
-This gives you:
-
-✓ Bounded graph traversal served efficiently by the relational store (measured)  
-✓ Flexibility of property graph model  
-✓ Interoperability through RDF export
-
-### Accepting Contributions
-
-WHG accepts contributions in multiple formats:
-
-**JSON-LD (LPF):**
-- Standard Linked Places Format with GeoJSON geometries
-- Best for most contributors
-- Familiar to digital humanities researchers
-
-**Turtle (.ttl):**
-- Native RDF with WKT or GeoJSON geometries
-- Best for semantic web researchers
-- Enables direct reuse of existing RDF datasets
-- Natural for complex ontological requirements
-
-**Submission guidelines:**
-
-1. Validate syntax using standard parsers (e.g., `rapper`, Apache Jena)
-2. Ensure compliance with WHG ontology (see validation section)
-3. Include proper provenance and source citations
-4. Provide at least one attestation per SpatialEntity
-
-**Example Turtle submission:**
-
-```turtle
-@prefix whg: <http://whgazetteer.org/ontology/> .
-@prefix geo: <http://www.opengis.net/ont/geosparql#> .
-@prefix prov: <http://www.w3.org/ns/prov#> .
-@prefix ex: <http://your-project.org/data/> .
-
-ex:my_place a whg:SpatialEntity ;
-    dcterms:identifier "your-id" ;
-    dcterms:description "Historical site in Mesopotamia" .
-
-ex:my_place_geom a geo:Geometry ;
-    geo:asWKT "POINT(44.4 33.3)"^^geo:wktLiteral .
-
-ex:my_source a whg:Authority ;
-    whg:authorityType "source" ;
-    dcterms:bibliographicCitation "Your source citation" .
-
-ex:att_001 a whg:Attestation ;
-    whg:attests ex:my_place ;
-    whg:attestsGeometry ex:my_place_geom ;
-    whg:certainty 0.9 ;
-    prov:hadPrimarySource ex:my_source .
-```
-
-### Validation
-
-Contributors should validate their submissions against:
-
-1. **RDF syntax** - Standard Turtle parser (e.g., `rapper`, Apache Jena)
-2. **WHG ontology** - SHACL shapes defining required patterns
-3. **Domain rules** - Business logic (e.g., at least one attestation per thing)
-
-Example SHACL constraint:
-
-```turtle
-whg:ThingShape a sh:NodeShape ;
-               sh:targetClass whg:SpatialEntity ;
-               sh:property [
-                     sh:path [ sh:inversePath whg:attests ] ;
-                     sh:minCount 1 ;
-                     sh:message "Every SpatialEntity must have at least one Attestation" ;
-                 ] .
-```
-
-### Tools
-
-Recommended tools for working with WHG RDF data:
-
-- **Apache Jena** - Java toolkit for RDF processing
-- **RDFLib** - Python library for RDF
-- **Protégé** - Ontology editor with visualization
-- **YASGUI** - SPARQL query interface
-
-## See Also
-
-- [Data Model Overview](overview.md) - Overview of the WHG data model
-- [Attestations](attestations.md) - Attestation patterns in detail
-- [Contributions](contributions.md) - How to contribute data
-- [Vocabularies](vocabularies.md) - Controlled vocabularies and type systems
-
-## External Resources
-
-- [W3C RDF Primer](https://www.w3.org/TR/rdf11-primer/)
-- [GeoSPARQL Specification](http://www.opengis.net/doc/IS/geosparql/1.0)
-- [W3C Time Ontology](https://www.w3.org/TR/owl-time/)
-- [W3C PROV-O](https://www.w3.org/TR/prov-o/)
-- [Linked Places Format Repository](https://github.com/LinkedPasts/linked-places-format)
+- [Data formats in and out](../guide/formats.md): which format to use
+- [Identifiers and citation](../guide/identifiers.md): WHG's persistent identifiers
+- [Routes, Itineraries, Networks, Groups and Periods](patterns.md) and
+  [Routes and networks](../guide/routes-and-networks.md)
+- [Attestations & Relations](attestations.md) and [Vocabularies](vocabularies.md)
+- PLATO's [Linked data](https://pelagios.org/place-attestation-ontology/guide/linked-data.html) and
+  [JSON formats](https://pelagios.org/place-attestation-ontology/guide/json.html) guides

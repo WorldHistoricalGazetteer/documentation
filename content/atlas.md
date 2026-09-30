@@ -79,20 +79,21 @@ likely it is that two records are the same place.
 ## You are in control: the grouping dial
 
 ```{figure} images/atlas-01-search-results.jpg
-:alt: Atlas search results with clustered places and the merge-sensitivity dial
+:alt: Atlas search results with clustered places and the Merge sensitivity dial
 :width: 100%
 
 A toponym search for *Constantinople*: matching records are grouped into results
-(each openable to all its sources), while the **merge-sensitivity** dial and
+(each openable to all its sources), while the **Merge sensitivity** dial and
 signal-weight controls re-group the map instantly.
 ```
 
 Different questions call for different strictness. A quick overview might want places
-grouped generously; careful scholarship might want only near-certain matches merged.
+grouped generously; careful scholarship might want only near-certain matches grouped.
 
-So Atlas gives you a **dial** (a slider). Slide towards *loose* and more records merge
-together; slide towards *strict* and only the most confident matches are grouped. You
-can even adjust **how much each kind of evidence counts** — for instance, leaning more
+So Atlas gives you a **dial** (a slider, labelled *Merge sensitivity*). Grouping is a view of
+the results, not a change to the data: records are never merged, and each keeps its own sources.
+Slide towards *loose* and more records are grouped together; slide towards *strict* and
+only the most confident matches are grouped. You can even adjust **how much each kind of evidence counts** — for instance, leaning more
 on names and less on exact location when you are working with sparsely-located
 historical data. Every adjustment re-groups the map **instantly**.
 

@@ -122,6 +122,16 @@ meaningful**. Stops are numbered, you set the sequence with the ↑ ↓ buttons,
 carried through to the published collection so it can drive an ordered presentation. (A route-line
 preview and "generate an itinerary from a reconciled Map-your-Data project" are planned refinements.)
 
+```{admonition} What happens to an Itinerary at v4
+:class: note
+In v4, an itinerary is no longer a kind of Place Collection. It becomes a PLATO
+[itinerary](../v4/data-model/patterns.md#itinerary): a place in its own right (a SpatialEntity whose
+Type names `plato:TypeItinerary`), with each stop joined to it by a `MemberOf` attestation that carries
+the stop's `sequence` and its stay dates. An ordered collection whose stops have no dates becomes a
+[route](../v4/data-model/patterns.md#route) instead (Type `plato:TypeRoute`), with the stops still in
+sequence. WHG's 42 existing ordered place collections will be converted in the same way.
+```
+
 ## Building a Gazetteer Group
 
 A Gazetteer Group aggregates **published gazetteers** (datasets) so they can be browsed and compared

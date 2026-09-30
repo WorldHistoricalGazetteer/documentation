@@ -386,8 +386,9 @@ for a row — each becomes a `closeMatch` (a place legitimately linked to more t
 record, e.g. the same place in both GeoNames and a WHG dataset).
 
 **Setting the location.** A *Location* toolbar lets you fix the geometry for the
-row: **Use match location** clones the selected match's geometry (point, line, or
-polygon) into your data, or you can **draw** your own — Point, Line, or Polygon,
+row: **Use match location** copies the selected match's geometry (point, line, or
+polygon) into your data, where it stays attributed to the matched record and under that
+record's licence (WHG place#240), or you can **draw** your own — Point, Line, or Polygon,
 clicking on the map to add vertices and *Finish* to complete. Press a shape's button
 again to add another part (→ Multi-point / -line / -polygon). *Clear* removes the
 override. Whatever you set here wins on export.
@@ -470,7 +471,7 @@ line. Problems surface here, rather than as a rejection after upload.
 **Fill gaps for the whole dataset from Scope.** The two most common gaps — a missing
 **place type** and missing **dates/periods** — can be filled once for every place from
 the **Scope** picker: set a type under *What* and a year range or historical period
-under *When*. Any row without its own value then inherits the Scope value in the export
+under *When*. Any row without its own value then takes the Scope value in the export
 and the contribution.
 
 **Contribute to WHG — one click.** Once it validates, the button submits the file
