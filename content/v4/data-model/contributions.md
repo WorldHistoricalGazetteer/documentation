@@ -1,10 +1,9 @@
 # Contributions: What Arrives and What It Becomes
 
-% TODO(0.7.1-doi): add the 0.7.1 version DOI
 This page describes how data comes into WHG v4 and what it becomes in the data model. The model is
 [PLATO](https://w3id.org/plato), the Place Attestation Ontology, at [PLATO
 0.7.1](https://github.com/pelagios/place-attestation-ontology/releases/tag/v0.7.1)
-(all versions: [doi:10.5281/zenodo.21688313](https://doi.org/10.5281/zenodo.21688313)). For which format to choose, see [Data formats in and out](../guide/formats.md); for a
+([doi:10.5281/zenodo.23060220](https://doi.org/10.5281/zenodo.23060220); all versions: [doi:10.5281/zenodo.21688313](https://doi.org/10.5281/zenodo.21688313)). For which format to choose, see [Data formats in and out](../guide/formats.md); for a
 step-by-step route entered in spreadsheets, see [Routes, itineraries and
 networks](../guide/routes-and-networks.md).
 

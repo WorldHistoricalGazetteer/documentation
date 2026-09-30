@@ -574,11 +574,10 @@ marked `plato:computed true`, and is not evidence (see
 
 ## Querying with SPARQL
 
-% TODO(0.7.1-doi): add the 0.7.1 version DOI
 These queries use only PLATO terms. Each was run with rdflib against PLATO's twelve example Turtle
 files, as released in [PLATO
 0.7.1](https://github.com/pelagios/place-attestation-ontology/releases/tag/v0.7.1)
-(all versions: [doi:10.5281/zenodo.21688313](https://doi.org/10.5281/zenodo.21688313)), and the results shown are what they returned. Replace the example IRIs with WHG
+([doi:10.5281/zenodo.23060220](https://doi.org/10.5281/zenodo.23060220); all versions: [doi:10.5281/zenodo.21688313](https://doi.org/10.5281/zenodo.21688313)), and the results shown are what they returned. Replace the example IRIs with WHG
 identifiers to use them on WHG data.
 
 ### 1. The names of a place, with their dates and sources

@@ -1,10 +1,9 @@
 # Summary
 
-% TODO(0.7.1-doi): add the 0.7.1 version DOI
 This page summarises the WHG v4 data model on one page, and says where each part is described in
 full. The model is [PLATO](https://w3id.org/plato), the Place Attestation Ontology, at [PLATO
 0.7.1](https://github.com/pelagios/place-attestation-ontology/releases/tag/v0.7.1)
-(all versions: [doi:10.5281/zenodo.21688313](https://doi.org/10.5281/zenodo.21688313)); the terms below are PLATO's unless they are marked as WHG's own practice.
+([doi:10.5281/zenodo.23060220](https://doi.org/10.5281/zenodo.23060220); all versions: [doi:10.5281/zenodo.21688313](https://doi.org/10.5281/zenodo.21688313)); the terms below are PLATO's unless they are marked as WHG's own practice.
 
 ---
 

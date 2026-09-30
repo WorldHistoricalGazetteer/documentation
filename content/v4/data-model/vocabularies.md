@@ -1,10 +1,9 @@
 # Vocabularies
 
-% TODO(0.7.1-doi): add the 0.7.1 version DOI
 Some parts of a WHG attestation take a value from a fixed list rather than free text. This page
 lists the lists WHG uses. They are [PLATO](https://w3id.org/plato)'s, at [PLATO
 0.7.1](https://github.com/pelagios/place-attestation-ontology/releases/tag/v0.7.1)
-(all versions: [doi:10.5281/zenodo.21688313](https://doi.org/10.5281/zenodo.21688313)): the enumerations in its JSON schema and the SKOS concept schemes in its ontology, with
+([doi:10.5281/zenodo.23060220](https://doi.org/10.5281/zenodo.23060220); all versions: [doi:10.5281/zenodo.21688313](https://doi.org/10.5281/zenodo.21688313)): the enumerations in its JSON schema and the SKOS concept schemes in its ontology, with
 the same values and the same identifiers. PLATO's own
 [Vocabularies](https://pelagios.org/place-attestation-ontology/guide/vocabularies.html) page is
 generated from the ontology and is the authority where this page and it ever differ. How the values

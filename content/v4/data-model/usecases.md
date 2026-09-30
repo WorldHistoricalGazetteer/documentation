@@ -1,11 +1,10 @@
 # Use Cases
 
-% TODO(0.7.1-doi): add the 0.7.1 version DOI
 This page describes what WHG v4 is for, one use case at a time. Each case gives the problem, how the
 data model handles it, and where to read more. The model is [PLATO](https://w3id.org/plato), the
 Place Attestation Ontology, at [PLATO
 0.7.1](https://github.com/pelagios/place-attestation-ontology/releases/tag/v0.7.1)
-(all versions: [doi:10.5281/zenodo.21688313](https://doi.org/10.5281/zenodo.21688313)). The examples come from PLATO's four [worked
+([doi:10.5281/zenodo.23060220](https://doi.org/10.5281/zenodo.23060220); all versions: [doi:10.5281/zenodo.21688313](https://doi.org/10.5281/zenodo.21688313)). The examples come from PLATO's four [worked
 examples](https://pelagios.org/place-attestation-ontology/guide/routes/) and its other example
 files:
 

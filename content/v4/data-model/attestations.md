@@ -1,12 +1,11 @@
 # Attestations and Relations
 
-% TODO(0.7.1-doi): add the 0.7.1 version DOI
 In WHG v4 everything known about a place, apart from its identifier, is an **attestation**: a bundle
 of evidence saying that a SpatialEntity had a name, a location, a type, a relation to something else
 or some other attribute, at some time, according to some source, as recorded by someone. The model
 is [PLATO](https://w3id.org/plato), the Place Attestation Ontology, at [PLATO
 0.7.1](https://github.com/pelagios/place-attestation-ontology/releases/tag/v0.7.1)
-(all versions: [doi:10.5281/zenodo.21688313](https://doi.org/10.5281/zenodo.21688313)). This page describes what an attestation can hold, how relations and identity are
+([doi:10.5281/zenodo.23060220](https://doi.org/10.5281/zenodo.23060220); all versions: [doi:10.5281/zenodo.21688313](https://doi.org/10.5281/zenodo.21688313)). This page describes what an attestation can hold, how relations and identity are
 expressed, how one attestation comments on another, and how a Gazetteer attests about places that
 other Gazetteers define. The controlled values it mentions are listed in
 [Vocabularies](vocabularies.md).
