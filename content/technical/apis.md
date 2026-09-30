@@ -1224,9 +1224,9 @@ root**.
     "datasets": { /* keyed by dataset label, same shape; present only when the */
                   /* response contains contributor-uploaded WHG data          */ },
     "whg": {                          // WHG's own curation/aggregation licence
-      "spdx_id": "CC-BY-NC-4.0",
-      "label": "Creative Commons Attribution-NonCommercial 4.0 International",
-      "url": "https://creativecommons.org/licenses/by-nc/4.0/"
+      "spdx_id": "CC-BY-4.0",
+      "label": "Creative Commons Attribution 4.0 International",
+      "url": "https://creativecommons.org/licenses/by/4.0/"
     }
   },
   "features": [ /* … */ ]
