@@ -9,7 +9,7 @@ geographic information.
 
 ```{mermaid} ../../diagrams/v4_erd.mermaid
 :align: center
-:name: fig-data-model
+:name: fig-data-model-overview
 :alt: Entity–relationship diagram for the WHG v4 data model.
 :caption: Entity–relationship diagram for the WHG v4 data model.
 ```
@@ -20,7 +20,7 @@ geographic information.
 
 The WHG data model is built around a **property graph** structure where information is represented as:
 
-- **SpatialEntities**: Primary entities (locations, historical entities, collections, routes, itineraries, networks)
+- **SpatialEntities**: Primary entities (locations, historical entities, routes, itineraries, networks)
 - **Attributes**: Descriptions of SpatialEntities (Names, Geometries, Timespans)
 - **Attestations**: Source-backed claims connecting SpatialEntities to attributes or other SpatialEntities
 
@@ -36,14 +36,13 @@ This approach enables WHG to:
 
 ### What is a SpatialEntity?
 
-A **SpatialEntity** is the primary entity in WHG - any object of scholarly interest that can be described and related to other
-entities. The term "SpatialEntity" is borrowed from schema.org's root type, chosen for its generality and future-extensibility.
+A **SpatialEntity** is the primary entity in WHG: PLATO's class for anything whose identity is bound up with space, the
+point on which attestations from many sources, periods and contributors converge.
 
 **Types of SpatialEntities in WHG**:
 
 - **Locations**: Geographic places (cities, regions, landmarks, etc.)
 - **Historical entities**: Political entities, empires, states
-- **Collections**: Curated sets of related SpatialEntities
 - **Routes**: Ordered sequences of locations representing journeys
 - **Itineraries**: Specific instances of travel along routes
 - **Networks**: Systems of interconnected SpatialEntities
@@ -57,21 +56,9 @@ A **period** is not a SpatialEntity: it is an Authority (`plato:Period`), and pl
 refer to a Period. A **Gazetteer** is not a SpatialEntity either: it is a dataset (`dcat:Dataset`) holding contributed
 SpatialEntities and their attestations, and a **gazetteer group** is a group of Gazetteers (`plato:GazetteerGroup`).
 
-### Why "SpatialEntity"?
-
-The term may seem informal, but it offers crucial advantages:
-
-**Generality**: Accommodates any type of entity without forcing artificial classifications. A medieval monastery might
-be simultaneously a location, a religious institution, and a network node - "SpatialEntity" encompasses all these facets.
-
-**Extensibility**: As WHG could eventually evolve to include new place-linked entity types (people, events, documents), "SpatialEntity" remains applicable
-without terminology shifts.
-
-**Interoperability**: Aligns with schema.org's vocabulary, facilitating linked data integration and semantic web
-compatibility.
-
-**Philosophical honesty**: Acknowledges that historical entities resist rigid categorization. What we call "Byzantium"
-refers to a complex, evolving reality that was simultaneously a place, an empire, an idea, and a cultural sphere.
+A WHG **place collection** is not a SpatialEntity either. It is a curatorial act, modelled as a Gazetteer whose
+attestations are about other gazetteers' places: attributed to its curator, and shown on those places' pages only if
+the curator declares them public.
 
 ### SpatialEntity Structure
 
@@ -306,9 +293,6 @@ The four-date model captures uncertainty:
 - `+infinity`: Into indefinite future
 - `present`: Current day (dynamic)
 
-See [Implementation in Database](implementation.md#handling-temporal-nulls-and-geological-time) for details on null
-handling.
-
 ## Attestation Entity
 
 An **Attestation** is a source-backed claim connecting a SpatialEntity to an attribute (Name, Geometry, Timespan) or to another
@@ -506,5 +490,4 @@ This model draws from:
 - **Attestations**: See [Attestations & Relations](attestations.md)
 - **Vocabularies**: See [Controlled Vocabularies](vocabularies.md)
 - **Use Cases**: See [Platform Use Cases](usecases.md)
-- **Implementation**: See [Implementation in Database](implementation.md)
 - **RDF Representation**: See [RDF Representation](rdf-representation.md)

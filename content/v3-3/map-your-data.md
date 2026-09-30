@@ -126,8 +126,8 @@ Massachusetts — the same word, read from its company.
 The result is a table whose place names arrive **already located and provisionally
 matched** to WHG (extra columns carry the matched name, country, and coordinates).
 Treat these as a well-informed first guess: continue to
-[Reconcile against WHG](#3-reconcile-against-whg) and
-[Review & confirm](#4-review-confirm-matches) to check and confirm them. Very
+[Reconcile against WHG](#reconcile-against-whg) and
+[Review & confirm](#review-confirm-matches) to check and confirm them. Very
 ambiguous names (a *Springfield* far from the rest of your places) may need a manual
 choice, and misspelled names won't be found automatically.
 
@@ -268,6 +268,7 @@ a strong first pass to be checked, not an infallible authority — especially fo
 regnal years, movable feasts, and calendar conversions near a year boundary.
 ```
 
+(reconcile-against-whg)=
 ## 3 · Reconcile against WHG
 
 Reconciliation matches your **name** column against WHG's gazetteers using the
@@ -358,6 +359,7 @@ Controls that shape the results:
   is wrong. The first run downloads the model (~20 MB, then cached); untick the box to
   fall back to plain text matching.
 
+(review-confirm-matches)=
 ## 4 · Review & confirm matches
 
 This step walks you through the rows that need a human decision. For each one you

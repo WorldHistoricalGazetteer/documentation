@@ -214,4 +214,3 @@ described (or is confusing even if "correct").
 - [ ] Nothing in the beta menu is reachable by non-beta users.
 - [ ] Performance is acceptable on your typical dataset sizes; note anything slow (with the record count).
 - [ ] Anything confusing, mislabelled, or inconsistent — report it even if it technically "works".
-```

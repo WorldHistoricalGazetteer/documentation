@@ -20,8 +20,8 @@ places (*Map your Data*) is simply the first doc-type; the others let you build 
 
 - **Place Collection** — a curated set of places with notes, relations, and a narrative, for
   teaching, storytelling, or thematic research.
-- **Itinerary** — a Place Collection where the *order* matters: an ordered journey through
-  places, with per-leg annotations and a route-line preview.
+- **Itinerary** — a journey through places in order, each stop with its own dates, with a
+  route-line preview (see [Routes, Itineraries and Networks](../v4/guide/routes-and-networks.md)).
 - **Gazetteer Group** — an aggregation of published gazetteers, grouped for comparison or
   analysis. *("Gazetteer" is the new name for what was called a "Dataset"; a "Gazetteer Group"
   was a "Dataset Collection" — see [A note on names](#a-note-on-names).)*

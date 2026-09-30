@@ -147,4 +147,3 @@ authorities publish new links and contributors share their expertise.
   [Collaborative Workbench](./v3-3.md).
 - Grouping that draws on WHG's full range of evidence — name sound, location, time,
   place type, and stated links — all combined in your browser.
-```
