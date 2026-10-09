@@ -6,7 +6,7 @@
 [whgazetteer.org/atlas/](https://whgazetteer.org/atlas/) and is open to WHG staff and signed-in beta
 testers only. It is changing as testers' reports come in. This page belongs to the draft
 [v4 user guide](./v4/userguide_index.md); to help test it, follow checklist N of the
-[Beta Testing Plan](./v3-3/beta-testing.md#n-atlas-gazetteers-panel).
+[Beta Testing Plan](./v3-3/beta-testing.md#n-atlas--gazetteers-panel).
 ```
 
 ## The problem Atlas solves
