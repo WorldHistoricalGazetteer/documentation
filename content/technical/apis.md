@@ -125,10 +125,10 @@ rest of this page, with the same meaning.
 
 | Status | Meaning |
 |---|---|
-| `404` | `/atlas/place/` only. The upstream service answered and has no such place. |
+| `404` | `/atlas/place/` and `/atlas/geometry/`. The upstream service answered and has no such place (`/atlas/geometry/` also uses it for a place with no stored polygon; see below). |
 | `503` | The upstream service could not be reached. Carries `Retry-After: 30` and a body with `gateway: false` and `failure` naming the kind. |
 | `504` | The upstream service is up but timed out on `/atlas/place/` or `/atlas/boundaries/`. Also carries `Retry-After: 30`. |
-| `451` | `/atlas/place/` only. The place's source does not permit WHG to redistribute its records ([above](#when-a-source-does-not-permit-redistribution)). The body names the source and gives its `source_url`. |
+| `451` | `/atlas/place/` and `/atlas/geometry/`. The place's source does not permit WHG to redistribute its records ([above](#when-a-source-does-not-permit-redistribution)). The body names the source and gives its `source_url`. |
 
 ```{note}
 `/atlas/search/` reports an upstream **timeout** differently: it returns `200` with `timeout: true` and an
@@ -136,6 +136,57 @@ empty result, because the service is up and the Atlas front end shows a "took to
 unreachable service gives `503`. In every case, an empty result beside `gateway: false` or
 `timeout: true` is **not** evidence that nothing matches.
 ```
+
+#### Exact geometry: `/atlas/geometry/` and `GET /api/geometry/<place_id>`
+
+```{versionadded} 2026-10-09
+When you select a region in the Atlas, its outline is now read from the gateway's geometry store rather
+than reassembled from vector-tile fragments, which truncated any region larger than the viewport
+([place#319](https://github.com/WorldHistoricalGazetteer/place/issues/319)).
+```
+
+`GET /atlas/geometry/?id=<place id>` is the beta-gated Atlas proxy (`403` without beta access; `400` for a
+missing or un-namespaced id). `place:` prefixes are accepted. It forwards to the gateway's
+`GET /api/geometry/<place_id>`, which returns one place's stored geometry as a single GeoJSON geometry: the
+union of every geometry stored for the place, including any borrowed from another source. The proxy adds
+`gateway: true` and the source's `attribution`.
+
+The gateway accepts two optional query parameters: `tolerance` (Douglas-Peucker, in degrees, 0 to 10) and
+`max_bytes` (cap on the serialised geometry; default 1,000,000, range 10,000 to 5,000,000). The Atlas proxy
+sends neither.
+
+| Field | Meaning |
+|---|---|
+| `place_id`, `namespace` | The place asked for. |
+| `geometry` | GeoJSON geometry, coordinates rounded to 6 decimals. |
+| `geometry_count`, `geometry_expected` | Stored geometries merged, and the number the index promised. They are always equal; a shortfall is a `404`. |
+| `bounds` | `[west, south, east, north]` of the **full** geometry, even when `geometry` is simplified. |
+| `vertex_count`, `raw_vertex_count` | Coordinate pairs returned, and stored before any simplification. |
+| `bytes`, `max_bytes` | Size of the returned geometry, and the cap it was held to. |
+| `simplified`, `tolerance` | Whether the geometry was simplified to fit the cap (or at your request), and the tolerance used, if any. |
+| `elapsed_ms`, `source` | Server time spent, and where the geometry came from (`geom-store`). |
+
+**Simplification.** A geometry that fits under `max_bytes` is returned as stored. A larger one is simplified
+in successive passes until it fits, and the response says so with `simplified: true`. Compare `vertex_count`
+with `raw_vertex_count` to see how much was lost; `bounds` always describes the full extent.
+
+**Limits.** No request may hold the service for long. A stored geometry of more than about 1.5 million
+vertices is refused without being processed, and each request has a 6 second budget. At most two geometries
+are assembled at once.
+
+| Status | `error` | Meaning |
+|---|---|---|
+| `404` | `not found` | No such place. |
+| `404` | `no geometry` | The place is known by a point only; no polygon or line is stored. Not an error in the place. |
+| `404` | `geometry incomplete` | The index promises more stored geometries than the store can produce. A partial union would be a truncated outline, so none is served. |
+| `413` | `geometry too large` or `geometry budget exceeded` | Too big to assemble within the limits. The vector tiles still carry the feature. |
+| `451` | `source not redistributable` | The source's terms do not allow WHG to re-serve its records, and geometry is source content. This also applies when the geometry is borrowed from such a source. Same meaning as [above](#when-a-source-does-not-permit-redistribution). |
+| `451` | `source licence not determined` | Contributed (`whg:`) datasets and any namespace without a registered authority. Their visibility and licence cannot be determined here, so their geometry is withheld rather than served on an assumption. |
+| `503` | | The geometry store is unavailable, or the endpoint is busy (`Retry-After: 5`). On the Atlas proxy, `503`/`504` mean the gateway could not be asked (`Retry-After: 30`). |
+
+The proxy checks the licence from the WHG registry before asking the gateway, and honours a refusal from
+either. A `404` or `413` is the answer to "what is this place's geometry"; `503` and `504` are not an answer
+at all, so do not treat them as absence.
 
 ### Place Identifiers and Source Namespaces
 
@@ -817,7 +868,7 @@ failure marker and never finding it.
 
 | Key | When present | Meaning |
 |---|---|---|
-| `attribution` | always | Licence and rights terms for the sources searched, keyed by namespace — including [`redistributable`](#redistributable-which-matches-you-will-be-able-to-fetch), which tells you in advance whether you will be allowed to fetch a source's records. See [Source Terms and Attribution](#source-terms-and-attribution). |
+| `attribution` | always | Licence and rights terms for the sources searched, keyed by namespace — including [`redistributable`](#redistributable--which-matches-you-will-be-able-to-fetch), which tells you in advance whether you will be allowed to fetch a source's records. See [Source Terms and Attribution](#source-terms-and-attribution). |
 | `messages` | rarely | Service-level notes. ⚠️ Omitted entirely when empty, so its absence is the normal case and presence cannot be tested for. Do not build a contract on it. |
 
 ⚠️ **A client iterating response keys as query ids must skip both.**

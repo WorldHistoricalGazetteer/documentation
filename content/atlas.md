@@ -126,9 +126,9 @@ Atlas treats that as a firm instruction rather than a clue to be weighed. These
 confirmed links always come from WHG's servers, so they reflect the community's
 accumulated knowledge.
 
-As a contributor you can add to this: assert that two records **are** the same place,
-or flag that two similar-looking records are actually **distinct**. Your assertions
-feed straight back into how places are grouped.
+Today Atlas uses the confirmed links that authorities and WHG already hold. Tools for contributors
+to assert that two records **are** the same place, or are **distinct**, are still to come (see
+[What's coming](#whats-coming)).
 
 ## Why not just fix the groups once and for all?
 
@@ -190,6 +190,18 @@ each with that source's licence badge.
   **"details withheld (licence)"**. The place still appears on the map and in results, but **Details**
   opens an explanation instead of the record: whose data it is, and a link to the source, where you can
   obtain it under the source's own terms. This is deliberate and is not an error.
+
+## Selecting an area
+
+When you select a region (by name or by clicking it), Atlas uses the region's **exact outline** where one
+is available, so a region larger than the screen is selected whole and searches are limited to its true
+shape. If the exact outline cannot be fetched, Atlas falls back to the outline drawn in the map tiles,
+which is a simplified version of the same boundary and can be incomplete for regions bigger than the
+current view.
+
+Exact outlines are not fetched for sources whose licence does not allow WHG to redistribute their records,
+or for contributed datasets whose licence and visibility are not yet checked. For these, the map's own
+outline is used for display.
 
 ## Controls marked "planned"
 

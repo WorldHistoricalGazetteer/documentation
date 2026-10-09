@@ -54,3 +54,16 @@ Printing the running commit next to `origin/main` automatically, at the end of a
 [place#318](https://github.com/WorldHistoricalGazetteer/place/issues/318). Until it is done, make the
 check above by hand.
 ```
+
+## Checking Atlas before and after a deploy
+
+The `whg3` repository has a headless smoke test of the Atlas page. Run it before and after a deploy:
+
+```
+python3 scripts/atlas_smoke.py <base>
+python3 scripts/atlas_smoke.py <base> --prove-it-fails
+```
+
+`<base>` is the site to test (for example the dev or production address). It runs anonymously in its own
+browser, never your own. `--prove-it-fails` runs a deliberately broken check to show the harness can fail,
+so a green result means something.
