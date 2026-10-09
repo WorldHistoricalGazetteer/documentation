@@ -25,9 +25,7 @@ Sign in with your WHG staff account to reach the admin index, from which
 the pages described below are accessible.
 
 ```{note}
-This section is intentionally a starting point. Several pieces — most
-significantly anything related to the Atlas UI (editorial review,
-contributor workflow, retention sweep oversight, etc.) — are not yet
-shipped and will be documented in detail once the v4.0 release lands.
-The {doc}`./staff/atlas-v3-5` page enumerates the pieces still to come.
+The Atlas is documented in {doc}`./staff/atlas-v3-5`, with the operator sections marked as staff-only.
+Several v4.0 pieces are not yet shipped and are listed at the end of that page: editorial review of
+submitted gazetteers, contributor oversight and the retention sweep.
 ```

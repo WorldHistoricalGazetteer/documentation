@@ -1,108 +1,144 @@
-# Atlas (staff notes)
+# Atlas (staff guide)
 
-```{warning}
-**This page is a placeholder.** The v4.0 Atlas UI is in active
-development. Once it ships, this page will need significant augmentation
-covering the staff-facing affordances listed below. Treat the content
-here as a forward-looking outline, not authoritative documentation.
+The **Atlas** is WHG's map-first way of exploring places, at `/atlas/`. This page describes how it
+behaves for users first, and then the parts that only staff and operators need. The operator sections are
+marked **Staff** so that the user-facing sections can be lifted into a public page later. For the
+user-level description, see [Atlas: Exploring Places](../atlas.md); for the tester checklist, see
+[Beta Testing Plan, checklist N](../v3-3/beta-testing.md#n-atlas--gazetteers-panel).
+
+```{note}
+The Atlas is in beta. This page describes what is live; it does not describe planned features, except
+under *Known limitations*.
 ```
 
-The v4.0 release reframes the WHG platform around an **Atlas** UI as the
-default site interface, with the v3.2 distinctions between Authorities,
-Datasets, and Collections collapsed into a unified concept of
-**Gazetteers**. Several pieces of that release introduce new staff
-workflows that will live alongside the {doc}`./gazetteer-configurator`
-and {doc}`./api-profiles` pages already documented in this section.
+## What the Atlas is and who can see what
 
-For the full design specification, see the master plan in the `whg3`
-repository: `developer/plan-Atlas-DynamicClustering.prompt.md`.
+The Atlas searches WHG's index of place records, groups records that describe the same place as you
+explore, and shows them on a map. It also has a Gazetteers panel for filtering by source and browsing one
+gazetteer on its own.
 
-## Sections to be added
+Access is gated by `User.can_access_beta`, which is true for staff, superusers and users whose **Role** is
+`beta_tester`.
 
-### Editorial review of submitted gazetteers
+| Visitor | What happens |
+|---|---|
+| Anonymous | The `/atlas/` page and map load, as do the ungated parts (such as the Gazetteers panel's registry data). Anything that needs the search service says *"This is a beta feature, request access to use it."* |
+| Signed in, no beta access | The same as anonymous. The beta-only JSON endpoints answer `403`, and the interface turns that into the *request access* message, with a link that opens the contact dialog. |
+| Beta tester, staff, superuser | Everything. |
 
-Contributors will be able to submit a private gazetteer for editorial
-review. Editors will need a dedicated interface to:
+### Staff: granting a tester access
 
-* See the queue of submitted datasets.
-* Open one in **Preview-as-published** mode (the dataset rendered as if
-  already merged into the public corpus) or **Working** mode (with
-  pending hard-link assertions visible).
-* Read the assertion history and any prior editor notes.
-* **Accept** (publishes the dataset and flips its assertions from
-  `pending` to `active`) or **Reject** (records mandatory editor notes
-  and returns the dataset to the contributor with the reason).
-* Hand off review with notes to a colleague.
+Open **Django admin, then Users**, find the person, and set **Role** to **beta tester**. Nothing else is
+needed. Staff and superusers already qualify. The same gate controls the other beta features, so a
+tester granted access for the Atlas will also see the Workbench BETA menu.
 
-This page will document where to find the queue, the conventions for
-editor notes, and the practical sequence for the most common review
-scenarios.
+## How it fits together (Staff)
 
-### Contributor oversight ("My Gazetteers")
+The browser loads `/atlas/` from Django and then calls Django's `/atlas/*` JSON endpoints (search, place,
+boundaries, geometry, status, registry coverage). Django, which alone is allowed through the CRC firewall,
+forwards them to the gazetteer service on the Pitt CRC (the *gateway*): `/api/search` for searches,
+`/api/places` for place records and `/api/geometry/<place_id>` for exact outlines. The map's vector tiles
+come directly from the tileserver, not through Django. The list of gazetteers, with their licences, dates
+and coverage, comes from the gazetteer registry in Django's database, which the indexing pipeline keeps
+up to date and which is also published as `GET /api/sources/`. Grouping of results into clusters is done in
+the browser, from the hits the gateway returns.
 
-Staff need visibility into:
+The technical detail of each endpoint, with status codes, is in [APIs](../technical/apis.md#atlas-json-endpoints).
 
-* Which contributors have datasets in `pending` (draft / submitted /
-  rejected) state and how long each has been there.
-* The retention countdown — pending datasets unmodified for 11 months
-  trigger a contributor notification, and at 12 months the dataset is
-  deleted unless flagged `private_permanent` or moved to `submitted`.
-* The list of `private_permanent` datasets per contributor, against the
-  per-contributor storage cap (operational policy, adjustable on
-  request).
+## Licensing behaviour
 
-### Working / Preview-as-published toggle
+Some sources are indexed and searchable but may not be re-served. They are marked
+`redistributable = false` in the registry (today `kain_par`, `nl` and `chgis`).
 
-Both editors and contributors can switch between viewing the corpus with
-their pending content treated as drafts (Working) or as if already
-published (Preview-as-published). The toggle has subtle semantics around
-which scope tokens get applied to discovery queries; the staff
-documentation will cover how this affects what staff see when reviewing
-contributor work.
+- Searching and mapping them is permitted. The result card's **Source & licence** footer reads
+  "details withheld (licence)".
+- **Details** (`/atlas/place/`) answers `451`, and the interface shows an explanation with a link to the
+  source.
+- **Exact area geometry** (`/atlas/geometry/`) also answers `451`, including for a place whose geometry is
+  borrowed from such a source. The Atlas then keeps the outline drawn in the map tiles.
+- **Contributed datasets** (`whg:*`) are withheld from `/atlas/geometry/` and the gateway's
+  `/api/geometry/` with `451` "source licence not determined". Their licence, visibility and embargo
+  cannot yet be looked up per dataset, so they are withheld rather than assumed public. This is a known
+  limitation ([place#319](https://github.com/WorldHistoricalGazetteer/place/issues/319)).
 
-### Volunteering, API, and Admin Dashboard relocations
+The check runs in Django against the registry before the gateway is asked, and again in the gateway. If
+they disagree, the refusal wins.
 
-The v3.2 site navigation's "Data" entry will be removed in v4.0. Some of
-its sub-functions move to the Atlas UI itself; others move to the admin
-or to dropdowns. This page will list where to find:
+## Failure modes and what users see
 
-* **Volunteering dashboard** — currently linked from the Data menu;
-  destination TBD.
-* **API documentation** — see also the existing
-  {doc}`./api-profiles` page for quota management.
-* **Admin Dashboard** — moved into the rightmost (user) navbar dropdown,
-  gated on `is_whg_admin`.
+The Atlas distinguishes "we could not ask" from "there is nothing". Staff should do the same when reading
+a report.
 
-### Retention sweep monitoring
+| Situation | Status | What the user sees |
+|---|---|---|
+| No beta access | `403` | *"This is a beta feature, request access to use it."* |
+| Gateway unreachable | `503` (with `Retry-After`) | *"... is temporarily unavailable; the search service did not answer."* and a banner at the bottom of the screen |
+| Gateway slow | `504` on place, boundary and geometry calls; `200` with `timeout: true` on search | *"... took too long to come back. The service is running; please try again."* No outage banner |
+| Gateway answered, no such place | `404` | "could not be found" |
+| Source not redistributable | `451` | the licence explanation |
 
-A scheduled Celery job (Batch 14a in the indexing rebuild plan) runs the
-retention sweep daily, sending notifications to contributors at the
-11-month boundary and confirming deletion at 12 months. Staff will need
-a way to:
+A slow search must not raise the outage banner: the service is up. An empty result next to `gateway: false`
+or `timeout: true` is a failure, not a finding. If testers report "no results" for a search that should
+match, ask whether a message or banner appeared.
 
-* Inspect the sweep's recent runs (where it logged what).
-* Override the timer for a specific dataset (e.g. when a contributor has
-  been in touch but hasn't yet acted in the UI).
-* See the audit trail of deletions.
+## Testing (Staff)
 
-### Gazetteers offcanvas — staff perspective
+**Before and after every Atlas deploy**, run the headless smoke test from the `whg3` repository:
 
-The Atlas Gazetteers offcanvas exposes a **My Gazetteers** toggle that
-groups a user's gazetteers into Published / Private / Pending. For staff,
-the same interface needs to render every contributor's gazetteers — not
-just the staff member's own — so reviewers can pick any pending dataset
-to enter its working scope. This page will document the staff-only
-affordance and the keyboard shortcuts (if any) that surface it.
+```
+python3 scripts/atlas_smoke.py <base>
+python3 scripts/atlas_smoke.py <base> --prove-it-fails
+```
 
-## Cross-references
+`<base>` is the site to test. It runs anonymously in its own browser (never your own Chrome, never a
+visible window) and checks the page load, the beta gates, deep links, the mobile layout and the search
+bar. It exits `0` when all checks pass (documented known failures excepted), `1` on a failed check and `2`
+if it could not run. `--prove-it-fails` runs every check against a page that cannot pass and requires every
+check to fail, so a green result is known to be able to turn red. Run it on dev before promoting, and on
+production afterwards. It cannot log in, so the beta-only behaviour needs a manual check as a beta user.
 
-When the v4.0 documentation is filled in, expect cross-links to:
+**Debug flag.** Add `?debug` to the URL, or run `localStorage['whg.debug'] = '1'` in the browser console.
+This exposes the map as `window.heroMapInstance`. The `localStorage` form survives the page rewriting its
+own address, which `?debug` does not, so automation should use it.
 
-* The {doc}`./gazetteer-configurator` page (re-ingestion, curatorial
-  flags) — the Atlas Gazetteers offcanvas reads the same registry rows
-  curated there.
-* The {doc}`../guides` section — many user-facing v3.2 guides
-  (Workbench, Reconciliation, Publishing) will be superseded or
-  rewritten for v4.0.
-* The Master Plan document in the `whg3` repo at
-  `developer/plan-Atlas-DynamicClustering.prompt.md`.
+**Readiness signal.** With the debug flag on, the Atlas sets `window.__whgAtlas.booted` as the last
+statement of its start-up. Wait on that. Do not wait on MapLibre's `map.loaded()` or `idle` event: on a
+plain `/atlas/` load the globe spins until the first interaction, so the map never reports idle on a
+perfectly healthy page. (Opening a gazetteer with `?gazetteer=<namespace>` stops the spin, so the map does
+settle there.)
+
+A map that looks blank when a headless or background browser window is not frontmost is a browser
+rendering artefact, not an Atlas fault.
+
+## Beta testing process
+
+1. Testers work through **checklist N** in the [Beta Testing Plan](../v3-3/beta-testing.md#n-atlas--gazetteers-panel).
+   Its "known issues, please don't report" lists are kept current as fixes land.
+2. Testers report problems with **BETA menu, then Report a snag**, or the snag link in the Atlas
+   navigation. The Atlas link preselects the **Atlas** feature area and attaches the Atlas state.
+3. Snags are triaged on the beta tracker (GitHub Project 12 for the Atlas items N1 to N8) and filed as
+   issues on the `place` repository.
+4. Testers must not put content from the `kain_par` or `vob_*` gazetteers in screenshots or public reports.
+
+## Known limitations
+
+- Low-zoom gaps for polygon-dominant gazetteers, and OHM square holes at low zoom: tile generation uses a
+  polygon-over-point majority vote ([place#166](https://github.com/WorldHistoricalGazetteer/place/issues/166)).
+- Dates: inconsistent date ingestion across authority scripts, and corrected data for `osm` and `tgn`
+  needs re-tiling before it is visible ([place#246](https://github.com/WorldHistoricalGazetteer/place/issues/246)).
+- Type identifiers in the index are bare codes with the vocabulary hidden in a label field
+  ([place#305](https://github.com/WorldHistoricalGazetteer/place/issues/305)).
+- Contributed records carry no feature class in the index, so feature-class filters drop them
+  ([place#286](https://github.com/WorldHistoricalGazetteer/place/issues/286)).
+- The boundary-level select may show "local" on a cold load; unconfirmed
+  ([place#317](https://github.com/WorldHistoricalGazetteer/place/issues/317)).
+- Exact area geometry is not served for contributed datasets until a per-dataset licence lookup exists, and
+  the starting simplification tolerance is still being tuned
+  ([place#319](https://github.com/WorldHistoricalGazetteer/place/issues/319)).
+- Itinerary, Network and Attest are visible but marked "planned".
+
+## Not yet documented
+
+Editorial review of submitted gazetteers, contributor oversight ("My Gazetteers") and the retention sweep
+belong to the v4.0 Atlas and are not live. They will be documented here when they ship; the design is in
+the `whg3` repository's Atlas planning documents.
