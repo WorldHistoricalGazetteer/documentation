@@ -1561,13 +1561,6 @@ curl "https://whgazetteer.org/entity/place:gn:745044/preview?token=<token>"
 
 ## Workbench Projects API
 
-```{warning}
-**Not yet deployed.** This section describes the behaviour of the whg3 branch `feat/314-plato-bearer`
-(WorldHistoricalGazetteer/place#314). Until it is promoted and the host's nginx is updated, the
-endpoints below answer a request without a session cookie with a redirect to the login page, and
-a cross-origin `PUT` or `DELETE` fails its preflight.
-```
-
 The Workbench keeps an in-progress project — a Map your Data reconciliation, a Place Collection, or
 a project from an external tool — as a versioned JSON snapshot owned by a team, with share links and
 an optimistic-lock push. WHG's own pages use it with a session cookie. A browser client on another
