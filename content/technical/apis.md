@@ -1688,9 +1688,10 @@ stale push is the `409` above, with the current snapshot), and it returns it byt
 numbers and nested structure included. The client owns the document's shape and the merge.
 
 **Live editing is off** for this type: `POST projects/<uuid>/collab-token/` answers `403`, code
-`live_editing_disabled`. It stays off until the real-time service checks the connecting origin,
-its token carries an issuer and audience, membership is re-checked on connect, and the store keeps
-value types.
+`live_editing_disabled`, and the real-time service refuses the document even if presented with a
+token. Whether to enable it later is a WHG decision; the service now verifies the token's issuer and
+audience, re-checks membership on connect and checks the connecting origin, but its store still
+stringifies cell values, which an opaque document cannot tolerate.
 
 ### Errors
 
