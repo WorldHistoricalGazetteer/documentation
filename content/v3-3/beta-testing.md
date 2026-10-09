@@ -245,13 +245,14 @@ block (N1 to N8) and step you were on, and the search or gazetteer involved.
   and the count in the results panel change sensibly (Exactly narrowest; Sounds like finds spelling variants).
 - [ ] With an area selected, a Places search is limited to that area. **Clear search** (the x) empties the
   box and results.
-- [ ] The results panel lists matches; clicking one flies the map to it and opens its popup.
+- [ ] The results panel lists matches; clicking one flies the map to it and opens its popup. A Wikidata
+  hit shows a real name, not a bare Q-id such as "Q12345".
+- [ ] If a search fails, note the **exact message text** in your report: errors are specific ("temporarily
+  unavailable", with a gateway banner at the bottom of the screen; "taking longer than usual"; or "This is a
+  beta feature — request access").
 
 Known issues, please don't report:
-- Bare Wikidata Q-ids (e.g. "Q12345") showing as titles on some results (place#290; fix in progress).
 - Repeated region labels on the map.
-- Name search is not yet available for some sources (`po`, `clio`, `nl`); an inline "not yet available for
-  this source" hint is the intended behaviour once it lands.
 
 #### N2. Clusters, merge sensitivity and signal weights
 - [ ] After a Places search, results are grouped into **cluster cards**: one card per real-world place, with
@@ -263,10 +264,15 @@ Known issues, please don't report:
   split**. Moving them re-groups instantly; no records are lost or changed, only grouped differently.
 - [ ] Look for wrong merges (different places lumped together) and wrong splits (obvious duplicates apart)
   and report examples with the search term and slider values.
+- [ ] Each card's **Source & licence** footer states the licence. Contributed (WHG) datasets read "licence
+  per dataset (see Details)". Records whose licence forbids WHG to redistribute them (e.g. China Historical
+  GIS, Native Land, `kain_par`) read "details withheld (licence)", and their **Details** opens an
+  explanation with a link to the source instead of the record.
 
 Known issues, please don't report:
 - Sparse dates: many records have none, so the Time signal carries little weight for them.
 - `osm` and `tgn` records dated "2025" (these sources are point-stamped with the date of capture).
+- "details withheld (licence)" on `chgis`, `nl` and `kain_par` records: correct behaviour.
 
 #### N3. Place portal (full place view)
 - [ ] Clicking a map point shows a popup with names, dates, type, source and **View at source**.
@@ -274,11 +280,12 @@ Known issues, please don't report:
   to authorities, and the source records behind a cluster. It closes cleanly with the x or Esc.
 - [ ] The address bar gains a `?place=` link while a place is open; copying it into a new tab reopens the
   same place. A bad or unknown place id gives a "not found" page, not an error.
+- [ ] For a record from a source whose licence forbids redistribution (`chgis`, `nl`, `kain_par`), Details
+  explains this and links to the source instead of showing the record.
 
 Known issues, please don't report:
-- **451 "licence withholds"** messages in popups for `kain_par`, `nl` and `chgis` records. This is correct:
-  those licences do not permit us to show the data.
-- Bare Wikidata Q-ids as titles (place#290).
+- **"Details withheld (licence)"** (and the explanation page) for `kain_par`, `nl` and `chgis` records. This
+  is correct: those licences do not permit us to show the data.
 
 #### N4. Gazetteers panel: Filter & Explore
 - [ ] Open **Gazetteers** (book icon). Two modes: **Filter** (tick several gazetteers to restrict searches
@@ -295,15 +302,18 @@ Known issues, please don't report:
 - [ ] A downloads button is either live (file downloads) or greyed with a tooltip explaining why.
 
 Known issues, please don't report:
-- **Itinerary** and **Network** pills, and Attest, are planned features (shown as sketches).
+- **Itinerary**, **Network** and **Attest** controls carry a "planned" tag and are disabled. Please don't
+  report them as broken; comments on their intended design are welcome.
 - Authority downloads point to the source rather than an export (place#312).
 - Low-zoom gaps in coverage for polygon-dominant gazetteers (place#166).
 - OHM shows square holes at low zoom.
-- 451 "licence withholds" on `kain_par`, `nl`, `chgis` is correct behaviour.
+- "Details withheld (licence)" on `kain_par`, `nl`, `chgis` is correct behaviour.
 
 #### N5. Layers, region sources and area selection
 - [ ] **Areas** mode, **Layers** button: the palette lists region/boundary sources. Switching a source on
   draws its boundaries on the map; off removes them. Changing the basemap keeps them.
+- [ ] In **Areas** mode, name search for PeriodO, Cliopatria, Native Land and OSM misc shows an inline
+  "Name search isn't available for this source yet (planned)" rather than results or an error.
 - [ ] Click a region on the map: it is selected and appears as a chip; click again or use the chip's x to
   deselect. Several areas can be selected together.
 - [ ] The **viewport constraint** button is available on the flat map only (greyed with a tooltip on the
@@ -340,12 +350,15 @@ Known issues, please don't report:
   results and layers stay put. The globe/flat projection toggle works.
 - [ ] **Share:** the share button on a result or popup copies a link (on a phone it opens the share sheet).
   Open the link in a private window: it restores the place, gazetteer or zoom (note you must be signed in
-  with beta access to use the Atlas).
+  with beta access to use the Atlas). A link of the form `?gazetteer=<ns>` opens that gazetteer in
+  **Explore**.
 - [ ] **Tour:** the signpost button (bottom left) starts the guided tour; steps should highlight the control
   they describe, and "Don't show this again" on the welcome panel is respected on reload.
 - [ ] **Mobile** (phone or a narrow window): panels open without covering the search box permanently,
-  buttons are tappable, the map pans and zooms by touch, and nothing overflows horizontally.
+  buttons are tappable, the map pans and zooms by touch, and nothing overflows horizontally. The tour is
+  deliberately not offered below 768 px wide.
 
 Known issues, please don't report:
-- Itinerary, Network and Attest are planned and not yet usable.
+- Itinerary, Network and Attest are "planned" and disabled; design comments welcome.
+- No tour on screens under 768 px wide: by design.
 - The map can look blank if the browser window is not the front window; bring it forward and reload.
