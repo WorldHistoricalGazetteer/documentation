@@ -1558,3 +1558,174 @@ curl "https://whgazetteer.org/entity/place:169687/api?token=<token>"
 # Preview HTML snippet for a place
 curl "https://whgazetteer.org/entity/place:gn:745044/preview?token=<token>"
 ```
+
+## Workbench Projects API
+
+```{warning}
+**Not yet deployed.** This section describes the behaviour of the whg3 branch `feat/314-plato-bearer`
+(WorldHistoricalGazetteer/place#314). Until it is promoted and the host's nginx is updated, the
+endpoints below answer a request without a session cookie with a redirect to the login page, and
+a cross-origin `PUT` or `DELETE` fails its preflight.
+```
+
+The Workbench keeps an in-progress project — a Map your Data reconciliation, a Place Collection, or
+a project from an external tool — as a versioned JSON snapshot owned by a team, with share links and
+an optimistic-lock push. WHG's own pages use it with a session cookie. A browser client on another
+origin, such as [PLATO Tools](https://pelagios.org/plato-tools/), may use the same endpoints with
+the user's WHG API token.
+
+All paths below are under `https://whgazetteer.org/reconciliation/`. Every response is JSON; a
+refusal is `{"error": "<message>", "code": "<code>"}` with the status codes listed under
+[Errors](#errors). Nothing here redirects.
+
+### Authentication
+
+Send the token in the `Authorization` header and nowhere else:
+
+```
+Authorization: Bearer <token>
+```
+
+The `?token=` query parameter accepted by the Entity and Reconciliation APIs is **not** accepted
+here: a token in a URL ends up in browser history, referrers and server logs.
+
+The token decides the user. A session cookie on the same request is ignored, and a wrong token is
+refused (`401`) even if a valid cookie is present — the token path never falls back to the cookie.
+A request without either gets `401` with a `WWW-Authenticate: Bearer realm="workbench"` challenge.
+
+The Workbench is a beta feature: the token's account must be enrolled (`403`, code
+`beta_required`, otherwise).
+
+Token-authenticated Workbench calls are **not charged** to the account's daily API allowance (the
+one that meters `/reconcile`, `/suggest` and `/entity`): saves are frequent, and would otherwise
+lock the user out of reconciliation. They have their own limits, below.
+
+### Cross-origin use (CORS)
+
+Browser requests are allowed from an allow-list of exact origins — at present only
+`https://pelagios.org`. For those origins, every endpoint in this section answers its own preflight
+(`OPTIONS`) with the methods it accepts, including `PUT` and `DELETE`, and the request headers
+`Authorization` and `Content-Type`; the preflight may be cached for a day. Error responses carry the
+same headers, so a `401`, `409`, `413` or `429` is readable by the page, and `Retry-After` is exposed.
+
+Credentials are never allowed across origins: the responses carry no
+`Access-Control-Allow-Credentials`, and a cookie-authenticated request that arrives with another
+origin's `Origin` header is refused (`401`). A token request whose `Origin` is outside the allow-list
+is refused too (`403`, code `origin_not_allowed`). Send requests with `credentials: "omit"`.
+
+### Limits
+
+| Limit | Value | On breach |
+|---|---|---|
+| Request body on `POST` and `PUT` (the whole JSON body, not only the snapshot) | 2 MiB (2,097,152 bytes) | `413`, code `body_too_large`, with `limit` and `size` in bytes |
+| Token requests per minute, per account, all Workbench endpoints together | 120 (fixed one-minute window, so a burst of up to 240 across a window boundary) | `429`, code `rate_limited`, with `retry_after` in the body and a `Retry-After` header |
+| Snapshot history kept per project | the newest 25 versions | older versions are pruned |
+| Daily API allowance | not charged | — |
+
+Measure a snapshot before sending it. A project with a few work files is a few hundred kilobytes;
+a large review can exceed the cap, in which case send the record without its bulkier work files.
+
+### Projects
+
+**`GET projects/`** — the caller's projects across all their teams. Projects of an opaque
+`doc_type` (see below) are left out unless asked for: `GET projects/?doc_type=plato`.
+
+```json
+{"projects": [{"id": "<uuid>", "title": "…", "team": 12, "team_title": "My workbench",
+               "role": "owner", "version": 7, "status": "draft", "doc_type": "plato",
+               "updated": "2026-10-09T12:00:00+00:00", "shared": false,
+               "is_personal_team": true, "published_collection": null}]}
+```
+
+**`POST projects/`** — create. Body `{"snapshot": {…}, "doc_type": "plato", "title": "…",
+"team": <id>}`; `team` may be omitted for the user's personal team, and must otherwise be a team
+they can edit. Returns `201 {"id", "version": 1, "team", "doc_type", "role"}`.
+
+**`GET projects/<uuid>/`** — the project with its current `snapshot` and `version`.
+Members of the project's team only (`403` otherwise, whatever the role).
+
+**`PUT projects/<uuid>/`** — push. Body `{"snapshot": {…}, "base_version": <int>, "title": "…"}`;
+`title` is optional. Editors and owners only; a viewer gets `403`.
+
+- `base_version` equal to the server's version: accepted, `200 {"status": "ok", "version": <new>,
+  "snapshot": null}`.
+- Stale, for an **opaque** `doc_type`: nothing is stored. `409 {"status": "conflict", "reason":
+  "opaque", "version": <current>, "snapshot": <current>}`. Merge on your side and push again with
+  the returned `version` as `base_version`.
+- Stale, for Map your Data's own `doc_type` (`reconciliation`): the server merges three ways and
+  returns `200 {"status": "merged", …}`, or `409 {"status": "conflict", "conflicts": […],
+  "merged": {…}}`, or `409 {"status": "stale"}` when the ancestor has been pruned.
+
+**`DELETE projects/<uuid>/`** — owner only. `200 {"ok": true}`.
+
+### Sharing
+
+**`POST projects/<uuid>/share/`** — mint (or return) the project's read-only link token. Editors
+and owners. `200 {"ok": true, "shared": true, "token": "<uuid>", "url": "…"}`. The `url` opens
+the snapshot in WHG's Map your Data page, which only suits that `doc_type`; a client with its own
+viewer should build its link from `token`.
+
+**`DELETE projects/<uuid>/share/`** — revoke it.
+
+**`GET shared/<token>/`** — the shared snapshot: `{"title", "snapshot", "version", "read_only":
+true}`. No authentication; the unguessable token is the capability, so treat it as a secret. Readable
+cross-origin from the allow-listed origins.
+
+### Teams
+
+**`GET teams/`** lists the caller's non-personal teams; **`POST teams/`** with `{"title",
+"description"}` creates one with the caller as owner. **`GET teams/<id>/members/`** lists members;
+**`POST teams/<id>/members/`** with `{"identifier": "<username or email>", "role": "editor",
+"project_id": "<uuid>"}` adds one (owner only; `project_id` is optional and only deep-links Map your
+Data projects into the invitation email); **`DELETE teams/<id>/members/<user_id>/`** removes one.
+Roles are `owner`, `editor` and `viewer`.
+
+### The `plato` doc_type
+
+`doc_type: "plato"` is **opaque**: the server stores the snapshot without reading it. It checks only
+that the snapshot is a JSON object; it derives no title from it (send `title`), it never merges it (a
+stale push is the `409` above, with the current snapshot), and it returns it byte-for-byte — nulls,
+numbers and nested structure included. The client owns the document's shape and the merge.
+
+**Live editing is off** for this type: `POST projects/<uuid>/collab-token/` answers `403`, code
+`live_editing_disabled`. It stays off until the real-time service checks the connecting origin,
+its token carries an issuer and audience, membership is re-checked on connect, and the store keeps
+value types.
+
+### Errors
+
+| Status | `code` | Meaning |
+|---|---|---|
+| `400` | — | malformed body: `snapshot` not an object, `base_version` not an integer, unknown `doc_type` |
+| `401` | `unauthenticated` | no token, a wrong token, an inactive account, or a cookie from another origin |
+| `403` | `beta_required` | the account is not enrolled in the Workbench beta |
+| `403` | `origin_not_allowed` | the request's `Origin` is not on the allow-list |
+| `403` | `csrf_failed` | cookie path only: no or wrong CSRF token |
+| `403` | `live_editing_disabled` | `collab-token/` for a `doc_type` without live editing |
+| `403` | — | not a member, or the role does not permit the action |
+| `404` | `not_found` | no such project or team, or it was deleted |
+| `405` | `method_not_allowed` | with an `Allow` header |
+| `409` | — | a stale push: see `PUT` |
+| `413` | `body_too_large` | with `limit` and `size` |
+| `429` | `rate_limited` | with `retry_after` and a `Retry-After` header |
+
+A `4xx` is terminal: fix the request rather than retrying it, except `409` (merge and push again)
+and `429` (wait `Retry-After`).
+
+### Example
+
+```bash
+# Create
+curl -X POST https://whgazetteer.org/reconciliation/projects/ \
+  -H "Authorization: Bearer <token>" -H "Content-Type: application/json" \
+  -H "User-Agent: plato-tools/0.9 (+https://pelagios.org/plato-tools/)" \
+  -d '{"doc_type": "plato", "title": "Map your data: parishes", "snapshot": {"record": {…}}}'
+# → 201 {"id": "7f…", "version": 1, "team": 12, "doc_type": "plato", "role": "owner"}
+
+# Push
+curl -X PUT https://whgazetteer.org/reconciliation/projects/7f…/ \
+  -H "Authorization: Bearer <token>" -H "Content-Type: application/json" \
+  -d '{"base_version": 1, "snapshot": {"record": {…}}}'
+# → 200 {"status": "ok", "version": 2, "snapshot": null}
+# → 409 {"status": "conflict", "reason": "opaque", "version": 3, "snapshot": {…}}  if stale
+```
