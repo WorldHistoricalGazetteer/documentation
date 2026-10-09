@@ -8,6 +8,7 @@ Gazetteer Configurator <./staff/gazetteer-configurator.md>
 User API Profiles <./staff/api-profiles.md>
 Site smoke test <./staff/smoke-test.md>
 Atlas (staff notes) <./staff/atlas-v3-5.md>
+Restarting the gateway <./staff/gateway-restart.md>
 ```
 
 This section documents the staff-only tools available to WHG editors and

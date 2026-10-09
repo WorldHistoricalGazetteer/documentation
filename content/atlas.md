@@ -1,11 +1,12 @@
 # Atlas: Discovering Linked Places
 
-```{admonition} Forthcoming feature (beta)
+```{admonition} Beta: live now, for invited testers
 :class: important
-**Atlas** is the new map-first way of exploring the World Historical Gazetteer. It is
-in active development and currently available to WHG staff and invited beta testers
-only, behind a beta toggle. These pages describe how it works in plain language; when
-Atlas ships they will move into **Guides & Tutorials**.
+**Atlas** is the new map-first way of exploring the World Historical Gazetteer. It is live at
+[whgazetteer.org/atlas/](https://whgazetteer.org/atlas/) and is open to WHG staff and signed-in beta
+testers only. It is changing as testers' reports come in. This page belongs to the draft
+[v4 user guide](./v4/userguide_index.md); to help test it, follow checklist N of the
+[Beta Testing Plan](./v3-3/beta-testing.md#n-atlas-gazetteers-panel).
 ```
 
 ## The problem Atlas solves
@@ -141,10 +142,82 @@ Atlas embraces that. Instead of one fixed set of groups, it gives you a transpar
 adjustable view you can tune to your own needs — and it improves continuously as
 authorities publish new links and contributors share their expertise.
 
+## Searching
+
+The search bar has an **Areas / Places** toggle.
+
+- **Places** searches place names. A menu beside the box sets the match: **Exactly**, **Starts with**,
+  **Contains** (the default) or **Sounds like**. *Sounds like* finds spelling variants across scripts.
+  With an area selected, a Places search is limited to that area.
+- **Areas** looks up a region or country by name. Choosing a suggestion selects the area: it appears as a
+  chip under the bar and is outlined on the map. Several areas can be selected together. You can also
+  click a region on the map.
+
+Name search over areas works for OpenStreetMap and OpenHistoricalMap boundaries. For PeriodO,
+Cliopatria, Native Land and OSM (miscellaneous) regions, the search box says *"Name search isn't
+available for this source yet (planned)"* and names the source, rather than showing no results. Pick
+those regions on the map instead.
+
+A Wikidata record whose own label is missing is shown under its preferred place name, not as a bare
+identifier such as "Q12345".
+
+When a search leaves a source out unless you ask for it by name (today, GB1900, namespace `gb`), a
+small note under the results reads *"Some sources are excluded by default"* and lists it.
+
+## When something goes wrong
+
+Atlas says which of three things happened, so you can tell a slow search from an outage from a missing
+permission.
+
+| Message | Meaning |
+|---|---|
+| *"... took too long to come back. The service is running; please try again."* | The search service is up but slow for this request. Try again, or narrow the search. |
+| *"... is temporarily unavailable; the search service did not answer."* | The service could not be reached, and a banner at the bottom of the screen says so. This is a failure to ask, not a finding that nothing matches. |
+| *"This is a beta feature; request access to use it."* | Your account does not have beta access. The link opens the contact dialog. |
+
+"Not found" is reserved for the case where the service answered and has no such place. Failures that
+used to appear only in the browser console are now shown as a brief message as well.
+
+## Source and licence, on every result
+
+Each cluster card ends with a **Source & licence** footer: one entry per source among its members,
+each with that source's licence badge.
+
+- Records from contributed datasets read *"licence per dataset (see Details)"*, because each
+  contributed dataset has its own licence, shown on the record itself.
+- Some sources are indexed and searchable, but their licence does not allow WHG to redistribute their
+  records (for example China Historical GIS, Native Land and `kain_par`). Their entries read
+  **"details withheld (licence)"**. The place still appears on the map and in results, but **Details**
+  opens an explanation instead of the record: whose data it is, and a link to the source, where you can
+  obtain it under the source's own terms. This is deliberate and is not an error.
+
+## Controls marked "planned"
+
+Some controls are visible but disabled and carry a **planned** tag: **Itinerary**, **Network** and
+**Attest** in the Gazetteers panel. They show where Atlas is heading and do nothing yet. Comments on
+how they should work are welcome.
+
+Some gazetteers (OpenStreetMap and OpenHistoricalMap) cannot be browsed as a whole in **Explore** mode.
+A link such as `?gazetteer=osm` selects such a gazetteer as a search filter instead and says so in a
+notice.
+
+## Reporting a problem
+
+Choose **BETA menu, then Report a snag**, or use the snag link in the Atlas navigation. The Atlas link
+opens the form with the feature area **Atlas** already chosen, and the report carries the Atlas state
+(in the page address it records). Say which search term and gazetteer were involved. Please do not
+include content from the `kain_par` or `vob_*` gazetteers in screenshots or public reports.
+
+## On a phone or tablet
+
+At 768 px wide or narrower, Atlas uses a mobile layout: the time slider, the signal-weight sliders, the
+basemap menu and the overlay panels are laid out for touch, and panels open without permanently
+covering the search box. The guided tour is not offered at this width. On a phone the share button
+opens the device's share sheet.
+
 ## What's coming
 
-- The map-first Atlas interface, with live grouping and the strictness dial.
 - Contributor tools to confirm or reject links, shared with the
   [Collaborative Workbench](./v3-3.md).
-- Grouping that draws on WHG's full range of evidence — name sound, location, time,
-  place type, and stated links — all combined in your browser.
+- The controls marked **planned**: Itinerary, Network and Attest.
+- Name search for the region sources that do not have it yet.

@@ -115,6 +115,28 @@ that the record does not exist. If you cache API outcomes, `451` is safe to cach
 `source.source_url` to obtain the data under the source's own terms instead.
 ```
 
+#### Atlas JSON endpoints
+
+The Atlas web application is backed by three JSON endpoints that proxy the same upstream gazetteer
+service: `/atlas/search/` (POST), `/atlas/place/?id=<place id>` and `/atlas/boundaries/?q=<name>`. They
+are for the Atlas front end, **beta-gated** (a signed-in session with beta access; otherwise `403`), and
+not a supported integration surface. They are listed here because they use the same status codes as the
+rest of this page, with the same meaning.
+
+| Status | Meaning |
+|---|---|
+| `404` | `/atlas/place/` only. The upstream service answered and has no such place. |
+| `503` | The upstream service could not be reached. Carries `Retry-After: 30` and a body with `gateway: false` and `failure` naming the kind. |
+| `504` | The upstream service is up but timed out on `/atlas/place/` or `/atlas/boundaries/`. Also carries `Retry-After: 30`. |
+| `451` | `/atlas/place/` only. The place's source does not permit WHG to redistribute its records ([above](#when-a-source-does-not-permit-redistribution)). The body names the source and gives its `source_url`. |
+
+```{note}
+`/atlas/search/` reports an upstream **timeout** differently: it returns `200` with `timeout: true` and an
+empty result, because the service is up and the Atlas front end shows a "took too long" state. Only an
+unreachable service gives `503`. In every case, an empty result beside `gateway: false` or
+`timeout: true` is **not** evidence that nothing matches.
+```
+
 ### Place Identifiers and Source Namespaces
 
 Place identifiers include a **namespace prefix** that indicates the originating source. For example:
@@ -719,6 +741,32 @@ performance and relevance.
 > **Note:** The `gb` namespace (GB1900) is excluded from results by default to reduce noise. To
 > include it, pass an empty `exclude_namespaces` list via the gateway API.
 
+```{versionadded} 2026-10-09
+Gateway search and reconcile responses now say which exclusion was applied, in a root-level
+`namespaces_excluded` array (for example `["gb"]`), so a client can tell a user that a source was left
+out. It is `[]` when you passed an explicit `namespaces` scope (which overrides the exclusion) or no
+exclusion applied. It sits beside `namespaces_searched`. The WHG Atlas passes it through from its
+`/atlas/search/` endpoint and shows a note under the results. The public `/reconcile` endpoint does not
+forward it.
+```
+
+#### Temporal extent in `GET /api/sources/`
+
+Each entry in `GET /api/sources/` carries `temporal_extent`: `[earliest, latest]`, in years, where a
+negative year is BCE. Read it as the period a source *covers*, not the date it was compiled.
+
+```{versionadded} 2026-10-09
+Sources that are snapshots no longer publish their compilation year as if it were their coverage.
+`kain_par` (pre-1850 parishes) is `[null, 1851]`: an **open start** and an end at the 1851 census its
+geometry is aligned to. `un` (UN Countries) and `nl` (Native Land) are `[]`. Previously they read
+`[2025, 2025]` and `[2026, 2026]`.
+```
+
+- **`null` as the start or end** means that end is open, not that the value is missing. Test for `null`
+  before doing arithmetic on it.
+- **`[]`** means no coverage range is known for the source. It is not a zero-length range.
+  `whg` (contributed datasets) and `osm_misc` are also `[]`.
+
 ### Result Format
 
 Each entry in a query's `result` array is an object with the following fields:
@@ -739,6 +787,17 @@ Each entry in a query's `result` array is an object with the following fields:
 | `ccodes` | array | ISO 3166-1 alpha-2 country codes as the source recorded them. |
 | `place_types` | array | Source-vocabulary place types, where the source supplies them. Frequently `[]`. |
 | `wikipedia` | array | Wikipedia links, where known. Frequently `[]`. |
+
+```{versionadded} 2026-10-09
+About 2.7 million Wikidata (`wd`) records were ingested with a bare identifier such as `Q12345` as their
+title, because the entity had no label in the extract's language. Gateway search hits, reconcile
+candidates and place details now show the record's preferred toponym instead (the first English name,
+else the first name), and carry the original identifier as **`qid_title`**. `qid_title` is `null`
+whenever the title is as stored, so it doubles as a flag that a title was replaced. The permanent fix
+is at ingest ([place#290](https://github.com/WorldHistoricalGazetteer/place/issues/290)); `qid_title` will
+then become `null` for those records. The public `/reconcile` response carries the repaired name in
+`name` but does not forward `qid_title`.
+```
 
 ```{note}
 The five rows above were absent from this table until 2026-09-21, though all five have been emitted for
