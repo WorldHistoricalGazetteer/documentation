@@ -406,6 +406,8 @@ first: follow the workflow on your own, and open the guide only when stuck. Note
 - [ ] **Allow the lookup.** Give the token in the WHG lookup panel when the regions or places step asks for
   it, and allow the lookup in the **Permissions** panel, which says where the token is kept. A preview
   always shows exactly what will be sent before anything goes.
+- [ ] **Set the dataset's language.** In the WHG lookup panel, set the language of your names (e.g. `en`)
+  if they carry no language tags; a name's own tag is used where it has one.
 - [ ] **Keep my working data between visits.** Leave this on (it is on by default, under *Your working data*
   in **Permissions**), so that a workflow survives a reload or a closed tab.
 
@@ -472,10 +474,10 @@ Check that nothing you did was lost, and that every refusal told you what to do.
 These are known already. There is no need to report them, unless one stops you working. The list will
 change as fixes land, so re-check this page if something looks different.
 
-- **Historical regions are mostly not in WHG.** Hundreds, wapentakes and old county boundaries usually match
-  only a same-named town or a modern unit. The places within such a region then find nothing, or are refused
-  with "not even a representative point". Use **look up again with the constraint relaxed**, or leave the
-  region unmatched.
+- **Historical regions often match a later unit of the same name.** Regions are matched only to areas, but
+  WHG's areas are mostly later or modern boundaries (hundreds, wapentakes and 1680 county lines are rarely
+  there). If places within a region find nothing, check the region's match, look up again with the
+  constraint relaxed, or leave the region unmatched.
 - **After a bulk accept, check places whose region is unmatched.** In testing, one was taken from the wrong
   one of two same-named places in a county, 47 km away. This stands until PLATO tools can skip ties on bulk
   accept (plato-tools #31).
@@ -487,7 +489,6 @@ change as fixes land, so re-check this page if something looks different.
 - **No sharing through WHG yet**, and no *Submit to WHG*. The result is a file you download.
 - **Size.** A 33-row table ran against WHG at about 2 seconds per request, with no problems. Nothing larger
   has been tried, hence the sessions above. WHG allows about 5,000 lookups per account per day.
-- **No language is sent to WHG.**
 - **WHG's scores** rank the answers to one search, not how likely a match is. The decision is always yours.
 - **Firefox and Safari** ask you to choose your file again at a step that needs it. Chrome and Edge offer a
   one-click **Open again**.
