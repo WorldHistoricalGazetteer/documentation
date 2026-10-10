@@ -14,6 +14,12 @@ use the tools. If you'd like to help test, see **Getting access** below (sign in
 the WHG team to switch on beta access for your account).
 ```
 
+```{note}
+Beta testers are also invited to try **Map your Data in PLATO tools**, which is moving out of WHG with
+WHG's agreement. It has its own checklist, **O** below, and reports go through the same route as every
+other snag.
+```
+
 ## How testing is tracked, and how issues get resolved
 
 We want beta testing to be **fast to report into** and **traceable to a cause**. Three things work
@@ -111,6 +117,10 @@ described (or is confusing even if "correct").
   dismisses it and it doesn't return.
 
 ### B. Map your Data (reconciliation)
+
+*Map your Data is moving to PLATO tools. The version under test now is the PLATO tools one, in section
+[O](#o-map-your-data-in-plato-tools); this checklist covers the version still inside WHG.*
+
 - [ ] Import a CSV / spreadsheet / GeoJSON of place records; columns are detected and can be re-assigned.
 - [ ] Reconcile against WHG; candidate matches appear with scores and on the map.
 - [ ] Accept / reject matches; the review state persists on reload (it's saved in your browser).
@@ -362,3 +372,149 @@ Known issues, please don't report:
 - Itinerary, Network and Attest are "planned" and disabled; design comments welcome.
 - No tour on screens under 768 px wide: by design.
 - The map can look blank if the browser window is not the front window; bring it forward and reload.
+
+
+### O. Map your Data in PLATO tools
+
+**Map your Data** is moving from WHG to [PLATO tools](https://pelagios.org/plato-tools/), with WHG's
+agreement, and the PLATO tools version is the one under test now. It is a guided workflow, run by PLATO
+tools' workflow manager, Methodos. It takes a table of historical places and turns it into linked place
+data in PLATO's format:
+
+1. Find the regions the places lie in, level by level.
+2. Match each place to WHG.
+3. Adopt a WHG location, or draw one on a map.
+4. Check, compare and write the result.
+
+We want to learn three things:
+
+- whether someone who did not build it can finish the workflow on their own data;
+- where it confuses, stalls or gives wrong matches;
+- how large a table it handles comfortably.
+
+The tools are labelled *Experimental*. Expect rough edges, and report them all. You do not need to read
+the [Map your data guide](https://pelagios.org/place-attestation-ontology/guide/tools.html#methodos-map-your-data)
+first: follow the workflow on your own, and open the guide only when stuck. Note every place you needed it.
+
+#### O1. Setup (about ten minutes, done once)
+- [ ] **Browser.** Use a current desktop Chrome, Edge or Firefox, in a normal window. A private window keeps
+  nothing between visits, so you could not resume work.
+- [ ] **WHG account and beta access.** The WHG lookup step does nothing without them (see *Getting access*).
+- [ ] **WHG token.** Log in to [whgazetteer.org](https://whgazetteer.org/) with ORCiD, then go to
+  **Profile**, then **API Token**. The token does not expire. Treat it like a password: never paste it
+  into a report or a screenshot.
+- [ ] **Allow the lookup.** Give the token in the WHG lookup panel when the regions or places step asks for
+  it, and allow the lookup in the **Permissions** panel, which says where the token is kept. A preview
+  always shows exactly what will be sent before anything goes.
+- [ ] **Keep my working data between visits.** Leave this on (it is on by default, under *Your working data*
+  in **Permissions**), so that a workflow survives a reload or a closed tab.
+
+Your own files never leave your computer. Only place names, and coordinates if you choose, go to WHG
+during the lookup.
+
+#### O2. Your test data
+Use a real table of your own if you have one: a spreadsheet (CSV, Excel or OpenDocument) with one place
+name per row. A column for the region each place lies in (a parish, a county, a country) tests the most,
+because it adds the region review. If you have no table, ask the WHG team for a 20 to 50-row example table
+of parishes with their counties.
+
+Work up in size, because nothing larger than 10 rows has been measured yet:
+
+| Session | Rows | Purpose |
+| --- | --- | --- |
+| 1 | 20–50 | Learn the workflow end to end |
+| 2 | 100–300 | A realistic small dataset, with resume and recovery |
+| 3 | 500 or more | Find where it slows or stalls (only once session 2 goes well) |
+
+WHG allows each account about 5,000 lookups a day, so a large table may need two days. Plan three sessions
+of one to two hours each, a few days apart, so that fixes from one session are in place for the next.
+
+#### O3. Session 1: the whole workflow (20 to 50 rows)
+- [ ] **Start.** On [pelagios.org/plato-tools](https://pelagios.org/plato-tools/), press **Not sure where to
+  start? Answer three questions**. Answer: a list of place names; places on a map; then the yes-or-no
+  questions. If your table gives regions, give a base address (any web address you control, for example
+  `https://example.org/my-places/`). Press **Follow**. *Check: did the questions make sense, and did you
+  get Map your data?*
+- [ ] **Match the columns** (Hermes). Choose your file in step 1, match each column to PLATO's fields, and
+  press **This step is done**. *Check: were the guessed matches right? Was any column impossible to place?*
+- [ ] **Check the table** (Elenchos) and **make a PLATO dataset** (Metaphrasis). *Check: was every problem
+  reported in words you could act on?*
+- [ ] **Identify the regions** (Krisis), if your table gives them: **Review the regions level by level**,
+  widest first. *Check: were the right regions found? How many did you settle by hand?*
+- [ ] **Look the places up in WHG** (Krisis). Read the preview of what will be sent, then allow it. *Check:
+  how long did it take for your table? Any errors?*
+- [ ] **Decide the candidates** (Krisis). Accept, reject or leave each match. *Check: record how many places
+  had the right match first, somewhere in the list, or not at all.*
+- [ ] **Record the decisions** with **Finish**. Export the candidates first if the review offers it.
+- [ ] **Draw or trace** missing places (Chora), if you said you would. Use **Open Chora**, then **Back to the
+  workflow** and **Take the dataset back from Chora**. *Check: did the hand-back work first time?*
+- [ ] **Check the result**, **compare it** with the dataset made from the table (Mneme), and **download** it.
+  *Check: open the downloaded file. Does it contain every place, with its matches?*
+
+Skip publishing (Agora) in session 1.
+
+#### O4. Session 2: resume and recover (100 to 300 rows)
+Run the workflow on a 100 to 300-row table, and on purpose:
+- [ ] reload the page in the middle of "Decide the candidates", and carry on;
+- [ ] close the tab and come back next day;
+- [ ] press **Back a step** once, and redo the step;
+- [ ] choose the wrong file at a step that asks for one.
+
+Check that nothing you did was lost, and that every refusal told you what to do.
+
+#### O5. Session 3: size (500 rows or more)
+- [ ] Run a table of 500 rows or more. Note the time each of "Check the table", "Identify the regions",
+  "Look the places up in WHG" and "Decide the candidates" took, and the point where anything slowed, froze
+  or failed.
+
+#### O6. Known limitations (as of 10 October 2026)
+
+These are known already. There is no need to report them, unless one stops you working. The list will
+change as fixes land, so re-check this page if something looks different.
+
+- **Historical regions are mostly not in WHG.** Hundreds, wapentakes and old county boundaries usually match
+  only a same-named town or a modern unit. The places within such a region then find nothing, or are refused
+  with "not even a representative point". Use **look up again with the constraint relaxed**, or leave the
+  region unmatched. WHG's `area_only` reconcile filter (place#323), which restricts matches to places
+  actually within an area, is now live on WHG. PLATO tools does not use it yet, so this limitation stands
+  until it does.
+- **After a bulk accept, check places whose region is unmatched.** In testing, one was taken from the wrong
+  one of two same-named places in a county, 47 km away. This stands until PLATO tools can skip ties on bulk
+  accept (plato-tools #31).
+- **In Chora's adopt search, check the country before adopting.** The search does not yet send the region,
+  so the first results can be abroad.
+- **A dataset already in WHG matches itself.** For example, Index Villaris 1680 is in WHG.
+- **One browser only.** Work is kept in the browser you used. You cannot move it to another computer or hand
+  it to a colleague yet.
+- **No sharing through WHG yet**, and no *Submit to WHG*. The result is a file you download.
+- **Size.** A 33-row table ran against WHG at about 2 seconds per request, with no problems. Nothing larger
+  has been tried, hence the sessions above. WHG allows about 5,000 lookups per account per day.
+- **No language is sent to WHG.** WHG's `lang` parameter (place#324) is now live on WHG, but PLATO tools does
+  not use it yet, so this limitation stands until it does.
+- **WHG's scores** rank the answers to one search, not how likely a match is. The decision is always yours.
+- **Firefox and Safari** ask you to choose your file again at a step that needs it. Chrome and Edge offer a
+  one-click **Open again**.
+
+#### O7. How to report a PLATO tools problem
+
+Use the same route as any other snag: **Workbench BETA menu → Report a snag**, with the feature area
+**Navigation / access / other** and a title that starts **"PLATO tools:"**. One problem per report. If
+something blocks you completely, say so in the title. WHG triages and forwards PLATO tools reports to the
+PLATO tools lead, and fixes are made in PLATO tools, not WHG.
+
+The form has no fields for severity or status, so put them in the report text. Start the description with
+a line such as `Severity: Wrong result`, using one of: **Blocks me**, **Wrong result**, **Confusing**,
+**Suggestion**. For each problem, also give:
+
+- the session and the workflow step;
+- what you did, what you expected, and what happened;
+- the exact words of any message, and a screenshot if it helps (never showing your WHG token);
+- the table's size, and whether it gives regions.
+
+The status is set by the team as it works on the report, using: **New**, **Seen**, **Fixing**, **Fixed,
+please retest** (when it is ready to check again) and **Closed**. You will see it on the tracker item, or
+we will tell you when a fix is ready to retest. Your first PLATO tools report starts at **New**.
+
+Roles: beta testers try the workflow and report; the PLATO tools lead takes questions, blockers and fixes
+for PLATO tools; the WHG team handles WHG accounts, tokens, beta access and the lookup service. The start
+date for the sessions is to be agreed with the WHG team.
