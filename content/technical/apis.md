@@ -1654,15 +1654,17 @@ Members of the project's team only (`403` otherwise, whatever the role).
 ### Sharing
 
 **`POST projects/<uuid>/share/`** — mint (or return) the project's read-only link token. Editors
-and owners. `200 {"ok": true, "shared": true, "token": "<uuid>", "url": "…"}`. The `url` opens
-the snapshot in WHG's Map your Data page, which only suits that `doc_type`; a client with its own
-viewer should build its link from `token`.
+and owners. `200 {"ok": true, "shared": true, "token": "<uuid>", "url": "…", "doc_type": "…"}`.
+The `url` opens the snapshot in WHG's Map your Data page, which only suits that `doc_type`: for an
+opaque type such as `plato` it is `null`, and the client builds its own link from `token`.
 
 **`DELETE projects/<uuid>/share/`** — revoke it.
 
-**`GET shared/<token>/`** — the shared snapshot: `{"title", "snapshot", "version", "read_only":
-true}`. No authentication; the unguessable token is the capability, so treat it as a secret. Readable
-cross-origin from the allow-listed origins.
+**`GET shared/<token>/`** — the shared snapshot: `{"title", "snapshot", "version", "doc_type",
+"read_only": true}`. No authentication; the unguessable token is the capability, so treat it as a
+secret. Readable cross-origin from the allow-listed origins. Check `doc_type` before opening the
+snapshot: Map your Data refuses a link to any type but its own, and a client with its own viewer
+should do the same.
 
 ### Teams
 
@@ -1682,9 +1684,11 @@ numbers and nested structure included. The client owns the document's shape and 
 
 **Live editing is off** for this type: `POST projects/<uuid>/collab-token/` answers `403`, code
 `live_editing_disabled`, and the real-time service refuses the document even if presented with a
-token. Whether to enable it later is a WHG decision; the service now verifies the token's issuer and
-audience, re-checks membership on connect and checks the connecting origin, but its store still
-stringifies cell values, which an opaque document cannot tolerate.
+token. Whether to enable it later is a WHG decision. The service verifies the token's issuer and
+audience, checks the connecting origin, re-checks membership, role and account status on connect and
+again periodically while connected, caps live connections per user, and its store keeps the types of
+the values it holds; but its document mapping is Map your Data's, and an opaque document would need
+one of its own.
 
 ### Errors
 
