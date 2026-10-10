@@ -481,8 +481,9 @@ change as fixes land, so re-check this page if something looks different.
 - **Places with a namesake are left for you.** Bulk accept never takes a place when another candidate has
   the same name where it was looked for (two records within 2 km count as one place). The place says so, and
   the decision is yours.
-- **In Chora's adopt search, check the country before adopting.** The search does not yet send the region,
-  so the first results can be abroad.
+- **Chora's adopt search looks where the place lies.** It searches within the place's region (when your
+  dataset links that region to WHG) and its country, and says so before sending. If the right record isn't
+  there, press **Search everywhere**.
 - **A dataset already in WHG matches itself.** For example, Index Villaris 1680 is in WHG.
 - **One browser only.** Work is kept in the browser you used. You cannot move it to another computer or hand
   it to a colleague yet.
