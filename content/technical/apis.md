@@ -732,7 +732,7 @@ for instance) to be rejected at this step.
 |---|---|---|
 | `dataset` | integer | Restrict to a specific dataset ID. |
 | `unlocated` | boolean | Include results with no spatial metadata (default: true). |
-| `lang` | string | ISO 639-1 code (case-insensitive, e.g. `en`, `de`, `cy`) for the **language of the query name**. Phonetic and fuzzy matching language-condition the query embedding with it, so a name is matched as that language would pronounce it. Anything that is not a two- or three-letter code is treated as unknown (`und`), never as an error, and omitting it is the same as `und`. A client-supplied query vector, where you send one, takes precedence for its own query. OpenRefine-style property: `whg:lang`. |
+| `lang` | string | ISO 639-1 code (case-insensitive, e.g. `en`, `de`, `cy`) for the **language of the query name**. Phonetic and fuzzy matching condition the query's phonetic embedding on it, which can change which similar-sounding names rank highest. Anything that is not a two- or three-letter code is treated as unknown (`und`), never as an error, and omitting it is the same as `und`. A client-supplied query vector, where you send one, takes precedence for its own query. OpenRefine-style property: `whg:lang`. |
 | `limit` | integer | Maximum results per query (default: 100, max: 1000). This is the standard Reconciliation API v0.2 parameter name. `size` is accepted as an alias. |
 
 ### Source Namespaces
