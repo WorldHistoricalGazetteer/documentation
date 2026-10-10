@@ -475,9 +475,7 @@ change as fixes land, so re-check this page if something looks different.
 - **Historical regions are mostly not in WHG.** Hundreds, wapentakes and old county boundaries usually match
   only a same-named town or a modern unit. The places within such a region then find nothing, or are refused
   with "not even a representative point". Use **look up again with the constraint relaxed**, or leave the
-  region unmatched. WHG's `area_only` reconcile filter (place#323), which restricts matches to places
-  actually within an area, is now live on WHG. PLATO tools does not use it yet, so this limitation stands
-  until it does.
+  region unmatched.
 - **After a bulk accept, check places whose region is unmatched.** In testing, one was taken from the wrong
   one of two same-named places in a county, 47 km away. This stands until PLATO tools can skip ties on bulk
   accept (plato-tools #31).
@@ -489,8 +487,7 @@ change as fixes land, so re-check this page if something looks different.
 - **No sharing through WHG yet**, and no *Submit to WHG*. The result is a file you download.
 - **Size.** A 33-row table ran against WHG at about 2 seconds per request, with no problems. Nothing larger
   has been tried, hence the sessions above. WHG allows about 5,000 lookups per account per day.
-- **No language is sent to WHG.** WHG's `lang` parameter (place#324) is now live on WHG, but PLATO tools does
-  not use it yet, so this limitation stands until it does.
+- **No language is sent to WHG.**
 - **WHG's scores** rank the answers to one search, not how likely a match is. The decision is always yours.
 - **Firefox and Safari** ask you to choose your file again at a step that needs it. Chrome and Edge offer a
   one-click **Open again**.
