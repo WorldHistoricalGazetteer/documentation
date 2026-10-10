@@ -478,9 +478,9 @@ change as fixes land, so re-check this page if something looks different.
   WHG's areas are mostly later or modern boundaries (hundreds, wapentakes and 1680 county lines are rarely
   there). If places within a region find nothing, check the region's match, look up again with the
   constraint relaxed, or leave the region unmatched.
-- **After a bulk accept, check places whose region is unmatched.** In testing, one was taken from the wrong
-  one of two same-named places in a county, 47 km away. This stands until PLATO tools can skip ties on bulk
-  accept (plato-tools #31).
+- **Places with a namesake are left for you.** Bulk accept never takes a place when another candidate has
+  the same name where it was looked for (two records within 2 km count as one place). The place says so, and
+  the decision is yours.
 - **In Chora's adopt search, check the country before adopting.** The search does not yet send the region,
   so the first results can be abroad.
 - **A dataset already in WHG matches itself.** For example, Index Villaris 1680 is in WHG.
