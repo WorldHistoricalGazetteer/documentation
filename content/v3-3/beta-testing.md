@@ -403,13 +403,26 @@ first: follow the workflow on your own, and open the guide only when stuck. Note
 - [ ] **WHG token.** Log in to [whgazetteer.org](https://whgazetteer.org/) with ORCiD, then go to
   **Profile**, then **API Token**. The token does not expire. Treat it like a password: never paste it
   into a report or a screenshot.
-- [ ] **Allow the lookup.** Give the token in the WHG lookup panel when the regions or places step asks for
-  it, and allow the lookup in the **Permissions** panel, which says where the token is kept. A preview
-  always shows exactly what will be sent before anything goes.
+- [ ] **Allow the lookup.** The token field shows in the WHG lookup panel when WHG is the service. Paste
+  the token, then press **Remember my token** to keep it in this browser, or press Enter to use it for this
+  tab only. Once given, the field shows "••••••••", with a line saying where it is kept, and **Forget the
+  token** (there is no confirmation). Allow the lookup in the **Permissions** panel. A preview always shows
+  exactly what will be sent.
 - [ ] **Set the dataset's language.** In the WHG lookup panel, set the language of your names (e.g. `en`)
-  if they carry no language tags; a name's own tag is used where it has one.
+  if they carry no language tags; a name's own tag is used where it has one. The field suggests languages
+  as you type, by code or by name: "old eng" finds `ang`.
+- [ ] **Set a Scope (optional).** In the workflow's list of steps, open the "Scope" line and press **Edit**.
+  A Scope confines every WHG lookup:
+  - **Where:** "In these countries", "Within a place in WHG", or "Within an area drawn on a map";
+  - **What:** kinds of place, from a shortlist or **More types…**;
+  - **When:** a start and/or end year, with "Include places with no dates";
+  - **Sources:** only the WHG sources chosen.
+
+  A table's own region columns win over Where for their rows.
 - [ ] **Keep my working data between visits.** Leave this on (it is on by default, under *Your working data*
-  in **Permissions**), so that a workflow survives a reload or a closed tab.
+  in **Permissions**), so that a workflow survives a reload or a closed tab. It also keeps the file you
+  chose, with no time limit, until you forget it. A new visit offers it: "Kept from last time: …" with
+  **Use it** and **Forget it**.
 
 Your own files never leave your computer. Only place names, and coordinates if you choose, go to WHG
 during the lookup.
@@ -432,12 +445,16 @@ WHG allows each account about 5,000 lookups a day, so a large table may need two
 of one to two hours each, a few days apart, so that fixes from one session are in place for the next.
 
 #### O3. Session 1: the whole workflow (20 to 50 rows)
+The page has three columns: the tools on the left, the current step in the centre (titled "Step n of N:
+…"), and your workflow on the right, with a checkbox per step: ticked when done, ringed for the current
+step, and greyed until reached.
+
 - [ ] **Start.** On [pelagios.org/plato-tools](https://pelagios.org/plato-tools/), press **Not sure where to
   start? Answer three questions**. Answer: a list of place names; places on a map; then the yes-or-no
   questions. If your table gives regions, give a base address (any web address you control, for example
   `https://example.org/my-places/`). Press **Follow**. *Check: did the questions make sense, and did you
   get Map your data?*
-- [ ] **Match the columns** (Hermes). Choose your file in step 1, match each column to PLATO's fields, and
+- [ ] **Match the columns** (Hermes). Choose your file under *Choose your data*, match each column to PLATO's fields, and
   press **This step is done**. *Check: were the guessed matches right? Was any column impossible to place?*
 - [ ] **Check the table** (Elenchos) and **make a PLATO dataset** (Metaphrasis). *Check: was every problem
   reported in words you could act on?*
@@ -448,8 +465,11 @@ of one to two hours each, a few days apart, so that fixes from one session are i
 - [ ] **Decide the candidates** (Krisis). Accept, reject or leave each match. *Check: record how many places
   had the right match first, somewhere in the list, or not at all.*
 - [ ] **Record the decisions** with **Finish**. Export the candidates first if the review offers it.
-- [ ] **Draw or trace** missing places (Chora), if you said you would. Use **Open Chora**, then **Back to the
-  workflow** and **Take the dataset back from Chora**. *Check: did the hand-back work first time?*
+- [ ] **Draw or trace** missing places (Chora), if you said you would. Use **Open Chora**. Chora opens your
+  dataset at once, and **Back to the workflow** is there from the start. After saving in Chora, go back and
+  use **Take the dataset back from Chora**. If there is nothing to draw, use **Nothing to draw: go on with
+  this dataset**. *Check: did going back keep your dataset, both with the link and with the browser's Back
+  button?*
 - [ ] **Check the result**, **compare it** with the dataset made from the table (Mneme), and **download** it.
   *Check: open the downloaded file. Does it contain every place, with its matches?*
 
@@ -460,7 +480,9 @@ Run the workflow on a 100 to 300-row table, and on purpose:
 - [ ] reload the page in the middle of "Decide the candidates", and carry on;
 - [ ] close the tab and come back next day;
 - [ ] press **Back a step** once, and redo the step;
-- [ ] choose the wrong file at a step that asks for one.
+- [ ] choose the wrong file at a step that asks for one;
+- [ ] go to Chora and come back with the browser's Back button;
+- [ ] set a narrow Scope, find a place left with nothing, and use **Look it up again without Scope**.
 
 Check that nothing you did was lost, and that every refusal told you what to do.
 
@@ -469,7 +491,7 @@ Check that nothing you did was lost, and that every refusal told you what to do.
   "Look the places up in WHG" and "Decide the candidates" took, and the point where anything slowed, froze
   or failed.
 
-#### O6. Known limitations (as of 10 October 2026)
+#### O6. Known limitations (as of 12 October 2026)
 
 These are known already. There is no need to report them, unless one stops you working. The list will
 change as fixes land, so re-check this page if something looks different.
@@ -482,8 +504,11 @@ change as fixes land, so re-check this page if something looks different.
   the same name where it was looked for (two records within 2 km count as one place). The place says so, and
   the decision is yours.
 - **Chora's adopt search looks where the place lies.** It searches within the place's region (when your
-  dataset links that region to WHG) and its country, and says so before sending. If the right record isn't
-  there, press **Search everywhere**.
+  dataset links that region to WHG) and its country, and says so before sending. It also keeps to the
+  workflow's Scope. If the right record isn't there, press **Search everywhere**.
+- **A narrow Scope can leave a place with nothing.** WHG applies the Scope's Where, What and When to its
+  best name matches (about 200), so the right answer can fall outside them. The place says so and offers
+  **Look it up again without Scope**. Nothing is relaxed without you.
 - **A dataset already in WHG matches itself.** For example, Index Villaris 1680 is in WHG.
 - **One browser only.** Work is kept in the browser you used. You cannot move it to another computer or hand
   it to a colleague yet.
@@ -491,8 +516,9 @@ change as fixes land, so re-check this page if something looks different.
 - **Size.** A 33-row table ran against WHG at about 2 seconds per request, with no problems. Nothing larger
   has been tried, hence the sessions above. WHG allows about 5,000 lookups per account per day.
 - **WHG's scores** rank the answers to one search, not how likely a match is. The decision is always yours.
-- **Firefox and Safari** ask you to choose your file again at a step that needs it. Chrome and Edge offer a
-  one-click **Open again**.
+- **Choosing your file again.** With *Keep my working data* on, your file is kept in this browser and chosen
+  again for you in every browser. With it off, Firefox and Safari ask you to choose the file again at a
+  step that needs it.
 
 #### O7. How to report a PLATO tools problem
 
