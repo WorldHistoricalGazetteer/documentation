@@ -684,7 +684,8 @@ The following parameters can be included in each query object within a reconcili
 |---|---|---|
 | `start` | integer | Start year for temporal filtering. |
 | `end` | integer | End year (default: current year). Must be ≥ `start`. |
-| `undated` | boolean | Include results with no temporal metadata (default: true). |
+| `undated` | boolean | With `start`/`end`: also keep places that carry no temporal metadata at all, instead of dropping them (default: false). |
+| `temporal_mode` | string | Which of a place's temporal bounds the `start`–`end` window is tested against: `possibly` (default; anything its bounds do not rule out) or `definitely` (only places attested throughout). Ignored without a window. |
 
 #### Spatial Filtering
 
@@ -1167,28 +1168,29 @@ The WHG Reconciliation Service allows you to match place names in your spreadshe
 collection of historical places. This is particularly useful for disambiguating place names and enriching your data with
 standardised identifiers, coordinates, and temporal information.
 
-```{warning}
-**Through OpenRefine you cannot currently reach the containment model described in
-[The Query Model](#the-query-model), and this is the most important limitation on this page.**
+```{note}
+**OpenRefine can reach the containment model described in [The Query Model](#the-query-model)
+through the protocol's `properties` array.** A reconciliation client passes per-query filters there,
+and WHG accepts these properties:
 
-A reconciliation client passes per-query filters through the protocol's `properties` array, and WHG
-accepts only four properties there: `whg:namespaces`, `whg:countries_codes`, `whg:classes_codes` and
-`whg:types_objects`. There is **no `contained_in` property and no spatial property at all** — so
-`contained_in`, `bounds` and the circular `lat`/`lng`/`radius` search are unreachable from a standard
-reconciliation client, however they are configured in the interface.
+| Property | Same as the top-level parameter |
+|---|---|
+| `whg:namespaces` | `namespaces` |
+| `whg:countries_codes` | `countries` |
+| `whg:classes_codes` | `fclasses` |
+| `whg:types_objects` | `types` |
+| `whg:contained_in` | `contained_in` |
+| `whg:within_bbox` | `bbox`, written `west,south,east,north` |
+| `whg:within_radius` | `lat`, `lng` and `radius` together, written `lat,lng,radius_km` |
+| `whg:area_only` | `area_only` |
+| `whg:lang` | `lang` |
 
-The practical consequences:
-
-- `whg:countries_codes` is the only geographic constraint available to you. It is a country-level
-  filter on upstream country tagging, not true containment — it will not scope to a county, a region
-  or a historical polygon, and it inherits the tagging problems described under
-  [Filter Behaviour](#filter-behaviour-and-common-pitfalls).
-- For anything finer, **call `POST /reconcile` directly** with the two-pass pattern, and bring the
-  results back into OpenRefine afterwards.
-
-Adding containment and spatial keys to the `properties` array is tracked as part of
-[place#217](https://github.com/WorldHistoricalGazetteer/place/issues/217) and has **not** shipped.
-This note describes the service as it behaves today.
+Each value takes the same form as the parameter it stands for; a top-level parameter, if also sent,
+wins. `contained_in` ids are case-sensitive bare ids such as `ukhc:LCS`, not URIs. A malformed
+`whg:within_bbox` or `whg:within_radius` is reported as an error rather than ignored.
+`whg:countries_codes` filters on upstream country tagging, not containment, and inherits the problems
+described under [Filter Behaviour](#filter-behaviour-and-common-pitfalls); prefer `whg:contained_in`
+for anything finer than a country.
 ```
 
 #### Prerequisites
