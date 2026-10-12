@@ -682,10 +682,16 @@ The following parameters can be included in each query object within a reconcili
 
 | Parameter | Type | Description |
 |---|---|---|
-| `start` | integer | Start year for temporal filtering. |
-| `end` | integer | End year (default: current year). Must be ≥ `start`. |
+| `start` | integer | Start year of the window (negative = BCE). Omit for an open start. |
+| `end` | integer | End year of the window. Omit for an open end. Must be ≥ `start`. |
 | `undated` | boolean | With `start`/`end`: also keep places that carry no temporal metadata at all, instead of dropping them (default: false). |
 | `temporal_mode` | string | Which of a place's temporal bounds the `start`–`end` window is tested against: `possibly` (default; anything its bounds do not rule out) or `definitely` (only places attested throughout). Ignored without a window. |
+
+Sending `start` and/or `end` is what switches the filter on, and it applies to every candidate source
+alike. An older `temporal: true` flag is still accepted but is not needed: until October 2026 WHG's
+own legacy index applied the window only when that flag was also sent, so a query with years alone got
+date-filtered gazetteer candidates mixed with unfiltered WHG ones
+([place#327](https://github.com/WorldHistoricalGazetteer/place/issues/327)).
 
 #### Spatial Filtering
 
