@@ -1606,9 +1606,11 @@ lock the user out of reconciliation. They have their own limits, below.
 ### Cross-origin use (CORS)
 
 Browser requests are allowed from an allow-list of exact origins — at present only
-`https://pelagios.org`. For those origins, every endpoint in this section answers its own preflight
+`https://pelagios.org`. The development server, `dev.whgazetteer.org`, also allows
+`http://localhost:5173` and `http://localhost:4173` for testing a client locally; the live site does
+not. For those origins, every endpoint in this section answers its own preflight
 (`OPTIONS`) with the methods it accepts, including `PUT` and `DELETE`, and the request headers
-`Authorization` and `Content-Type`; the preflight may be cached for a day. Error responses carry the
+`Authorization`, `Content-Type` and `Content-Encoding`; the preflight may be cached for a day. Error responses carry the
 same headers, so a `401`, `409`, `413` or `429` is readable by the page, and `Retry-After` is exposed.
 
 Credentials are never allowed across origins: the responses carry no
@@ -1620,13 +1622,17 @@ is refused too (`403`, code `origin_not_allowed`). Send requests with `credentia
 
 | Limit | Value | On breach |
 |---|---|---|
-| Request body on `POST` and `PUT` (the whole JSON body, not only the snapshot) | 2 MiB (2,097,152 bytes) | `413`, code `body_too_large`, with `limit` and `size` in bytes |
+| Request body on `POST` and `PUT` (the whole JSON body, not only the snapshot; for a gzip body, both as sent and once decompressed) | 2 MiB (2,097,152 bytes) | `413`, code `body_too_large`, with `limit` and `size` in bytes |
 | Token requests per minute, per account, all Workbench endpoints together | 120 (fixed one-minute window, so a burst of up to 240 across a window boundary) | `429`, code `rate_limited`, with `retry_after` in the body and a `Retry-After` header |
 | Snapshot history kept per project | the newest 25 versions | older versions are pruned |
 | Daily API allowance | not charged | — |
 
 Measure a snapshot before sending it. A project with a few work files is a few hundred kilobytes;
 a large review can exceed the cap, in which case send the record without its bulkier work files.
+
+A `POST` or `PUT` body may be sent gzip-compressed with `Content-Encoding: gzip`. No other encoding is
+accepted (`415`, code `unsupported_encoding`), and a body that is not valid gzip is a `400`, code
+`bad_encoding`. Compression stretches the cap only as far as the decompressed body stays within it.
 
 ### Projects
 
@@ -1661,6 +1667,22 @@ Members of the project's team only (`403` otherwise, whatever the role).
 
 **`DELETE projects/<uuid>/`** — owner only. `200 {"ok": true}`.
 
+**`GET projects/<uuid>/versions/`** — the kept versions, newest first, without their snapshots. Any
+member of the project's team, viewers included.
+
+```json
+{"id": "<uuid>", "current_version": 7, "kept": 25,
+ "versions": [{"version": 7, "created": "2026-10-14T09:30:00+00:00",
+               "saved_by": {"user_id": 41, "username": "…", "name": "…"}}, …]}
+```
+
+`saved_by` is `null` for a version whose saver's account no longer exists.
+
+**`GET projects/<uuid>/versions/<n>/`** — one kept version, read-only: the fields above plus `id`,
+`doc_type`, `current_version` and `snapshot`. A version that has been pruned, or never existed, is a
+`404`. To restore one, `PUT` its snapshot with the current version as `base_version`: the restore
+becomes a new version, and nothing is overwritten.
+
 ### Sharing
 
 **`POST projects/<uuid>/share/`** — mint (or return) the project's read-only link token. Editors
@@ -1689,8 +1711,16 @@ Roles are `owner`, `editor` and `viewer`.
 
 `doc_type: "plato"` is **opaque**: the server stores the snapshot without reading it. It checks only
 that the snapshot is a JSON object; it derives no title from it (send `title`), it never merges it (a
-stale push is the `409` above, with the current snapshot), and it returns it byte-for-byte — nulls,
-numbers and nested structure included. The client owns the document's shape and the merge.
+stale push is the `409` above, with the current snapshot). The client owns the document's shape and
+the merge.
+
+It returns the same JSON *value*, not the same bytes. The snapshot is stored as Postgres `jsonb`:
+object keys come back in the database's order rather than yours, a duplicated key keeps only its last
+value, whitespace is not kept, and numbers come back as JSON numbers (`1e2` as `100`, and a
+non-integer at double precision). Strings, `null`, `true`/`false`, arrays and nesting are kept exactly.
+A string or key containing U+0000 (`\u0000`) cannot be stored and is refused (`400`, code
+`nul_character`). A client that needs its exact bytes back should store them encoded, for example as
+a base64 string inside the snapshot.
 
 **Live editing is off** for this type: `POST projects/<uuid>/collab-token/` answers `403`, code
 `live_editing_disabled`, and the real-time service refuses the document even if presented with a
@@ -1705,8 +1735,10 @@ one of its own.
 | Status | `code` | Meaning |
 |---|---|---|
 | `400` | — | malformed body: `snapshot` not an object, `base_version` not an integer, unknown `doc_type` |
+| `400` | `bad_encoding` | `Content-Encoding: gzip` with a body that is not valid gzip |
+| `400` | `nul_character` | a JSON string or key contains U+0000 |
 | `401` | `unauthenticated` | no token, a wrong token, an inactive account, or a cookie from another origin |
-| `403` | `beta_required` | the account is not enrolled in the Workbench beta |
+| `403` | `beta_required` | the account is not enrolled in the Workbench beta; to ask to join, use *Get in touch* on [whgazetteer.org/development/](https://whgazetteer.org/development/) |
 | `403` | `origin_not_allowed` | the request's `Origin` is not on the allow-list |
 | `403` | `csrf_failed` | cookie path only: no or wrong CSRF token |
 | `403` | `live_editing_disabled` | `collab-token/` for a `doc_type` without live editing |
@@ -1715,6 +1747,7 @@ one of its own.
 | `405` | `method_not_allowed` | with an `Allow` header |
 | `409` | — | a stale push: see `PUT` |
 | `413` | `body_too_large` | with `limit` and `size` |
+| `415` | `unsupported_encoding` | a `Content-Encoding` other than `gzip` |
 | `429` | `rate_limited` | with `retry_after` and a `Retry-After` header |
 
 A `4xx` is terminal: fix the request rather than retrying it, except `409` (merge and push again)
