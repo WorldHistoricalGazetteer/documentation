@@ -465,11 +465,11 @@ step, and greyed until reached.
 - [ ] **Decide the candidates** (Krisis). Accept, reject or leave each match. *Check: record how many places
   had the right match first, somewhere in the list, or not at all.*
 - [ ] **Record the decisions** with **Finish**. Export the candidates first if the review offers it.
-- [ ] **Draw or trace** missing places (Chora), if you said you would. Use **Open Chora**. Chora opens your
-  dataset at once, and **Back to the workflow** is there from the start. After saving in Chora, go back and
-  use **Take the dataset back from Chora**. If there is nothing to draw, use **Nothing to draw: go on with
-  this dataset**. *Check: did going back keep your dataset, both with the link and with the browser's Back
-  button?*
+- [ ] **Draw or trace** missing places (Chora), if you said you would. Use **Open Chora**. Chora opens inside
+  the same page ([pelagios.org/plato-tools/#chora](https://pelagios.org/plato-tools/#chora)) with your dataset
+  loaded. Saving in Chora chooses the saved file and completes this step. If there is nothing to draw, use
+  **Nothing to draw: go on with this dataset**. *Check: after saving, was the step marked done, and are the
+  places you drew in the dataset?*
 - [ ] **Check the result**, **compare it** with the dataset made from the table (Mneme), and **download** it.
   *Check: open the downloaded file. Does it contain every place, with its matches?*
 
@@ -481,7 +481,7 @@ Run the workflow on a 100 to 300-row table, and on purpose:
 - [ ] close the tab and come back next day;
 - [ ] press **Back a step** once, and redo the step;
 - [ ] choose the wrong file at a step that asks for one;
-- [ ] go to Chora and come back with the browser's Back button;
+- [ ] open Chora, then leave it with the browser's Back button;
 - [ ] set a narrow Scope, find a place left with nothing, and use **Look it up again without Scope**.
 
 Check that nothing you did was lost, and that every refusal told you what to do.
