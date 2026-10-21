@@ -15,6 +15,12 @@ identifier you can cite and link to. The identifier resolves through **w3id.org*
 community-run permanent-identifier service, so it does not depend on WHG's own web address staying
 the same.
 
+A `place:` identifier names a **gazetteer record**, that is, one source's account of a place, not
+the place itself: two sources describing the same city have two records, and two identifiers. To
+see what other records have been stated to describe the same place, open the record's
+[Concordance](./record-pages.md#the-concordance); to cite a group of similar records, use a
+[locus](./loci.md).
+
 Identifiers take the form
 
 ```text
