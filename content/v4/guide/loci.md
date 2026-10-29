@@ -102,6 +102,13 @@ to its own [record page](./record-pages.md), where you can see that source's ful
 Concordance. A record found only in WHG's search index (from GeoNames or Wikidata, for example) has
 no record page; its link is its identifier, `/entity/place:<namespace>:<id>/`.
 
+## Linking from a locus page
+
+Signed-in beta testers see **Same place** and **Not the same** buttons on each member row. They open the
+**Link** sheet described in [Linking records](./record-pages.md#linking-records-same-place-or-not), to
+state that two members are, or are not, the same place. A link never merges a locus or changes who is in
+it: it is a statement by a person, shown in the Concordance of the records concerned.
+
 ## Old WHG place addresses
 
 Addresses of the form `/places/<number>/portal/` were handed out by earlier versions of WHG. They

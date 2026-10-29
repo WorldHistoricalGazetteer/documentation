@@ -312,7 +312,7 @@ Known issues, please don't report:
 - [ ] A downloads button is either live (file downloads) or greyed with a tooltip explaining why.
 
 Known issues, please don't report:
-- **Itinerary**, **Network** and **Attest** controls carry a "planned" tag and are disabled. Please don't
+- **Itinerary** and **Network** controls carry a "planned" tag and are disabled. Please don't
   report them as broken; comments on their intended design are welcome.
 - Authority downloads point to the source rather than an export (place#312).
 - Low-zoom gaps in coverage for polygon-dominant gazetteers (place#166).
@@ -369,7 +369,7 @@ Known issues, please don't report:
   deliberately not offered below 768 px wide.
 
 Known issues, please don't report:
-- Itinerary, Network and Attest are "planned" and disabled; design comments welcome.
+- Itinerary and Network are "planned" and disabled; design comments welcome.
 - No tour on screens under 768 px wide: by design.
 - The map can look blank if the browser window is not the front window; bring it forward and reload.
 

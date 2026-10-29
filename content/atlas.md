@@ -205,9 +205,13 @@ outline is used for display.
 
 ## Controls marked "planned"
 
-Some controls are visible but disabled and carry a **planned** tag: **Itinerary**, **Network** and
-**Attest** in the Gazetteers panel. They show where Atlas is heading and do nothing yet. Comments on
+Some controls are visible but disabled and carry a **planned** tag: **Itinerary** and **Network**
+in the Gazetteers panel. They show where Atlas is heading and do nothing yet. Comments on
 how they should work are welcome.
+
+The planned **Attest** control has been replaced by **Link**, which works for beta testers. Signed in,
+use **Same place** or **Not the same** in a map popup or in the Place List to state that two places are,
+or are not, the same place. See [Linking records](./v4/guide/record-pages.md#linking-records-same-place-or-not).
 
 Some gazetteers (OpenStreetMap and OpenHistoricalMap) cannot be browsed as a whole in **Explore** mode.
 A link such as `?gazetteer=osm` selects such a gazetteer as a search filter instead and says so in a
@@ -231,5 +235,5 @@ opens the device's share sheet.
 
 - Contributor tools to confirm or reject links, shared with the
   [Collaborative Workbench](./v3-3.md).
-- The controls marked **planned**: Itinerary, Network and Attest.
+- The controls marked **planned**: Itinerary and Network.
 - Name search for the region sources that do not have it yet.

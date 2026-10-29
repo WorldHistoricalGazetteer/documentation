@@ -164,6 +164,31 @@ cluster at … settings*, opens a [locus page](./loci.md) for the group of recor
 uses either the index's current calibrated settings or WHG's fixed fallback settings, and says
 which.
 
+## Linking records: same place, or not
+
+Signed-in beta testers can state that two records are the same place, or are not. Next to a record in an
+[Atlas](../../atlas.md) map popup, in the Place List, in this page's Concordance (on each entry and each
+*co-cited* record) and on the member rows of a [locus page](./loci.md), the **Same place** and **Not the
+same** buttons open the **Link** sheet. It offers three choices:
+
+- **Same place** (the default) records a *closeMatch*.
+- **Same place, exactly**, under **Advanced**, records an *exactMatch*. Use it only when you are sure the
+  two descriptions mean one and the same place.
+- **Not the same place** records that the two are distinct.
+
+You may add a reason of up to 2000 characters. To take a link back, open the Link sheet again and
+withdraw it. A withdrawn link stops appearing but is kept in WHG's history.
+
+A link appears in the Concordance as *Linked by NAME (ORCID), DATE*. A link made by someone in the
+record's dataset team counts as the dataset's own statement (tier 1); a link by anyone else counts as
+other people's statements (tier 2). *Not the same* statements are listed separately under **Said not to
+be the same** and never merge records.
+
+A link is a statement by a person, not a decision by WHG. It does not merge records or change anyone's
+data. If either record belongs to a dataset that is not yet published, the link is saved as
+**pending**: only you and that dataset's owners can see it until the dataset is published, and nothing
+is sent outside WHG. Each person can make 200 new links a day.
+
 ## About this group
 
 The **About this group** section describes the record together with its attested equivalents (its

@@ -135,7 +135,7 @@ rendering artefact, not an Atlas fault.
 - Exact area geometry is not served for contributed datasets until a per-dataset licence lookup exists, and
   the starting simplification tolerance is still being tuned
   ([place#319](https://github.com/WorldHistoricalGazetteer/place/issues/319)).
-- Itinerary, Network and Attest are visible but marked "planned".
+- Itinerary and Network are visible but marked "planned". Attest has been replaced by Link (beta testers).
 
 ## Not yet documented
 
