@@ -562,3 +562,20 @@ date for the sessions is to be agreed with the WHG team.
 - [ ] On a public record, **Links made by people** shows each Link with who made it, when, and CC BY
   4.0; **Dispute this Link** opens the Link sheet with the opposite answer chosen.
 - [ ] **Show my name on Links I make** on your Profile page saves, and the help text beside it is clear.
+- [ ] On the page of a private dataset you own, the **Review and publication** panel offers **Start the
+  review process**; after confirming, the dataset is a private draft and nothing else has changed.
+- [ ] **Before review: two questions** saves your answers (**Save answers**); a "yes" asks you to say
+  what is sensitive.
+- [ ] **Submit for review** sends you an email with the expected date, and the panel shows the same date.
+- [ ] **Automatic checks** lists each check with its result; **Remove them** clears placeholder
+  identifiers from a private draft.
+- [ ] After the editor's decision, the panel shows the new stage and *The editor's note* (for changes
+  requested or declined), and you receive an email.
+- [ ] Once accepted, **Publish** asks you to confirm and says what will happen; afterwards the dataset
+  page shows *Waiting to be added to the search index* until it is searchable, and your pending Links
+  become public.
+- [ ] **Withdraw** asks you to confirm; afterwards your Links are private again and the panel offers
+  **Submit again for review**.
+- [ ] Editors: **Review queue** (marked *beta*) lists submitted datasets; **Start review**, then
+  **Accept**, **Request changes** or **Decline** (the last two need a note) work, and the owner is
+  emailed.

@@ -4,11 +4,13 @@
 Part of the [Draft v4 User Guide](../userguide_index.md): under review during beta testing.
 ```
 
-% Rewritten 2026-10-30 against whg3 staging 3380f08f5 (place#334, #337, #338, #340, #341, #342, #343).
-% On-screen labels quoted here were checked against the templates and scripts of that commit.
+% Rewritten 2026-10-30 against whg3 staging 3380f08f5 (place#334, #337, #338, #340, #341, #342, #343);
+% review and publication sections updated against whg3 staging 56c3d4c19 (= prod main 4078ffce0 for
+% these files): _lifecycle_panel.html, lifecycle_tags.py, review_queue.html, views_lifecycle.py.
+% On-screen labels quoted here were checked against the templates and scripts of those commits.
 % Items marked TODO(SG) are relayed or inferred, not read in the whg3 code: check before release.
-% TODO(SG): submit / publish / withdraw have no buttons yet (JSON endpoints under /datasets/<id>/lifecycle/
-%   only), so "ask the WHG team" below is a placeholder until the dataset page has them.
+% TODO(SG): a declined dataset has no way back in the UI (submit is not allowed from 'declined', and the
+%   upload path does not enter the lifecycle), although the decline email says "upload a revised version".
 % TODO(SG): "datasets with polygons are added too" and "fuzzy search may not find new places yet" are
 %   relayed from the indexing work, not read in whg3 code.
 % TODO(SG): "228 carried over" is the 2026-10-30 prod run of migrate_reviewed_links (170 public, 58 pending).
@@ -54,7 +56,8 @@ A Link has these properties:
   **Links made by people** (see [Record Pages and the Concordance](./record-pages.md)).
 - **It can be disputed.** Anyone who can make Links (during beta, any beta tester) can choose **Dispute
   this Link** beside someone else's Link and answer the opposite way. A dispute does not delete the
-  original: both statements stay visible, each with its maker.
+  original: both statements stay visible, each with its maker. (While a Record page is still loading,
+  **Dispute this Link** and **Change or withdraw** are greyed out and show *Loading…*.)
 - **It can be changed or withdrawn** by the person who made it (**Change or withdraw** beside your own
   Link, or **Withdraw** in the Link sheet). A withdrawn Link stops counting and is no longer shown, but
   WHG keeps a record of it.
@@ -157,9 +160,9 @@ disagrees, by *"But: …"*.
 - **None of these fits** (or **n**): none of the suggestions is right. This is a note about your review,
   not a statement about the world, and only you and your dataset's team see it.
 - **Not sure yet** (or **l**) moves the record to **Later**.
-- **Undo** (or **u**) takes back your last decision on this page: it withdraws the Links that decision
-  made from the suggestions and returns the record to its tab. A Link you made from a hand search is not
-  taken back by Undo; withdraw it in the Link sheet instead.
+- **Undo** (or **u**) takes back your last decision on this page: it withdraws the Links you made for
+  that record on this page (from its suggestions or from a hand search) and returns the record to its
+  tab.
 
 Use **←** and **→** to move between records without deciding. Under **Advanced** you can choose **Same
 place, exactly** instead of **Same place** for the Links you make from the record on screen.
@@ -203,38 +206,67 @@ During beta, **every dataset is reviewed by the WHG team before it is published*
 linking: you need not start, or finish, linking for your dataset to be reviewed, and you can go on
 linking while it is under review.
 
-When you submit a dataset for review you receive an email saying when to expect an answer; reviews
-usually take up to 10 working days. An editor reads WHG's automatic checks, looks at a sample of your
-records on the map, and checks the licence and any sensitivity you declared. The automatic checks cover:
+### The Review and publication panel
+
+Review and publication are done from a panel on your dataset's page, headed **Review and publication**
+and marked *beta*. Only the dataset's owners see it, and only when signed in with beta access. It shows
+the dataset's current stage in plain words (for example *"Private draft: only you and your collaborators
+can see it. When it is ready, submit it for review by the WHG team."*) and only the buttons that apply at
+that stage. Buttons with consequences ask you to confirm first, and say what will happen.
+
+**A dataset you uploaded before this review process existed** does not enter it automatically. If it is
+private, the panel offers **Start the review process**. This moves it to a private draft and changes
+nothing else: *"It stays private while you prepare it. When you submit it, the WHG team reviews it, and
+it can be published only after that review."* A dataset that is already public cannot be started; it
+would have to be made private first.
+
+### Submitting
+
+While the dataset can be submitted, the panel shows:
+
+- **Before review: two questions**, which the editor reads *"when deciding whether part of the dataset
+  should be held back"*: whether the dataset includes information about Indigenous peoples, lands or
+  places that their communities may wish to control, and whether it includes locations that could cause
+  harm if widely known (sacred or burial sites, vulnerable heritage, private homes). Answer each, then
+  choose **Save answers**. A "yes" asks you to say briefly what is sensitive;
+- an optional **Note for the editor**, and **Submit for review**.
+
+You receive an email saying when to expect an answer; reviews usually take up to 10 working days, and the
+panel shows the expected date (*"The WHG team will usually reply by …"*). The dataset stays private
+meanwhile.
+
+The panel also has **Automatic checks**, the same checks the editor reads, each marked as passed, worth a
+look, must be fixed, or not checked:
 
 - records loaded, and the licence: a dataset with no records, or no licence, cannot be published;
-- placeholder identifiers, possible duplicates, coordinates and dates;
+- placeholder identifiers (where a private draft has some, **Remove them** deletes them in one step),
+  possible duplicates, coordinates and dates;
 - description and attribution;
-- the sensitivity declaration, two questions you answer: whether the dataset includes information about
-  Indigenous peoples, lands or places that their communities may wish to control, and whether it
-  includes locations that could cause harm if widely known (sacred or burial sites, vulnerable
-  heritage, private homes). A "yes" asks you to say briefly what is sensitive, so the editor can decide
-  whether to hold it back.
+- the sensitivity declaration;
+- whether link identifiers resolve (*not checked* yet).
 
-The editor does not see how many of your records you have linked.
+Your copy of the checks also counts the records with links and the Links made from your records. **The
+editor does not see these counts.**
 
-The review ends in one of three ways, each sent to you by email:
+### What the editor does
 
-- **Accepted**: you can publish the dataset whenever you are ready.
-- **Changes requested**: the email gives the editor's reasons. Make the changes, then submit the dataset
-  again.
-- **Declined**: the email gives the reason. The dataset stays yours, and private; you can upload a
-  revised version and submit it again.
+An editor opens the review queue, chooses **Start review** (so others know the dataset is being looked
+at), reads the automatic checks and your answers, looks at your records, and decides:
 
-```{note}
-The buttons for submitting, publishing and withdrawing a dataset, and the screen for answering the
-sensitivity questions, are **not yet built** on the dataset page. During beta, ask the WHG team to take
-your dataset through these steps.
-```
+- **Accept**, with an optional note: the panel then says *"Accepted. You can publish it whenever you are
+  ready."*
+- **Request changes**, with a note saying what needs changing. The panel shows *"The editor's note"* and
+  offers **Submit again for review** once you have made the changes.
+- **Decline**, with a reason. The panel says *"The editor has declined this dataset. It stays private."*
+  and shows the editor's reason.
+
+Each decision is also sent to you by email, with the editor's note.
 
 ## Publishing and withdrawing
 
-**Publishing** an accepted dataset makes it public. Then:
+**Publish** appears on the panel once the dataset is accepted. Its confirmation says: *"It becomes
+public: anyone can see and download it, its records are added to the search index, and the links you
+made from its records become public too."* Then:
 
 - its pending Links become public, as described above;
 - it is added to WHG's search index, usually within minutes. Until that is done the dataset page says
@@ -242,26 +274,29 @@ your dataset through these steps.
 - if it cannot be added automatically, the dataset page says *"This dataset could not be added to the
   search index automatically."*
 
-**Withdrawing** a published dataset makes it private again:
+**Withdraw** appears once the dataset is published, with an optional reason. Its confirmation says: *"It
+becomes private again: it is removed from the search index and its public page, and the links you made
+from its records stop being public."* Its Links go back to **pending** at once.
 
-- its Links go back to **pending** and disappear from public Record pages at once;
-- it is removed from the search index;
-- you can publish it again later without a new review.
+**A withdrawn dataset goes back through review before it can be published again.** The panel says *"To
+publish it again, submit it for review again"* and offers **Submit again for review**.
 
 A dataset with places in WHG's older shared v3 index cannot be withdrawn this way: WHG asks you to
 contact the editorial team.
 
+A dataset that becomes public by another route (for example the older v3 dataset settings) also has its
+pending Links made public, provided the record at the other end is public too.
+
 ## Your name on your Links
 
-Your Profile page has a checkbox, **Show my name on Links I make**. When it is ticked, anyone reading a
-record sees your name (and ORCiD iD) beside the Links you have made. When it is not ticked, people
-outside the beta see *"a WHG contributor"* instead.
+Your Profile page has a checkbox, **Show my name on Links I make**. Its help text says: when ticked,
+*"your name (and ORCiD iD) appears beside the Links you have made between records ... to everyone"*;
+when not ticked, *"only you and WHG beta testers see your name; everyone else sees 'a WHG contributor'
+instead"*.
 
-During beta:
-
-- other beta testers and WHG staff **always** see your name on your Links, whether or not you tick the
-  box. The box decides what everyone else will see once linking opens to all;
-- you see your own Links as *"Linked by you"*.
+In practice, during beta, the Links sections of Record pages are visible only to beta testers, so for
+now everyone who can see your Links sees your name, ticked or not. The box decides what everyone else
+will see once linking opens to all. You see your own Links as *"Linked by you"*.
 
 Whatever the setting, a Link that involves a private or embargoed record is never shown in public (see
 [Private until your dataset is published](#private-until-your-dataset-is-published)), and **Links made by
@@ -287,6 +322,9 @@ less than a Link made by a person.
   still show the v3 steps. The older v3 matching tools also still work during beta; see
   [Guides & Tutorials](../../guides.md).
 - **Suggestions are prepared once.** After the first run there is no button to prepare them again.
+- **A newly uploaded dataset does not enter the review process by itself.** Choose **Start the review
+  process** on its page while it is private.
+- **A declined dataset cannot yet be submitted again** from its page.
 - **Linking, the Concordance and Links made by people are open only to beta testers** until WHG v4 opens
   to everyone.
 
@@ -300,4 +338,6 @@ less than a Link made by a person.
 - a background worker reserved for preparing suggestions;
 - confirming many suggestions at once. This stays off until WHG has checked, against beta testers'
   decisions, how often **Likely the same place** is right;
-- the editors' review page, and the dataset-page buttons for submitting, publishing and withdrawing.
+- uploading a dataset straight into the review process (for now, **Start the review process** after
+  uploading);
+- a count, on WHG's dashboard, of the datasets waiting for review.
