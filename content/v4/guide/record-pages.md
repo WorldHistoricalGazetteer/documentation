@@ -50,7 +50,7 @@ this order:
 
 1. **Record**: what this one source says (its identifier, other names, types, dates, country codes,
    geometry, descriptions and depictions), then **Links, as contributed** and **Related places**.
-2. **About this group**: a short description of the record and its attested equivalents (see
+2. **About this group**: a short description of the record and its linked equivalents (see
    [About this group](#about-this-group)).
 3. **Concordance**: what has been stated about which other records describe the same place (see
    [The Concordance](#the-concordance)).
@@ -85,7 +85,7 @@ A's Concordance shows B but not C. Nobody said that A is the same as C, and WHG 
 
 It has three tiers, each a list on the page.
 
-1. **Outbound: this record's own attestations.** Links the record's source made: for example, "this
+1. **Outbound: Links made from this record.** Links the record's source made: for example, "this
    is the same as GeoNames 2988507". These are part of the record.
 2. **Inbound: other records that say they are this place.** Other contributors' statements that
    *their* record is the same as this one. Each is shown with who made it. They are about this
@@ -98,22 +98,26 @@ It has three tiers, each a list on the page.
 
 ### Link types
 
-Each link is shown with its type:
+Each link is shown with its answer:
 
-- **exactMatch** (and **sameAs**, which WHG treats as the same thing): the same place;
-- **closeMatch**: close enough to be treated as the same for most purposes;
-- other types, such as **related** or **seeAlso**, are listed but do not count as identity.
+- **Same place**: the two records describe the same place, or one close enough to be treated as the
+  same for most purposes;
+- **Same place, exactly**: interchangeable in every respect. WHG treats an older *sameAs* link as the
+  same thing;
+- **Not the same place**: the two records describe different places (listed separately; see below);
+- other relations, such as *related* or *seeAlso*, are listed but do not count as saying "same place".
 
-Only **exactMatch** and **closeMatch** links in tiers 1 and 2 are combined: they are the record's
-**attested equivalents**, the records drawn on the Concordance map. Tier 3 and the other link types
-are listed only.
+Only **Same place** and **Same place, exactly** links in tiers 1 and 2 are combined: they are the
+record's **linked equivalents**, the records drawn on the Concordance map. Tier 3 and the other
+relations are listed only. (Behind the scenes these answers are stored as *closeMatch* and *exactMatch*;
+the page's summary sentences still quote those two names.)
 
 ### Where each link came from
 
 Each link also says where it came from, for example:
 
 - **in the contributed data**: the link came with the source's own data;
-- **reviewed by the dataset owner**: the owner confirmed the match while reconciling their data;
+- **reviewed by the dataset owner**: the owner confirmed the match while checking matches for their data (in the older v3 tools);
 - **2024 migration; provenance unknown**: carried over when WHG moved to its current system, with no
   record of who made it or how. Most record-to-record links are of this kind.
 
@@ -131,8 +135,8 @@ Some uploads contain a link whose identifier is a placeholder rather than a real
 
 ### The Concordance map
 
-The map shows this record (in red) and its attested equivalents that have a location (in blue).
-The summary under it gives the counts, for example *4 attested equivalents (exactMatch or
+The map shows this record (in red) and its linked equivalents that have a location (in blue).
+The summary under it gives the counts, for example *4 linked equivalents (exactMatch or
 closeMatch, from this record or about it), 4 on the map, plus this record*. If the record itself
 has no location, the summary says so.
 
@@ -191,7 +195,7 @@ is sent outside WHG. Each person can make 200 new links a day.
 
 ## About this group
 
-The **About this group** section describes the record together with its attested equivalents (its
+The **About this group** section describes the record together with its linked equivalents (its
 exactMatch and closeMatch links in tiers 1 and 2; never tier 3), using only what the records
 themselves say. It is shown as a set of small cards, each about one thing:
 
@@ -203,12 +207,12 @@ themselves say. It is shown as a set of small cards, each about one thing:
 
 A card appears only when there is something to say. Nothing is inferred. *How this was written*,
 under the cards, lists the limits of the description. If some equivalents could not be looked up
-just then, or the record has more attestations than the page reads, the section says the group is
+just then, or the record has more Links than the page reads, the section says the group is
 incomplete or partial.
 
 ## Wikipedia links
 
-The **Elsewhere** card lists Wikipedia articles when one of the record's attested equivalents is a
+The **Elsewhere** card lists Wikipedia articles when one of the record's linked equivalents is a
 Wikidata record in WHG's index. The links are the Wikipedia articles (sitelinks) that WHG's copy of
 that Wikidata record holds. They show what Wikidata links to; they are not a claim that WHG makes
 about the place. WHG does not build links of its own from a Wikidata number, and does not look

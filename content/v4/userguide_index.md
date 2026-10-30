@@ -24,6 +24,7 @@ Suggesting Corrections <./guide/corrections.md>
 Sounds-alike Search <./guide/sounds-alike.md>
 Record Pages and the Concordance <./guide/record-pages.md>
 Loci: Citing a Group of Records <./guide/loci.md>
+Linking Your Records <./guide/linking-your-records.md>
 Glossary: Linking Records <./guide/glossary.md>
 Identifiers and Citation <./guide/identifiers.md>
 Data Formats In and Out <./guide/formats.md>
