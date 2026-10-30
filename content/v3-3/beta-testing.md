@@ -543,3 +543,22 @@ we will tell you when a fix is ready to retest. Your first PLATO tools report st
 Roles: beta testers try the workflow and report; the PLATO tools lead takes questions, blockers and fixes
 for PLATO tools; the WHG team handles WHG accounts, tokens, beta access and the lookup service. The start
 date for the sessions is to be agreed with the WHG team.
+
+### P. Linking your records
+
+*How it works, and what is not built yet: [Linking Your Records](../v4/guide/linking-your-records.md).*
+
+- [ ] Your dataset's page shows a **Links** card marked *beta*; **Link your records** opens the
+  suggestions page, and **Prepare suggestions** starts the search for suggestions.
+- [ ] While suggestions are being prepared the page says how many records are done, and you can start.
+- [ ] The tabs (**Likely the same place**, **Which one, if any?**, **Weak suggestions**, **Nothing
+  found**, **Later**, **Not yet checked**) each say what they mean, and the counts change as you decide.
+- [ ] **Same place** makes a Link; **Not the same place** passes a suggestion over; **None of these
+  fits** and **Not sure yet** move the record on; **Undo** takes your last decision back.
+- [ ] The keys listed under the page do what they say.
+- [ ] A search by hand finds a place the suggestions missed, and **Same place** links it.
+- [ ] While your dataset is private, your Links show *"Visible to you and the dataset owners until it is
+  published"* and do not appear in **Links made by people** on the other record's page.
+- [ ] On a public record, **Links made by people** shows each Link with who made it, when, and CC BY
+  4.0; **Dispute this Link** opens the Link sheet with the opposite answer chosen.
+- [ ] **Show my name on Links I make** on your Profile page saves, and the help text beside it is clear.
