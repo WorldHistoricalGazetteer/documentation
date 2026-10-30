@@ -41,10 +41,6 @@ and your dataset team.
 
 You want to come back to this record later. Nothing is recorded about the places themselves.
 
-## Don't match this record
-
-You have chosen to leave this record out of suggestions altogether.
-
 ## Not yet checked
 
 WHG has not yet been able to look for suggestions for this record.
@@ -55,9 +51,10 @@ A record WHG proposes as possibly the same place as one of yours. Suggestions ar
 they are:
 
 - **Likely the same place**: one clear suggestion.
-- **Which one?**: several plausible suggestions.
+- **Which one, if any?**: several plausible suggestions.
 - **Weak suggestions**: possible, but unconvincing.
 - **Nothing found**: no suggestions.
+- **Later**: records you set aside with *Not sure yet*.
 
 Choosing a suggestion makes a link. Passing it over makes nothing.
 
@@ -68,8 +65,8 @@ The automatic search that proposes suggestions. It never makes a link on your be
 ## Links (section of a Record page)
 
 The Record page section that lists what has been stated about which other records describe the same
-place (the Concordance, in the longer guide pages). It shows who made each link and when.
-See [Record Pages and the Concordance](./record-pages.md).
+place. It is currently headed **Concordance** and is being renamed **Links**. It shows who made each
+link and when. See [Record Pages and the Concordance](./record-pages.md).
 
 ## Record
 
@@ -80,14 +77,6 @@ may describe the same place.
 
 A page that groups records that may be one place, so that the group can be cited. A Locus is not a record,
 and it is not itself a statement that the records are the same place. See [Loci](./loci.md).
-
-## How sure
-
-An optional setting on a link: **certain**, **less certain** or **unsure**.
-
-## One decision
-
-When you confirm several suggestions together, they are saved as one decision, and can be undone together.
 
 ## Private until your dataset is published
 
