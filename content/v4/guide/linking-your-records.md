@@ -11,8 +11,8 @@ Part of the [Draft v4 User Guide](../userguide_index.md): under review during be
 % Confirmed by the lead session 2026-10-31: 228 carried-over Links (170 public, 58 pending, prod run);
 % polygon datasets are indexed (live on 1360/979); fuzzy search misses new places until an embedding
 % backfill (exact and prefix work); indexing timing (~30 s job, 60 s follow-up, 15-min sweep).
-% TODO(SG): "up to 10 working days" and "200 new Links in any 24 hours" are the code defaults
-%   (the review SLA and daily Link cap settings); the repo sets neither, prod env not checked.
+% Also confirmed 2026-10-31: "up to 10 working days" and "200 new Links in any 24 hours" are the code
+%   defaults; prod overrides neither (env vars unset, no settings value).
 
 ```{important}
 Linking is in **beta**. It is open to signed-in beta testers, and screens and wording may change. Words
