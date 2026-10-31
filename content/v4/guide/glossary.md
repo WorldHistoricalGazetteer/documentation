@@ -86,7 +86,13 @@ team and WHG staff. It becomes visible when the dataset is published.
 ## Review by the WHG team
 
 Every dataset is reviewed by the WHG team before publication during beta. The review is separate from
-linking: you can start linking your records as soon as your upload has been validated.
+linking. On a dataset in the review process you answer the two questions on Indigenous and sensitive data,
+then choose **Submit for review**. An editor opens the review queue and chooses **Start review**, then
+**Accept**, **Request changes** (with a note) or **Decline** (with a note). After changes are requested, or a
+decline, you can edit the dataset and use **Submit again for review**; a withdrawn dataset is also reviewed
+again before it can be published. A dataset that is already public must be made private before you can
+choose **Start the review process**. The steps, the labels and the emails are described in
+[Review before publication](./linking-your-records.md#review-before-publication).
 
 ## Older WHG words
 
