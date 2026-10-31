@@ -5,16 +5,14 @@ Part of the [Draft v4 User Guide](../userguide_index.md): under review during be
 ```
 
 % Rewritten 2026-10-30 against whg3 staging 3380f08f5 (place#334, #337, #338, #340, #341, #342, #343);
-% review and publication sections updated against whg3 staging 56c3d4c19 (= prod main 4078ffce0 for
-% these files): _lifecycle_panel.html, lifecycle_tags.py, review_queue.html, views_lifecycle.py.
+% review and publication sections updated against whg3 staging 4b58d1b0c (lifecycle panel, review
+% queue, sensitivity questions required, declined datasets resubmittable, index-failure wording).
 % On-screen labels quoted here were checked against the templates and scripts of those commits.
-% Items marked TODO(SG) are relayed or inferred, not read in the whg3 code: check before release.
-% TODO(SG): a declined dataset has no way back in the UI (submit is not allowed from 'declined', and the
-%   upload path does not enter the lifecycle), although the decline email says "upload a revised version".
-% TODO(SG): "datasets with polygons are added too" and "fuzzy search may not find new places yet" are
-%   relayed from the indexing work, not read in whg3 code.
-% TODO(SG): "228 carried over" is the 2026-10-30 prod run of migrate_reviewed_links (170 public, 58 pending).
-% TODO(SG): the failure line says "The WHG team has been told"; no notification was found in whg3 code.
+% Confirmed by the lead session 2026-10-31: 228 carried-over Links (170 public, 58 pending, prod run);
+% polygon datasets are indexed (live on 1360/979); fuzzy search misses new places until an embedding
+% backfill (exact and prefix work); indexing timing (~30 s job, 60 s follow-up, 15-min sweep).
+% TODO(SG): "up to 10 working days" and "200 new Links in any 24 hours" are the code defaults
+%   (the review SLA and daily Link cap settings); the repo sets neither, prod env not checked.
 
 ```{important}
 Linking is in **beta**. It is open to signed-in beta testers, and screens and wording may change. Words
@@ -229,7 +227,15 @@ While the dataset can be submitted, the panel shows:
   places that their communities may wish to control, and whether it includes locations that could cause
   harm if widely known (sacred or burial sites, vulnerable heritage, private homes). Answer each, then
   choose **Save answers**. A "yes" asks you to say briefly what is sensitive;
-- an optional **Note for the editor**, and **Submit for review**.
+- an optional **Note for the editor**, and **Submit for review** (or **Submit again for review** after
+  changes were requested, after the dataset was declined, or after it was withdrawn).
+
+**Both questions must be answered before you can submit.** Until they are, the submit button is greyed
+out and the panel says *"Answer the two questions on Indigenous and sensitive data before submitting this
+dataset for review. Use "Save answers" above first."* If you answered Yes to either question without
+saying what is sensitive, it says *"You answered Yes to a sensitivity question: say briefly what is
+sensitive before submitting this dataset for review."* Answers you saved earlier are kept, so you need not
+answer again when you submit the dataset a second time.
 
 You receive an email saying when to expect an answer; reviews usually take up to 10 working days, and the
 panel shows the expected date (*"The WHG team will usually reply by …"*). The dataset stays private
@@ -242,7 +248,8 @@ look, must be fixed, or not checked:
 - placeholder identifiers (where a private draft has some, **Remove them** deletes them in one step),
   possible duplicates, coordinates and dates;
 - description and attribution;
-- the sensitivity declaration;
+- the sensitivity declaration (until both questions are answered it says *"the dataset cannot be
+  submitted for review until they are"*);
 - whether link identifiers resolve (*not checked* yet).
 
 Your copy of the checks also counts the records with links and the Links made from your records. **The
@@ -257,8 +264,9 @@ at), reads the automatic checks and your answers, looks at your records, and dec
   ready."*
 - **Request changes**, with a note saying what needs changing. The panel shows *"The editor's note"* and
   offers **Submit again for review** once you have made the changes.
-- **Decline**, with a reason. The panel says *"The editor has declined this dataset. It stays private."*
-  and shows the editor's reason.
+- **Decline**, with a reason. The panel says *"The editor has declined this dataset. It stays private.
+  You can edit it and submit it for review again."*, shows the editor's reason, and offers **Submit
+  again for review**.
 
 Each decision is also sent to you by email, with the editor's note.
 
@@ -272,7 +280,8 @@ made from its records become public too."* Then:
 - it is added to WHG's search index, usually within minutes. Until that is done the dataset page says
   *"Waiting to be added to the search index"*. Datasets with polygons are added too;
 - if it cannot be added automatically, the dataset page says *"This dataset could not be added to the
-  search index automatically."*
+  search index automatically. Please contact the WHG team if it is still not searchable in a day or
+  so."*
 
 **Withdraw** appears once the dataset is published, with an optional reason. Its confirmation says: *"It
 becomes private again: it is removed from the search index and its public page, and the links you made
@@ -315,16 +324,17 @@ less than a Link made by a person.
 
 ## Known limits in beta
 
-- **Newly published places may not be found by fuzzy search yet.** A published dataset becomes
-  searchable soon after publication, but some parts of search are rebuilt less often, so a new place may
-  not turn up in every kind of search, or as a suggestion for someone else's records, straight away.
+- **Fuzzy search does not find newly published places yet.** Once a dataset is in the search index,
+  its places are found by exact-name searches and by searches on the start of a name. Fuzzy search,
+  which allows for spelling variation, finds them only after a further processing step has been run on
+  the index. Suggestions for other people's records use fuzzy search, so your newly published places are
+  not suggested to them until then.
 - **Some wording elsewhere is still WHG v3's.** The progress badges on the dataset page, for example,
   still show the v3 steps. The older v3 matching tools also still work during beta; see
   [Guides & Tutorials](../../guides.md).
 - **Suggestions are prepared once.** After the first run there is no button to prepare them again.
 - **A newly uploaded dataset does not enter the review process by itself.** Choose **Start the review
   process** on its page while it is private.
-- **A declined dataset cannot yet be submitted again** from its page.
 - **Linking, the Concordance and Links made by people are open only to beta testers** until WHG v4 opens
   to everyone.
 
