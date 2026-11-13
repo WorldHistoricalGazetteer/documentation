@@ -147,3 +147,28 @@ restart. The 20 GB and 28 GB values are `ES_SERVING_HEAP` and `ES_REBUILD_HEAP`.
 
 Throughput is now limited by Elasticsearch's CPU on the shared virtual machine. More capacity means more
 cores, a replica or a second machine: a cost decision for WHG, not something more tuning will supply.
+
+## Near-miss tuning and its evaluation set
+
+Misspelt names are found by the *near-miss* search, then scored. `evaluation/nearmiss/` in the indexing
+repository holds a frozen set of 1,497 mis-spelt place names with known answers (real GeoNames places,
+realistic errors, plus nonsense strings), a runner that sends them through the real reconcile pipeline,
+and stratified metrics with confidence intervals. It is a tuning aid, not the labelled genealogy set.
+Tune against the `dev` split, confirm once on `test`; its README has the protocol and the baseline.
+
+What it found, and what was changed on 13 November 2026:
+
+* A place found only by the near-miss search could score at most 0.75 times its resemblance, while the
+  best phonetic neighbour of any query scores about 1.0, so a junk neighbour beat a near-exact spelling.
+  `GATEWAY_LEXICAL_FUZZY_BOOST` is now 1.15 (scoring only; no cost). Unscoped hit@10 on `dev` rose from
+  0.661 to 0.746, OCR-style and keyboard-slip errors from about 0.25 to about 0.6, and correctly spelt
+  queries did not change.
+* A first-letter slip (*Seddam* for *Zeddam*) cannot be found while the first two letters must match.
+  `GATEWAY_NEAR_MISS_PREFIX_LENGTH` set to 1 raised unscoped hit@10 to 0.822 on `dev` and 0.811 on the
+  held-out `test` split (scoped 0.903, from 0.767). **It costs capacity: about 11% of throughput in the
+  benchmark** (19.3 against 21.6 to 22.0 queries per second at 16 clients), so the live setting is 2 in
+  `.env.local` until that trade-off is decided; 0 would add about 3 points more at roughly 38% more
+  latency and is not recommended.
+
+Both settings can be changed without a deploy: edit `.env.local` and restart the gateway.
+

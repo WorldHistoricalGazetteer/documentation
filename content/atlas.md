@@ -149,6 +149,13 @@ The search bar has an **Areas / Places** toggle.
 - **Places** searches place names. A menu beside the box sets the match: **Exactly**, **Starts with**,
   **Contains** (the default) or **Sounds like**. *Sounds like* finds spelling variants across scripts.
   With an area selected, a Places search is limited to that area.
+- **Wildcards** work in any Places search, whatever the menu says: type `*` for any run of letters or `?`
+  for exactly one (for example `par*`, `Newcas?le`, `Mount ver*`). Put a backslash before either to mean
+  the character itself. A pattern must start with at least three letters, so `*aris` and `pa*` are
+  refused with a message that says how to write them. Names are matched in every language and script,
+  and the places people most likely mean, those whose own name fits the pattern and that are larger,
+  come first. A very broad pattern such as `par*` matches far more names than a search can examine, so
+  add letters or choose an area to narrow it.
 - **Areas** looks up a region or country by name. Choosing a suggestion selects the area: it appears as a
   chip under the bar and is outlined on the map. Several areas can be selected together. You can also
   click a region on the map.
