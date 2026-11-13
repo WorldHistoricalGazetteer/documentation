@@ -1454,10 +1454,12 @@ translation for a caller that only has the service's string:
 
 **GEDCOM is the one convention taken from a specification.** A GEDCOM `PLAC` value is a
 comma-separated list of jurisdictions, smallest first unless the file header says otherwise with
-`PLAC.FORM`. TreeAlive ingests GEDCOM, so its profile follows the same rules. **Every other service
-profile is an assumption** about that service's export, and `GET /api/genealogy/services` says so
-(`"basis": "assumed"`). If you know a service's real convention, state it with `order`, `separator` and
-`form` rather than relying on the profile.
+`PLAC.FORM`. TreeAlive ingests GEDCOM, so its profile follows the same rules. The Ancestry and
+MyHeritage profiles are **observed**, not documented: they were checked against public sample exports
+from those services (no vendor documentation exists for this), and the response says
+`"basis": "observed"`. Every other profile is an **assumption** (`"basis": "assumed"`). If you know a
+service's real convention, state it with `order`, `separator` and `form` rather than relying on the
+profile.
 
 - **Order.** `small_to_large` (`Town, County, Country`) is the GEDCOM default. Some conventions run the
   other way (`Country, County, Town`). With `order: "auto"` (and for the `generic` profile) the order is
@@ -1465,6 +1467,11 @@ profile is an assumption** about that service's export, and `GET /api/genealogy/
   it assumed `small_to_large`.
 - **Blank slots.** GEDCOM marks a missing level with an empty slot (`Holy Land, , Ontario, Canada`).
   Blanks keep their position for `PLAC.FORM` but are not searched.
+  Real Ancestry exports contain them at the *start* too (`, , Texas, USA`).
+- **Street addresses.** Leading house numbers and street names are skipped, because the gazetteer holds
+  places, not addresses: `57, Caledon Road, East Ham, Essex, England` is searched as *East Ham* in
+  Essex, England, and a note in the response says so. Only leading parts are skipped, and only when a
+  place follows, so `St Louis`, `3 Rivers` and a lone `Park Lane` stay as places.
 - **`PLAC.FORM` shorter or longer than the string.** The ends are anchored (the first component takes
   the first level, the last takes the last) and the middle components take the levels nearest the broad
   end, so `Provo, Utah, USA` under `City, County, State, Country` reads *locality / state / country*,
