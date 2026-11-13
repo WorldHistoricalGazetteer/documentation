@@ -165,10 +165,11 @@ What it found, and what was changed on 13 November 2026:
   queries did not change.
 * A first-letter slip (*Seddam* for *Zeddam*) cannot be found while the first two letters must match.
   `GATEWAY_NEAR_MISS_PREFIX_LENGTH` set to 1 raised unscoped hit@10 to 0.822 on `dev` and 0.811 on the
-  held-out `test` split (scoped 0.903, from 0.767). **It costs capacity: about 11% of throughput in the
-  benchmark** (19.3 against 21.6 to 22.0 queries per second at 16 clients), so the live setting is 2 in
-  `.env.local` until that trade-off is decided; 0 would add about 3 points more at roughly 38% more
-  latency and is not recommended.
+  held-out `test` split (scoped 0.903, from 0.767). It costs capacity: about 13% of throughput in the
+  benchmark (20.1 against 23.2 queries per second at 16 clients, p95 1.1 s). That was accepted for the
+  accuracy gain and prefix 1 is live; setting `GATEWAY_NEAR_MISS_PREFIX_LENGTH=2` in `.env.local` gives
+  back most of the capacity (21.6 to 22.0 queries per second) for about 8 points of accuracy. A prefix of
+  0 would add about 3 points more at roughly 38% more latency and is not recommended.
 
 Both settings can be changed without a deploy: edit `.env.local` and restart the gateway.
 
