@@ -799,7 +799,7 @@ character, including a literal wildcard.
 | `partialName:Par` | **Type-ahead** prefix match. If given, `name` is ignored. |
 | `name:"par*,france"` | A name *within* a place: everything after the first comma is the jurisdiction hierarchy, **smallest first**. The country becomes a country filter and an administrative parent becomes a `contained_in` scope. A parent that cannot be resolved is reported in `warnings` and **not** applied. |
 | `+date:1800/1900` or `+date:1823` | Required year window: becomes `start` and `end`. `1800/` and `/1900` give an open end. An optional `date` (no `+`) only influences ranking in FamilySearch, and WHG does not rank by date, so it is **not applied** and a warning says so. |
-| `+typeId:186` | Required place type. Only FamilySearch type ids in WHG's crosswalk are understood (currently `186`, cities, becomes feature class `P`). Other numeric ids are reported and ignored. You can pass a WHG source type instead (`typeId:A.PCLI`) or an AAT id (`typeId:aat:300008347`). `typeGroupId` is not supported. |
+| `+typeId:186` | Required place type. Only FamilySearch type ids in WHG's crosswalk are understood (currently `186`, cities, becomes feature class `P`). Other numeric ids are reported and ignored. **Feature classes exist only on GeoNames records**, so this restricts the results to GeoNames places; other sources classify places in their own vocabularies. You can pass a WHG source type instead (`typeId:A.PCLI`) or an AAT id (`typeId:aat:300008347`). `typeGroupId` is not supported. |
 | `+parentId:un:fra~` | Required parent: becomes `contained_in`. **The value must be a WHG place id** (`gn:…`, `un:…`, with or without the `place:` prefix), not a FamilySearch id: the two systems do not share identifiers. Without `~` FamilySearch means *direct* parents only; WHG has no direct-parent relation and applies any containment, and says so in `warnings`. `-parentId` and an optional `parentId` are not applied. |
 | `latitude`, `longitude`, `distance` | Proximity search. All three are required together. `distance` is `45K` (km) or `10M` (miles); with no unit it is miles, as in FamilySearch. |
 | `placeHint` | Not supported: reported and ignored. |
@@ -1437,7 +1437,7 @@ translation for a caller that only has the service's string:
 | `size` | integer | Candidates per place (default 10, max 50). |
 | `country_hint` | string | ISO 3166-1 alpha-2 country to assume when the string has none. |
 | `start_year`, `end_year` | integer | Temporal filter, as for reconciliation. |
-| `relax` | boolean | Walk the relaxation ladder (default `true`). `false` stops at the most specific rung. |
+| `relax` | boolean | Walk the relaxation ladder (default `true`). `false` stops after the most specific rung. |
 | `parse_only` | boolean | Return the parse and the resolved context but do not search the locality. |
 | `namespaces` | array | Restrict to these source namespaces. |
 
@@ -1466,20 +1466,31 @@ profile is an assumption** about that service's export, and `GET /api/genealogy/
 
 ### The relaxation ladder
 
-Family-tree data is full of the user's own mistakes (`Brussels, Germany`). A **hard** country or county
-filter turns such a mistake into a wrong answer or none. So the locality is searched down a ladder,
-stopping at the first rung that gives an acceptable answer:
+Family-tree data is full of the user's own mistakes (`Brussels, Germany`; `Ballymena, County Antrim,
+Ireland`, when Antrim is in Northern Ireland). A **hard** country or county filter turns such a mistake
+into a wrong answer or none. So the locality is searched down a ladder:
 
 | Rung | Scope applied | Used when |
 |---|---|---|
-| `container` | the deepest resolved administrative area **and** the country | at least one administrative level resolved |
+| `container` | the deepest resolved administrative area, **alone** | at least one administrative level resolved |
 | `country` | the country only | a country was recognised or hinted |
 | `none` | no scope | always the last resort |
 
-A rung is **accepted** when it has a top candidate whose `confidence` is at least **30** (the same
-name-quality floor documented under [Interpreting `confidence`](#interpreting-confidence)), or when no
-confidence is reported. If no rung is accepted the most relaxed rung with any hits is returned with
-`status: "low_confidence"`.
+The container rung deliberately does **not** also apply the stated country: a container implies its own
+country, and the stated one may be the mistake, in which case the two would exclude everything.
+
+The ladder stops at the first rung whose top candidate is a **strong** name match, a `confidence` of at
+least **85** (an exact or head-word match). If no rung is strong, the **best-scoring** rung is returned
+(ties go to the more specific one), with `status: "low_confidence"` if even that is under **30**, the
+name-quality floor documented under [Interpreting `confidence`](#interpreting-confidence). So a loose
+look-alike inside the user's stated place never beats an exact match just outside it, and a weak match is
+flagged rather than promoted.
+
+How an administrative level is resolved: the component is looked up by name under the stated country
+and then anywhere (the country may be wrong), preferring a place that has a **polygon** (`areal: true`).
+A GeoNames administrative unit, which is only a point, is accepted as a fallback (`areal: false`); the
+gateway can still use it as a scope, and if it cannot, the rung returns nothing and the ladder moves on.
+`outside_stated_country: true` marks a container found only outside the country the user wrote.
 
 The response always says what happened. `scope.rung` is the rung that answered, `scope.relaxed` is
 `true` if it was not the most specific one available, and every candidate carries `country_matches`:
@@ -1513,12 +1524,13 @@ as a decision.
     },
     "context": {
       "country": {"code": "IE", "source": "alias"},                   // alias | index | hint | none
-      "containers": [{"place_id": "gn:2657254", "name": "Antrim", "component": "County Antrim"}],
+      "containers": [{"place_id": "osm:r1119534", "name": "County Antrim", "component": "County Antrim",
+                      "areal": true, "outside_stated_country": true}],   // Antrim is in GB, the user wrote Ireland
       "unresolved": []                   // levels that could not be resolved, never silently dropped
     },
     "scope": {
       "rung": "container", "relaxed": false,
-      "attempts": [{"rung": "container", "hits": 3, "top_confidence": 100.0, "accepted": true}],
+      "attempts": [{"rung": "container", "hits": 3, "top_confidence": 100.0, "accepted": true}],   // accepted = strong match
       "note": null
     },
     "candidates": [ /* the ordinary candidate objects, each with "country_matches": true|false|null */ ]
