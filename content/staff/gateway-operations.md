@@ -1,0 +1,127 @@
+# Gateway performance and operations
+
+How the gateway's request path behaves under load, what was changed to make it faster, how to see where
+a request's time goes, and which settings roll each change back. Written after the work of
+12–13 November 2026; for deploying and restarting see {doc}`./gateway-restart`.
+
+## The shape of a reconcile request
+
+One fuzzy `/api/reconcile` query runs **five Elasticsearch searches in three stages**:
+
+| Stage | Searches | Notes |
+|---|---|---|
+| Discovery | KNN (phonetic), near-miss lexical, exact lexical, run in parallel on `toponyms` | Dominates the request time |
+| Places | one fetch of the top candidate places | |
+| Enrichment | one fetch of those places' names | |
+
+The gateway and Elasticsearch run on **one 8-core virtual machine** and compete for the same cores.
+
+## What changed, and what it bought
+
+Measured on the live gateway from a New York server with closed-loop clients, **unique synthetic place
+names** (half country-scoped), zero errors in every run. These are **relative** improvements on one
+synthetic workload, single runs, not a capacity promise: other users and real data will differ.
+
+| Change | Sustained throughput (queries/s) |
+|---|---|
+| Start of the evening (two gateway workers, defaults) | about 3.4 |
+| Cap OpenMP/MKL threads at 1 | about 11 |
+| Enrich only the results that will be returned | about 13.8 |
+| Drop fuzzy expansion over the n-gram field in the near-miss search | about 22 |
+
+At 16 concurrent clients the 95th-percentile latency went from about 7.1 s to about 1.1 s.
+
+1. **Thread cap.** Each gateway worker's math libraries defaulted to one thread per core, so the two
+   workers and Elasticsearch fought over the cores and the workers burned CPU on contention (about
+   390% of a core against about 50% afterwards). `python -m gateway` now sets `OMP_NUM_THREADS` and
+   `MKL_NUM_THREADS` to 1 before anything loads them. It is deliberately **not** in the package
+   `__init__`: batch jobs such as the embedding backfill import `gateway.*` and want every core.
+2. **Trim before enrichment.** The names of up to 200 candidates were fetched although at most `size` are
+   returned. Only the survivors of the same ranking are fetched now. The output is identical, and tests
+   compare it against the untrimmed behaviour.
+3. **Near-miss clause.** The near-miss search ran fuzzy expansion over `name.prefix`, an edge-n-gram
+   field in which every prefix of every name is a term. That was the dominant cost of the search (median
+   75 ms of Elasticsearch time against 11 ms without it). Truncated forms such as `Broxbourn` still reach
+   `Broxbourne`, through an un-fuzzed match on that field. On 242 real toponyms corrupted with one or two
+   transcription errors, unscoped hit@10 and MRR were unchanged and country-scoped hit@10 moved from
+   0.572 to 0.568 (one query in 236).
+4. **Result cache.** See {ref}`gateway-ops-settings`. A hit costs microseconds. Its benefit depends
+   entirely on how often real data repeats, which is **not yet measured**.
+
+```{note}
+Tighter near-miss variants (fixed `AUTO:4,8` fuzziness, size 100, fewer expansions) saved a few more
+milliseconds and cost 0.4–1.3 points of recall, so they were not adopted.
+```
+
+(gateway-ops-settings)=
+## Settings
+
+Per-host settings go in `.env.local` in the gateway clone, which is **untracked** and read on every start
+(including a reboot). Never edit the tracked `.env`: a local edit there blocks the deploy's `git pull`.
+
+| Variable | Default | Effect |
+|---|---|---|
+| `GATEWAY_WORKERS` | `2` | Uvicorn worker processes. Raising it did not help once Elasticsearch became the ceiling. |
+| `OMP_NUM_THREADS`, `MKL_NUM_THREADS` | `1` (set by `python -m gateway`) | An explicit value in the environment wins. |
+| `GATEWAY_RESULT_CACHE_SIZE` | `2048` | Result-cache entries per worker. `0` disables the cache. |
+| `GATEWAY_RESULT_CACHE_TTL` | `120` | Seconds an entry lives. Lower it to shorten the staleness window. |
+| `GATEWAY_NEAR_MISS_FUZZY_NGRAM` | `0` | `1` restores the old near-miss clause (rollback). |
+| `GATEWAY_STAGE_TIMING_SAMPLE` | `0` (off) | Log one timing line for every Nth reconcile request. |
+| `GATEWAY_STAGE_TIMING_UNTIL` | unset | `YYYY-MM-DD` (UTC): sampling switches itself off at that date. An unparseable value means *off*. |
+
+**Cache behaviour to know about.** The key is the whole request. An identical repeat within the TTL is
+byte-identical to the first answer, so a dataset published and then reconciled against inside the window
+can see the earlier answer. A degraded answer (an enrichment failure, a name that could not be embedded,
+a scope that could not be applied) is **never stored**. Embedding and clustering-fuel requests bypass the
+cache. Each worker has its own cache.
+
+## Reading the stage timing
+
+With sampling on, each sampled request writes one line to `gateway.log`:
+
+```bash
+grep reconcile_timing /vast/ishi/elastic/logs/gateway.log | tail -5
+```
+
+Each line is JSON: `total_ms`; `stages_ms` (`prep`, `region`, `embed_build`, `es_discovery`,
+`discovery_score`, `es_places`, `containment`, `es_enrich`, `enrich_loop`, `format`, `hardlinks`);
+`es_took_ms` (Elasticsearch's own server-side time, including `discovery_knn`, `discovery_near` and
+`discovery_exact`); `n` (places found, survivors, names fetched, `cache_hit`); and the request's `mode`,
+`size`, `scoped`. The gap between a stage's wall time and its `es_took_ms` is gateway and network overhead.
+
+The log is rotated only when the gateway restarts, so keep the sample rate low on a long run: 1 in 50
+is about 7 MB a day. Sampling is **on at 1 in 50 until 27 November 2026** and then stops by itself.
+
+## Deploying from the Pitt clone
+
+The gateway clone on the Pitt host is checked out on a **feature branch**, not on `main`. `gateway-restart`
+pulls `origin/main` with `--ff-only`, which cannot fast-forward a branch that has diverged, so the pull
+warns and the gateway restarts on the code already there. To ship a change, merge `origin/main` into
+the clone's branch first (as the `gazetteer` user, which holds the pull key), then restart. The restart's
+"STALE CODE" banner compares `HEAD` with `origin/main`; after such a merge `HEAD` is a merge commit, so the
+banner fires although the running code contains `origin/main`.
+
+## What the host looks like (read-only survey, 13 November 2026)
+
+| | `toponyms` | `places` |
+|---|---|---|
+| Documents | 73.5 M | 366 M |
+| Size | 57.8 GB | 25.3 GB |
+| Primary shards, replicas | 4, none | 4, none |
+| Segments per shard | 17–21 | 19–25 |
+| Deleted documents | 4.7% | 9.4% |
+
+Each shard holds about 97–99% of its data in two large segments with 15 or more small ones beside them.
+The shards are about 14 GB and 6 GB, comfortably inside the usual 10–50 GB guidance, so they should
+**not** be split; if anything fewer, larger shards would lower the per-query KNN work.
+
+The node has 62 GB of RAM: a 28 GB heap (about 46% used), leaving about 34 GB of page cache against about
+91 GB of index data. Under load the host showed 15–18% I/O wait with only about 65% user CPU, so it is no
+longer purely CPU-bound. Cache-miss measurements, a smaller serving heap and preloading the KNN files are
+the next candidates; **none has been done**. Merging segments is risky on the live index: the large heap
+exists because HNSW merges have run out of memory before.
+
+## Capacity is a resourcing decision
+
+Throughput is now limited by Elasticsearch's CPU on the shared virtual machine. More capacity means more
+cores, a replica or a second machine: a cost decision for WHG, not something more tuning will supply.

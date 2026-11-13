@@ -25,6 +25,13 @@ unchanged on failure), but a restart meant to ship new code can then succeed whi
 code. The warning is easy to miss in tool output.
 ```
 
+```{warning}
+**The gateway clone is on a feature branch, so the pull cannot fast-forward.** `git pull --ff-only
+origin main` fails when the checked-out branch has diverged from `main`, and the restart then proceeds
+on the old code. Merge `origin/main` into the clone's branch first. The details, and why the "STALE CODE"
+banner then still appears, are in {doc}`./gateway-operations`.
+```
+
 ## Check what is actually running
 
 After every restart that was meant to ship code, compare the running commit with `origin/main`. Do not

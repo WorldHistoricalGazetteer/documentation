@@ -658,6 +658,22 @@ A few habits make a large difference to how much of a bulk run reconciles cleanl
 - **Deduplicate and cache locally.** Results are stable between runs; a cache keyed on the
   normalised name saves real volume across a large backlog.
 
+#### Repeated queries are cached
+
+The gateway keeps a short-lived cache of reconciliation answers, keyed on the **whole** query (every
+parameter, not only the name). An identical repeat inside **two minutes** is answered from the cache
+in microseconds and is byte-identical to the first answer. Two things follow:
+
+- **Staleness is bounded by two minutes.** A dataset published and then reconciled against within that
+  window can still see the earlier answer.
+- **Degraded answers are never cached.** If a name could not be embedded, a container failed to
+  resolve, or the enrichment step failed, the answer is returned but not stored, so a transient fault
+  cannot outlive itself.
+
+The cache is per server process, so a repeat is not guaranteed to hit it. Do not design around it:
+de-duplicate and cache on your own side, as [Getting better matches](#getting-better-matches)
+recommends.
+
 ### Query Parameters
 
 The following parameters can be included in each query object within a reconciliation request, or as query-string parameters for the suggest endpoint.
@@ -667,7 +683,7 @@ The following parameters can be included in each query object within a reconcili
 | Parameter | Type | Description |
 |---|---|---|
 | `query` | string | Free-text search string. Required **unless** a spatial filter (`contained_in`, `bounds`, or circular `lat`/`lng`/`radius`) or `dataset` is supplied — in which case it may be omitted for a spatial-only query. |
-| `mode` | string | Search mode: `exact`, `fuzzy` (default), `starts`, or `in`. Fuzzy mode can also be specified as `prefix_length\|fuzziness` (e.g. `2\|1`). |
+| `mode` | string | Search mode: `exact`, `fuzzy` (default), `starts`, `in`, or `familysearch` (the query is a [FamilySearch `q` string](#familysearch-mode); lexical only, never phonetic). Fuzzy mode can also be specified as `prefix_length\|fuzziness` (e.g. `2\|1`). |
 
 #### Facet Filtering
 
@@ -741,6 +757,83 @@ for instance) to be rejected at this step.
 | `unlocated` | boolean | Include results with no spatial metadata (default: true). |
 | `lang` | string | ISO 639-1 code (case-insensitive, e.g. `en`, `de`, `cy`) for the **language of the query name**. Phonetic and fuzzy matching condition the query's phonetic embedding on it, which can change which similar-sounding names rank highest. Anything that is not a two- or three-letter code is treated as unknown (`und`), never as an error, and omitting it is the same as `und`. A client-supplied query vector, where you send one, takes precedence for its own query. OpenRefine-style property: `whg:lang`. |
 | `limit` | integer | Maximum results per query (default: 100, max: 1000). This is the standard Reconciliation API v0.2 parameter name. `size` is accepted as an alias. |
+| `offset` | integer | Skip this many ranked results (default 0, max 2000): page through a long candidate list with `limit` + `offset`. The candidate pool is bounded, so very deep offsets run out. This is FamilySearch's `start`. |
+
+### FamilySearch Mode
+
+```{admonition} Beta: implemented, not yet exposed on whgazetteer.org
+`mode: "familysearch"` is implemented in the WHG gateway. The public reconciliation endpoint does not
+pass the mode through yet, so this page documents the contract rather than something you can call
+today. Request and response details may still change.
+```
+
+A client written for FamilySearch's [Read Places](https://developers.familysearch.org/main/reference/readplaces)
+API can send its query unchanged. Set `mode` to `familysearch` and put the FamilySearch `q` string in
+`query`:
+
+```json
+{"queries": {"q0": {"query": "name:\"par*,france\" +date:1800/1900", "mode": "familysearch", "limit": 10, "offset": 0}}}
+```
+
+The `q` string is translated into WHG's own parameters **before anything is searched**.
+
+```{important}
+**No phonetic search runs in this mode.** FamilySearch's matching is lexical, so the translation uses
+only lexical queries: an exact name, a prefix, a wildcard, or an edit-distance fuzzy match. A name
+that only *sounds* like an indexed one will not match here, unlike in `fuzzy` mode. Use `fuzzy` mode
+for spelling variants and cross-script matches.
+```
+
+#### Query syntax
+
+`q` is a space-separated list of `name:value` pairs. A value containing spaces or commas is quoted:
+`name:"New York, New York"`. An operator may precede the name: `+` requires the pair, `-` excludes.
+A trailing `~` makes `name` fuzzy, and makes `parentId` match any descendant. `\` escapes a
+character, including a literal wildcard.
+
+| FamilySearch pair | What it does here |
+|---|---|
+| `name:England` | **Exact**, case-insensitive match on a place name. This is the default, as in FamilySearch. |
+| `name:Baden~` | **Edit-distance fuzzy** match on the name, without phonetics. |
+| `name:par*` or `name:p?ris` | **Wildcard** match (`*` any run, `?` one character). A wildcard may not start the name, and may not be combined with `~`: either is rejected with a 422, as FamilySearch itself does. `\*` is a literal asterisk. |
+| `partialName:Par` | **Type-ahead** prefix match. If given, `name` is ignored. |
+| `name:"par*,france"` | A name *within* a place: everything after the first comma is the jurisdiction hierarchy, **smallest first**. The country becomes a country filter and an administrative parent becomes a `contained_in` scope. A parent that cannot be resolved is reported in `warnings` and **not** applied. |
+| `+date:1800/1900` or `+date:1823` | Required year window: becomes `start` and `end`. `1800/` and `/1900` give an open end. An optional `date` (no `+`) only influences ranking in FamilySearch, and WHG does not rank by date, so it is **not applied** and a warning says so. |
+| `+typeId:186` | Required place type. Only FamilySearch type ids in WHG's crosswalk are understood (currently `186`, cities, becomes feature class `P`). Other numeric ids are reported and ignored. You can pass a WHG source type instead (`typeId:A.PCLI`) or an AAT id (`typeId:aat:300008347`). `typeGroupId` is not supported. |
+| `+parentId:un:fra~` | Required parent: becomes `contained_in`. **The value must be a WHG place id** (`gn:…`, `un:…`, with or without the `place:` prefix), not a FamilySearch id: the two systems do not share identifiers. Without `~` FamilySearch means *direct* parents only; WHG has no direct-parent relation and applies any containment, and says so in `warnings`. `-parentId` and an optional `parentId` are not applied. |
+| `latitude`, `longitude`, `distance` | Proximity search. All three are required together. `distance` is `45K` (km) or `10M` (miles); with no unit it is miles, as in FamilySearch. |
+| `placeHint` | Not supported: reported and ignored. |
+
+`start` and `count` in FamilySearch are `offset` and `limit` here. Unknown keys are reported, never
+silently dropped.
+
+#### What comes back
+
+The ordinary [result format](#result-format), plus a `familysearch` object on the response (not on each
+candidate) that shows exactly what was done:
+
+```jsonrelaxed
+{
+  "familysearch": {
+    "q": "name:\"par*,france\" +date:1800/1900",
+    "phonetic": false,                       // always false in this mode
+    "mode_applied": "wildcard",              // exactci | lexfuzzy | wildcard | starts
+    "applied": {"query": "par*", "ccodes": ["FR"], "start_year": 1800, "end_year": 1900},
+    "resolved_parents": [{"component": "france", "kind": "country", "code": "FR", "source": "alias"}],
+    "warnings": [],                          // every parameter that could not be honoured, and why
+    "ignored": []
+  }
+}
+```
+
+Always read `warnings`. A FamilySearch client that sends a parameter WHG cannot honour gets a result
+set that is *wider* than it asked for, and `warnings` is the only place that says so.
+
+```{note}
+`confidence` is **omitted** in this mode: it measures how well a *phonetic or fuzzy* candidate's name
+matches, and an exact, wildcard or prefix match has no such measure. Results are not ranked by name
+quality either; they are the places that satisfy the query.
+```
 
 ### Source Namespaces
 
@@ -1293,6 +1386,158 @@ formats.
 Before writing a bulk client, read [Batching, Quotas and Retries](#batching-quotas-and-retries)
 above — it covers how many queries fit in one request, how the daily quota is counted, and how to
 handle errors without hammering the service.
+
+## Genealogy Place Strings API
+
+```{admonition} Beta: implemented, not yet exposed on whgazetteer.org
+`POST /api/genealogy/place` is implemented in the WHG gateway. Public access on whgazetteer.org
+(authentication and quota) is **not yet enabled**; this page documents the contract it will have.
+```
+
+Family-history services export a place as **one comma-delimited string** that carries its own
+administrative hierarchy: `Ballymena, County Antrim, Ireland`. The matching model cannot use that text.
+As [The Query Model](#the-query-model) explains, hierarchy has to arrive as **resolved identifiers**,
+and a bare name with no country or region cannot be placed by anyone. This endpoint does the
+translation for a caller that only has the service's string:
+
+1. **Parse** the string into ordered components (see [Parsing](#parsing)).
+2. **Recognise the country**, from a built-in alias table (`USA`, `Deutschland`, `Holland`, …) and
+   otherwise from the index.
+3. **Resolve each administrative level** from the broadest to the narrowest, each *inside* the
+   previous one.
+4. **Search the locality** down a [relaxation ladder](#the-relaxation-ladder) and report which rung
+   answered.
+
+### Endpoints
+
+| Endpoint | Method | Description |
+|---|---|---|
+| `/api/genealogy/place` | POST | Resolve one place string or a batch (at most 25) |
+| `/api/genealogy/services` | GET | The service profiles, and whether each is documented or assumed |
+
+### Request
+
+```json
+{
+  "service": "gedcom",
+  "places": ["Ballymena, County Antrim, Ireland", "Brussels, Germany", "Newport"],
+  "form": "City, County, Country",
+  "size": 5
+}
+```
+
+| Field | Type | Description |
+|---|---|---|
+| `service` | string | A profile from `GET /api/genealogy/services`: `gedcom`, `treealive`, `familysearch`, `ancestry`, `myheritage`, `findmypast`, `wikitree`, or `generic` (default; order is inferred). |
+| `place` / `places` | string / array | One string, or a batch of at most **25**. Each string costs several index lookups, so the batch is bounded. |
+| `form` | string | A GEDCOM header `PLAC.FORM`, e.g. `City, County, State, Country`. Declares each component's level. |
+| `order` | string | `small_to_large`, `large_to_small` or `auto`. Overrides the profile's order. |
+| `separator` | string | Overrides the separator (default `,`). |
+| `mode` | string | Name matching for the locality: `fuzzy` (default), `exact`, `starts`, `in`. `familysearch` is not accepted here. |
+| `size` | integer | Candidates per place (default 10, max 50). |
+| `country_hint` | string | ISO 3166-1 alpha-2 country to assume when the string has none. |
+| `start_year`, `end_year` | integer | Temporal filter, as for reconciliation. |
+| `relax` | boolean | Walk the relaxation ladder (default `true`). `false` stops at the most specific rung. |
+| `parse_only` | boolean | Return the parse and the resolved context but do not search the locality. |
+| `namespaces` | array | Restrict to these source namespaces. |
+
+### Parsing
+
+**GEDCOM is the one convention taken from a specification.** A GEDCOM `PLAC` value is a
+comma-separated list of jurisdictions, smallest first unless the file header says otherwise with
+`PLAC.FORM`. TreeAlive ingests GEDCOM, so its profile follows the same rules. **Every other service
+profile is an assumption** about that service's export, and `GET /api/genealogy/services` says so
+(`"basis": "assumed"`). If you know a service's real convention, state it with `order`, `separator` and
+`form` rather than relying on the profile.
+
+- **Order.** `small_to_large` (`Town, County, Country`) is the GEDCOM default. Some conventions run the
+  other way (`Country, County, Town`). With `order: "auto"` (and for the `generic` profile) the order is
+  inferred from where a recognised country sits; if there is no country at either end the response says
+  it assumed `small_to_large`.
+- **Blank slots.** GEDCOM marks a missing level with an empty slot (`Holy Land, , Ontario, Canada`).
+  Blanks keep their position for `PLAC.FORM` but are not searched.
+- **`PLAC.FORM` shorter or longer than the string.** The ends are anchored (the first component takes
+  the first level, the last takes the last) and the middle components take the levels nearest the broad
+  end, so `Provo, Utah, USA` under `City, County, State, Country` reads *locality / state / country*,
+  not *county*. A note in the response records that this was done.
+- **Cleaning.** Bracketed qualifiers (`(now Ballymena)`) are dropped, and administrative words are
+  stripped when resolving a level (`County Antrim`, `Antrim County` and `Co. Antrim` all look up
+  `Antrim`).
+
+### The relaxation ladder
+
+Family-tree data is full of the user's own mistakes (`Brussels, Germany`). A **hard** country or county
+filter turns such a mistake into a wrong answer or none. So the locality is searched down a ladder,
+stopping at the first rung that gives an acceptable answer:
+
+| Rung | Scope applied | Used when |
+|---|---|---|
+| `container` | the deepest resolved administrative area **and** the country | at least one administrative level resolved |
+| `country` | the country only | a country was recognised or hinted |
+| `none` | no scope | always the last resort |
+
+A rung is **accepted** when it has a top candidate whose `confidence` is at least **30** (the same
+name-quality floor documented under [Interpreting `confidence`](#interpreting-confidence)), or when no
+confidence is reported. If no rung is accepted the most relaxed rung with any hits is returned with
+`status: "low_confidence"`.
+
+The response always says what happened. `scope.rung` is the rung that answered, `scope.relaxed` is
+`true` if it was not the most specific one available, and every candidate carries `country_matches`:
+`false` means the answer is **not** in the country the user wrote, which is exactly the case where a
+person should look.
+
+```{note}
+**A bare name cannot be placed.** `Newport` alone matches many places and nothing in the string says
+which. The endpoint searches it unscoped, returns every plausible candidate, and says in `scope.note`
+that there was no context. That is the correct answer, not a failure: do not treat the top candidate
+as a decision.
+```
+
+### Response
+
+```jsonrelaxed
+{
+  "service": "gedcom",
+  "profile": {"separator": ",", "order": "small_to_large", "basis": "gedcom-spec"},
+  "results": [{
+    "input": "Ballymena, County Antrim, Ireland",
+    "status": "ok",                      // ok | low_confidence | no_match | parsed | empty | error
+    "parsed": {
+      "order_applied": "small_to_large", "order_source": "profile",   // profile | explicit | auto | form
+      "separator": ",", "form_used": null, "notes": [],
+      "components": [
+        {"raw": "Ballymena", "norm": "Ballymena", "level": null, "blank": false, "country": null},
+        {"raw": "County Antrim", "norm": "County Antrim", "level": null, "blank": false, "country": null},
+        {"raw": "Ireland", "norm": "Ireland", "level": "country", "blank": false, "country": "IE"}
+      ]                                  // narrowest first, whatever the input order
+    },
+    "context": {
+      "country": {"code": "IE", "source": "alias"},                   // alias | index | hint | none
+      "containers": [{"place_id": "gn:2657254", "name": "Antrim", "component": "County Antrim"}],
+      "unresolved": []                   // levels that could not be resolved, never silently dropped
+    },
+    "scope": {
+      "rung": "container", "relaxed": false,
+      "attempts": [{"rung": "container", "hits": 3, "top_confidence": 100.0, "accepted": true}],
+      "note": null
+    },
+    "candidates": [ /* the ordinary candidate objects, each with "country_matches": true|false|null */ ]
+  }]
+}
+```
+
+Errors are `422` with a message: an unknown `service` (the message lists the known ones), no `place`,
+more than 25 places, or `mode: "familysearch"`. One string failing inside a batch gives that string
+`status: "error"` and does not affect the others.
+
+### Good practice
+
+- **State what you know.** Pass `form` from the GEDCOM header and `order` when the service's order is
+  known. The profile is a default, not knowledge.
+- **Pass a `country_hint`** when your whole dataset is from one country and the strings omit it.
+- **Check `scope.relaxed` and `country_matches`** and route those rows to review.
+- **Cache locally** on the normalised string. Context resolutions are cached for an hour on the server,
+  but a repeated string is still cheaper not sent.
 
 ## Source Terms and Attribution
 
