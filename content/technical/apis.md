@@ -761,11 +761,15 @@ for instance) to be rejected at this step.
 
 ### FamilySearch Mode
 
-```{admonition} Beta: implemented, not yet exposed on whgazetteer.org
-`mode: "familysearch"` is implemented in the WHG gateway. The public reconciliation endpoint does not
-pass the mode through yet, so this page documents the contract rather than something you can call
-today. Request and response details may still change.
+```{admonition} Beta
+`mode: "familysearch"` is available on `POST /reconcile` with your API token. Request and response
+details may still change.
 ```
+
+Three things differ from the other modes on whgazetteer.org: only the gazetteer service is searched
+(never the older WHG index, which cannot read this syntax); `offset` is accepted **only** with this mode
+and is refused with an error otherwise, so a client can never mistake page 1 for page 2; and a client
+`embedding` is ignored, because the mode is never phonetic.
 
 A client written for FamilySearch's [Read Places](https://developers.familysearch.org/main/reference/readplaces)
 API can send its query unchanged. Set `mode` to `familysearch` and put the FamilySearch `q` string in
@@ -1389,10 +1393,15 @@ handle errors without hammering the service.
 
 ## Genealogy Place Strings API
 
-```{admonition} Beta: implemented, not yet exposed on whgazetteer.org
-`POST /api/genealogy/place` is implemented in the WHG gateway. Public access on whgazetteer.org
-(authentication and quota) is **not yet enabled**; this page documents the contract it will have.
+```{admonition} Beta
+`POST /genealogy/place` on whgazetteer.org requires your API token, as `/reconcile` does. Each place in
+a request counts as one query against the same per-minute budget (an over-limit request gets `429` with
+`Retry-After`), and the daily quota applies. Embargoed and withheld sources are removed from the
+candidates exactly as in `/reconcile`. Request and response details may still change.
 ```
+
+Paths below are those of the gateway; on whgazetteer.org drop the `/api` prefix
+(`https://whgazetteer.org/genealogy/place`).
 
 Family-history services export a place as **one comma-delimited string** that carries its own
 administrative hierarchy: `Ballymena, County Antrim, Ireland`. The matching model cannot use that text.
@@ -1538,8 +1547,10 @@ as a decision.
 }
 ```
 
-Errors are `422` with a message: an unknown `service` (the message lists the known ones), no `place`,
-more than 25 places, or `mode: "familysearch"`. One string failing inside a batch gives that string
+Errors carry a message: an unknown `service` (the message lists the known ones), no `place`, more than
+25 places, or `mode: "familysearch"` (`422` from the gateway; `400` for the same faults caught on
+whgazetteer.org, which also refuses any field not listed in the request table, so a misspelt
+`contry_hint` cannot silently search without a country). One string failing inside a batch gives that string
 `status: "error"` and does not affect the others.
 
 ### Good practice
