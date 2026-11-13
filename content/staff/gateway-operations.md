@@ -125,6 +125,24 @@ Afterwards swap use was under 1 GB, I/O wait about 13% and throughput at 16 clie
 index rebuild:** it was set that high because HNSW merges have run out of memory before, and merging
 segments on the live index remains risky. More RAM is not available.
 
+### Switching between the serving and rebuild heap
+
+The production node normally runs the **serving** heap (20 GB). Anything that rewrites the live index in
+bulk needs the **rebuild** heap (28 GB). Full index rebuilds use a separate staging Elasticsearch with
+its own heap and are unaffected; the in-place scripts below are what this applies to.
+
+1. `es -heap status` shows the running heap and the value in `.env.local`.
+2. `es -heap rebuild`, then `es es-restart` (a short search and reconcile outage, cold cache).
+3. Run the rewrite. `processing/recompute_h3_index.py apply`, `fix_point_derived_fields.py apply`,
+   `fix_dangling_has_geom.py apply`, `osm_way_area_geometry.py` (apply) and
+   `scripts/batch_apply_geom_patch.sh` all **refuse to start** below 26 GB
+   (`ES_REBUILD_HEAP_MIN_GB`; `ES_ALLOW_SMALL_HEAP=1` overrides, knowingly).
+4. `es -heap serving`, then `es es-restart` again. The preload setting on the toponyms index survives
+   restarts; check the benchmark afterwards.
+
+`es -heap` only edits `ES_HEAP_SIZE` in `.env.local` (a dated backup is kept); nothing changes until the
+restart. The 20 GB and 28 GB values are `ES_SERVING_HEAP` and `ES_REBUILD_HEAP`.
+
 ## Capacity is a resourcing decision
 
 Throughput is now limited by Elasticsearch's CPU on the shared virtual machine. More capacity means more
