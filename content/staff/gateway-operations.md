@@ -115,11 +115,15 @@ Each shard holds about 97–99% of its data in two large segments with 15 or mor
 The shards are about 14 GB and 6 GB, comfortably inside the usual 10–50 GB guidance, so they should
 **not** be split; if anything fewer, larger shards would lower the per-query KNN work.
 
-The node has 62 GB of RAM: a 28 GB heap (about 46% used), leaving about 34 GB of page cache against about
-91 GB of index data. Under load the host showed 15–18% I/O wait with only about 65% user CPU, so it is no
-longer purely CPU-bound. Cache-miss measurements, a smaller serving heap and preloading the KNN files are
-the next candidates; **none has been done**. Merging segments is risky on the live index: the large heap
-exists because HNSW merges have run out of memory before.
+The node has 62 GB of RAM and about 91 GB of index data on an NFS mount, so the page cache cannot hold
+everything. On 13 November 2026 the host showed 15–24% I/O wait under load with only about 62% user CPU,
+and its 8 GB of swap was full (7.6 GB of it Elasticsearch's own). The old-generation heap had never
+peaked above 10 GB, so the serving heap was cut from 28 GB to 20 GB (`ES_HEAP_SIZE` in `.env.local`) and
+`index.store.preload` was set to `["vec","vex"]` on the toponyms index, the only one with vectors.
+Afterwards swap use was under 1 GB, I/O wait about 13% and throughput at 16 clients rose from 20.4 to
+23.2 queries/s (single runs; the cache was still warming). **Raise the heap back to 28 GB before any
+index rebuild:** it was set that high because HNSW merges have run out of memory before, and merging
+segments on the live index remains risky. More RAM is not available.
 
 ## Capacity is a resourcing decision
 
