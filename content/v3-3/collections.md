@@ -23,8 +23,8 @@ places (*Map your Data*) is simply the first doc-type; the others let you build 
 - **Itinerary** — a journey through places in order, each stop with its own dates, with a
   route-line preview (see [Routes, Itineraries and Networks](../v4/guide/routes-and-networks.md)).
 - **Gazetteer Group** — an aggregation of published gazetteers, grouped for comparison or
-  analysis. *("Gazetteer" is the new name for what was called a "Dataset"; a "Gazetteer Group"
-  was a "Dataset Collection" — see [A note on names](#a-note-on-names).)*
+  analysis. *(A dataset becomes a "gazetteer" once published; a "Gazetteer Group" was a "Dataset
+  Collection" — see [A note on names](#a-note-on-names).)*
 
 Two further doc-types — **Routes** and **Networks** — are signposted in the tool as *"Coming
 with v4"*. They are first-class historical entities in their own right (a route or a network is
@@ -228,16 +228,19 @@ learn.
 
 ## A note on names
 
-WHG is standardising its vocabulary:
+WHG uses these words:
 
-| You may have seen | It is now called |
+| Word | Meaning |
 |---|---|
-| Dataset | **Gazetteer** |
-| Dataset Collection | **Gazetteer Group** |
-| Place Collection | **Place Collection** *(unchanged)* |
+| **Dataset** | What a contributor brings: the places they upload, up to and including review. |
+| **Gazetteer** | A dataset once it has been reconciled and published. |
+| **Gazetteer Group** | A group of published gazetteers (it was called a "Dataset Collection"). |
+| **Place Collection** | A curated set of places *(unchanged)*. |
+| **Source gazetteer** | One of the collections WHG matches against, such as GeoNames or Wikidata. |
 
-For now this is a **display change only** — the underlying URLs, downloads, and API are unchanged,
-so nothing you have linked to or built against breaks. "Place Collection" keeps its name.
+The URLs, downloads and API keep the name "dataset", so nothing you have linked to or built against
+breaks. An earlier version of this note said that "Dataset" was now simply called "Gazetteer"; that
+is no longer the rule.
 
 ## How this relates to the older builders
 

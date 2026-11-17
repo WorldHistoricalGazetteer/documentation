@@ -94,6 +94,14 @@ again before it can be published. A dataset that is already public must be made 
 choose **Start the review process**. The steps, the labels and the emails are described in
 [Review before publication](./linking-your-records.md#review-before-publication).
 
+## Dataset and gazetteer
+
+A **dataset** is what you bring to WHG: the places you upload, and the same set while it is being
+checked, matched and reviewed. Once it has been reconciled and published it is a **gazetteer**. A
+**Gazetteer Group** is a group of published gazetteers. The **source gazetteers** are the other
+collections WHG looks places up in, such as GeoNames and Wikidata. "Dataset" and "gazetteer" are
+therefore stages of one thing, and "source gazetteer" is something else.
+
 ## Older WHG words
 
 **Reconciliation** is the older WHG term for what v4 calls linking your records. The earlier
