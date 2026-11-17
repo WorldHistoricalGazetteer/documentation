@@ -749,6 +749,23 @@ for instance) to be rejected at this step.
 
 **Filtering by place ID (`contained_in`)** is the most convenient way to scope results to a region you can already name — a country (`un:ita`), an administrative area (`osm:r365331`), or any other place with a polygon. For example, `{"contained_in": ["un:ita"], "containment": "exact", "relation": "within"}` (no `query`) returns the places whose geometry lies entirely within Italy. With `relation: "intersects"` (the default) a feature need only overlap the region, so large/historical polygons that straddle the border are included.
 
+```{note}
+**Nearby and bounding-box searches over the gazetteer are spatial-only queries to this service**:
+send `lat`/`lng`/`radius` or `bounds` with no `query` (an API token is required, as for any `POST
+/reconcile`).
+
+The older `GET /api/spatial/` (`type=nearby` with `lon`/`lat`/`km`, or `type=bbox` with `sw`/`ne`) is
+a legacy endpoint. It searches only the places held in WHG's own database, i.e. contributed datasets,
+not the gazetteer index this service searches. Since the November 2026 update it returns, by default,
+one representative point (a point lying on the place's geometry) and a GeoJSON `bbox` per place;
+`geometry=full` returns every stored geometry as before, at most 20 places per page, and
+`geometry=none` returns none. Also by default (`match=within`), a place matches only if all of its
+geometry lies inside the circle or box, so a large polygon that merely contains the centre is no
+longer returned. `match=intersects` restores the earlier `nearby` behaviour. Its limits: `km` at most
+500, a box at most 30 degrees each way, `pagesize` at most 200. Its parameters are listed in the
+in-app Swagger UI.
+```
+
 #### Other
 
 | Parameter | Type | Description |
@@ -1586,7 +1603,7 @@ root**.
 | Endpoint | Attribution |
 |---|---|
 | `/reconcile` | `attribution` at the response root; every candidate also carries a `namespace` |
-| `/api/index/`, `/api/db/`, `/api/spatial/` | `attribution` at the response root |
+| `/api/index/`, `/api/db/`, `/api/spatial/` (legacy; WHG's own database only, see the [note under Spatial Filtering](#spatial-filtering)) | `attribution` at the response root |
 | `/api/place/…` (single record) | an `attribution` object on the record itself |
 | `/entity/{type}:{id}/api` | an `attribution` object in the LPF body (**new, 2026-09-21** — this representation previously carried none) |
 | `/api/attribution/` | standalone resolver — query terms for arbitrary namespaces or ids |
