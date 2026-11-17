@@ -112,6 +112,10 @@ earlier state can be reproduced and cited. See
 
 ## Gazetteers, collections, groups and periods
 
+```{note}
+**Words on screen and words in the model.** In the model, **Gazetteer** is the name of the workspace from the moment it is created, whether its status is `draft` or `published`. On WHG's pages a contributor's upload is called a **dataset** while it is being checked, matched and reviewed, and a **gazetteer** once it is published; the collections WHG matches against are **source gazetteers**. See the [glossary](../guide/glossary.md#dataset-and-gazetteer).
+```
+
 - A **Gazetteer** (`plato:Gazetteer`, a `dcat:Dataset`) is a versioned workspace, owned by a
   contributor or team, with a title, creators, a licence, a version and a status (`draft` or
   `published`). It **defines** its own SpatialEntities, and may also hold attestations **about other

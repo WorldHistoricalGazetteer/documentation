@@ -42,6 +42,10 @@ accept RDF (Turtle, say) for upload directly: convert it to PLATO JSON with the
 
 ### A Gazetteer
 
+```{note}
+**Words on screen and words in the model.** In the model, **Gazetteer** is the name of the workspace from the moment it is created, whether its status is `draft` or `published`. On WHG's pages a contributor's upload is called a **dataset** while it is being checked, matched and reviewed, and a **gazetteer** once it is published; the collections WHG matches against are **source gazetteers**. See the [glossary](../guide/glossary.md#dataset-and-gazetteer).
+```
+
 Every contribution becomes a **Gazetteer** (`plato:Gazetteer`, a `dcat:Dataset`). In WHG v4 this
 one concept replaces v3's datasets and place collections; v3's dataset collections become
 [gazetteer groups](#gazetteer-groups). The Gazetteer is titled, licensed and described in the vocabularies that data catalogues already read: its title, its
