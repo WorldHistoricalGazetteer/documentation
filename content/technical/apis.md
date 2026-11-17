@@ -1644,7 +1644,8 @@ root**.
 | Endpoint | Attribution |
 |---|---|
 | `/reconcile` | `attribution` at the response root; every candidate also carries a `namespace` |
-| `/api/index/`, `/api/db/`, `/api/spatial/` (**deprecated**; WHG's own database only, see [the legacy spatial endpoint is deprecated](#the-legacy-spatial-endpoint-is-deprecated)) | `attribution` at the response root |
+| `/api/index/`, `/api/db/` | `attribution` at the response root |
+| `/api/spatial/` (**deprecated**; WHG's own database only, see [the legacy spatial endpoint is deprecated](#the-legacy-spatial-endpoint-is-deprecated)) | `attribution` at the response root, after the `deprecation` notice |
 | `/api/place/…` (single record) | an `attribution` object on the record itself |
 | `/entity/{type}:{id}/api` | an `attribution` object in the LPF body (**new, 2026-09-21** — this representation previously carried none) |
 | `/api/attribution/` | standalone resolver — query terms for arbitrary namespaces or ids |
