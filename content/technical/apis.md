@@ -1959,9 +1959,15 @@ treated as `deprecated`, logged as an error, and fails the `api.E101` to `api.E1
    that any WHG page still calling a legacy endpoint keeps working in `compat` and `gone`. As the first
    step at the switch, check that the log shows no `origin=in-app` calls over a few days, then set it
    to `False`.
-4. **Retirement.** Set `LEGACY_API_MODE=gone` the same way, or retire one endpoint at a time with
+4. **Identifier URLs in legacy responses.** The legacy API responses emit `https://whgazetteer.org/api/place/<id>`
+   as `uri` / `geometry_url` (`api/serializers.py`), and WHG-hosted datasets store the default `uri_base`
+   `https://whgazetteer.org/api/db/?id=` as a marker (`datasets/views.py`). Neither is called by WHG's own
+   pages and neither is changed by the switch. Before `gone`, check whether any consumer treats those `uri`
+   values as stable identifiers (the access log for `/api/place/` shows who still resolves them); if so,
+   keep a redirect for them.
+5. **Retirement.** Set `LEGACY_API_MODE=gone` the same way, or retire one endpoint at a time with
    `LEGACY_API_MODE_OVERRIDES`.
-5. **Rollback** at any stage: set `LEGACY_API_MODE=deprecated` (or remove it) and recreate the
+6. **Rollback** at any stage: set `LEGACY_API_MODE=deprecated` (or remove it) and recreate the
    container the same way.
 
 ## API Tokens
