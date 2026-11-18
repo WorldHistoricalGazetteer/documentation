@@ -1958,8 +1958,7 @@ treated as `deprecated`, logged as an error, and fails the `api.E101` to `api.E1
    `/task_progress/`). `LEGACY_API_INAPP_PASSTHROUGH` is deliberately **left on** until the cutover, so
    that any WHG page still calling a legacy endpoint keeps working in `compat` and `gone`. As the first
    step at the switch, check that the log shows no `origin=in-app` calls over a few days, then set it
-   to `False`. Also update `server-admin/smoke_test.sh`, which checks `/api/place/88106/` and will fail
-   once that endpoint is `gone`.
+   to `False`.
 4. **Retirement.** Set `LEGACY_API_MODE=gone` the same way, or retire one endpoint at a time with
    `LEGACY_API_MODE_OVERRIDES`.
 5. **Rollback** at any stage: set `LEGACY_API_MODE=deprecated` (or remove it) and recreate the
