@@ -1865,6 +1865,12 @@ geometry lies inside the circle or box, so a large polygon that merely contains 
 returned. `match=intersects` restores the earlier `nearby` behaviour. The limits are: `km` at most
 500, a box at most 30 degrees each way, and `pagesize` at most 200.
 
+**`count` on `/api/db/`.** Since 2026-11-18, `/api/db/` counts matches only up to 1,000. Below that
+number, `count` is exact and the new `count_capped` field is `false`. When there are more than 1,000,
+`count` is `1000` and `count_capped` is `true`: read it as "at least 1,000". All other fields are
+unchanged. The endpoint has no offset, so `count` has never been usable for paging. Before this change,
+an exact count of a common name such as `?name=York` took more than a second on every request.
+
 ### At the v4 switch
 
 One server setting, `LEGACY_API_MODE`, decides what the legacy endpoints do. It has three values, and
