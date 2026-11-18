@@ -1,7 +1,8 @@
 # MCP Server (Model Context Protocol)
 
 ```{note}
-Last verified 2026-11-18 against server version 0.2.3.
+Last verified 2026-11-18 against server version 0.2.3. The `places_near` section describes version
+0.2.5, which sends WHG a circle query instead of a bounding box.
 ```
 
 WHG runs a small, read-only [Model Context Protocol](https://modelcontextprotocol.io/) (MCP) server.
@@ -89,8 +90,9 @@ curl -s https://mcp.whgazetteer.org/ \
   -d '{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"status","arguments":{}}}'
 ```
 
-The `serverInfo.version` in the `initialize` answer is the version of the MCP software library the
-server is built on, not the server's own version. Use the `status` tool for that.
+Up to version 0.2.3, the `serverInfo.version` in the `initialize` answer was the version of the MCP
+software library the server is built on. Since 0.2.4 it is the server's own version, as the `status`
+tool also reports.
 
 ## Tools
 
@@ -193,21 +195,27 @@ Places whose representative point lies within a radius of a point, nearest first
 | `km` | number, greater than 0, at most 100 | 25 | Radius in kilometres. |
 | `limit` | integer | 20 | 1–50. |
 
-How it works:
+How it works (version 0.2.5 and later):
 
-1. The server asks WHG for places inside the bounding box that encloses the circle. WHG returns **at
-   most 50 candidates** for that box.
-2. It computes the great-circle distance from the centre to each candidate's representative point
-   (`repr_point`), keeps those within `km`, and sorts them nearest first. Candidates without a
+1. The server sends WHG a [circle-only query](apis.md#circle-only-queries): the centre, the radius,
+   `relation: within` (the place must lie inside the circle) and a request for as many places as WHG
+   will give. WHG returns **at most 500 places, in no particular order**. It matches the circle as a
+   disc of H3 cells that can reach up to about 1.3 times the radius, so some of them lie just outside it.
+2. The server computes the great-circle distance from the centre to each place's representative
+   point (`repr_point`), keeps those within `km`, and sorts them nearest first. Places without a
    representative point are dropped.
 3. It returns the first `limit` of them, each with an added `distance_km` (rounded to the metre).
 
-Because the box holds at most 50 candidates, **in a dense area most places within the radius may not
-be among them**. When WHG returns the full 50, the answer carries a `note` saying so; use a smaller
-`km` to see more of what is close by. In a test on 2026-11-18, a 3 km radius in central Lund already
-reached the cap.
+Because WHG's 500 are not chosen by distance, **when WHG returns all 500, the places nearest the
+centre may not be among them**. The answer then carries `"may_be_incomplete": true` and a `note`
+saying so, with a suggested smaller `km`; a smaller radius finds the nearest places. Below 500 the
+answer holds every place WHG found in the circle.
 
-Example, `{"lon": 13.19, "lat": 55.70, "km": 3, "limit": 3}`, shortened:
+Up to version 0.2.4 the server asked for the bounding box around the circle instead, and WHG returned
+at most 50 places for it, because WHG's circle-only query returned nothing until a fix of 2026-11-18.
+
+Example, `{"lon": 13.19, "lat": 55.70, "km": 3, "limit": 3}`, shortened. The answer has this shape; the
+places listed were returned by version 0.2.3 and may differ now:
 
 ```jsonrelaxed
 {
@@ -218,9 +226,8 @@ Example, `{"lon": 13.19, "lat": 55.70, "km": 3, "limit": 3}`, shortened:
     {"id": "place:gn:6515785", "name": "Grand Hotel - Lund", "distance_km": 0.43, … }
   ],
   "namespaces_searched": ["gn", "osm", "whg"],
-  "scope": {"requested": true, "applied": true, "mode": "geojson", … },
-  "attribution": { … },
-  "note": "WHG returned its maximum of 50 candidates for the box around this circle, so there may be more places within the radius: narrow `km` to see them."
+  "attribution": { … }
+  // plus "may_be_incomplete": true and a "note" when WHG returned its maximum of 500
 }
 ```
 
@@ -287,7 +294,7 @@ changes it. Search results show this in advance: the source's entry in the `attr
 | Limit | Value |
 |---|---|
 | Results per search (`search_places`, `places_near`, `places_in_bbox`) | 1–50, default 20 |
-| Candidates `places_near` considers per call | 50 |
+| Places `places_near` considers per call | 500 (WHG's maximum for one query) |
 | Ids per `get_place` call | 10 |
 | Ids per `get_attribution` call | 50 |
 | Bounding box | at most 10 × 10 degrees |
@@ -319,6 +326,7 @@ limiting and host checks happen before the server, as HTTP status codes.
 | *"Not found."* | No such place id. | Check the id. |
 | *"Not a WHG place id: …"* | The id has the wrong form. | Use a number or an id as search results give it. |
 | *"Bounding box too large: …"*, *"east/north must not be less than west/south."* | `places_in_bbox` input outside the limits. | Use a smaller box. |
+| *"WHG refused the query: …"* | WHG answered that one query with an error instead of results, for example a radius over WHG's own 500 km limit. Not the same as "nothing found". | Change the query as the message says. |
 | *"Give at least `name` or `name_contains`."* | `search_places` was called without a name. | Add one. |
 | *"WHG's answer is too large; …"* | WHG's answer exceeded 1.5 MB. | Ask for fewer results or fewer places. |
 | *"WHG did not answer in time; …"*, *"Could not reach WHG."* | WHG was slow or unreachable. | Retry later. |
