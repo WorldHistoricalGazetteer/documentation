@@ -16,6 +16,9 @@ Suggested credit: *World Historical Gazetteer documentation, https://docs.whgaze
   curation and aggregation work (linkage, reconciliation and editorial work on top of those sources) is also CC BY 4.0,
   asserted alongside each source's terms and never instead of them. See
   [every licence WHG recognises](https://whgazetteer.org/licenses/).
+  A location that a dataset's owner adopts from a matched place in a source gazetteer keeps that
+  gazetteer's terms and is labelled with them; a location the owner places on the map is their own data.
+  See [Locations for records that have none](./v4/guide/linking-your-records.md#licensing) (beta).
 - **Software.** WHG's source code is released under the
   [BSD 3-Clause Licence](https://github.com/WorldHistoricalGazetteer/whg3/blob/main/LICENSE). Third-party packages keep
   their own licences; they are [listed here](https://whgazetteer.org/licenses/software/).
