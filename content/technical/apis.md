@@ -1852,7 +1852,7 @@ contributed datasets. It does not search the gazetteer index this service search
 | `type=bbox&sw=W,S&ne=E,N` | `"bounds": {"type": "Polygon", "coordinates": [[[W,S],[E,S],[E,N],[W,N],[W,S]]]}` | Add `"containment": "exact"` for a precise box. |
 | `match=within` / `intersects` | `"relation": "within"` / `"intersects"` | The default differs: `within` on `/api/spatial/`, `intersects` on `/reconcile`. |
 | `fc=P,A` | `"fclasses": ["P","A"]` | |
-| `dataset=<id>` | `"dataset": <id>` | |
+| `dataset=<id>` | `"dataset": <id>`, `"namespaces": ["whg"]` | `/reconcile` accepts `dataset` but does not currently filter by it. `"namespaces": ["whg"]` keeps the candidates to WHG's own places; keep those whose `id` starts `place:whg:<id>:`. |
 | `pagesize=<n>` | `"limit": <n>` | `/reconcile` allows up to 1000 and pages with `offset`. |
 | `geometry=point` | each candidate's `repr_point` | There is no `bbox`. |
 | `geometry=full` | none | Fetch the geometry per place from `/entity/place:<id>/api` or the gateway's `GET /api/geometry/<place_id>` (see *Exact geometry* above). |
@@ -1871,6 +1871,103 @@ page, and `geometry=none` returns none. By default (`match=within`) a place matc
 geometry lies inside the circle or box, so a large polygon that merely contains the centre is no longer
 returned. `match=intersects` restores the earlier `nearby` behaviour. The limits are: `km` at most
 500, a box at most 30 degrees each way, and `pagesize` at most 200.
+
+### At the v4 switch
+
+One server setting, `LEGACY_API_MODE`, decides what the legacy endpoints do. It has three values, and
+it can be set for one endpoint at a time.
+
+| `LEGACY_API_MODE` | What a caller of an old URL gets |
+|---|---|
+| `deprecated` (until the switch) | The legacy endpoint, as described above, with the deprecation headers and notice. |
+| `compat` | The **successor API** answers the old URL, through a translation of the old parameters. An API token is required: add `?token=<your token>` to the same old URL, or send `Authorization: Bearer <token>`. |
+| `gone` | **HTTP 410 Gone**, with a JSON body naming the replacement and, where the old request translates, the exact request to send instead. |
+
+**In `compat` mode.** The old URL, the old parameters and, for searches, the old envelope (a GeoJSON
+`FeatureCollection`) keep working, but the data comes from the successor. It is not the legacy
+endpoint's data, and parts of it differ:
+
+| Old request | Served by | What comes back |
+|---|---|---|
+| `/api/spatial/?type=…` | `POST /reconcile` spatial-only query, as mapped [above](#mapping-legacy-spatial-queries) | A `FeatureCollection`. Each candidate becomes a Feature with a `Point` geometry at its `repr_point` and `title`, `place_id`, `namespace`, `ccodes`, `score`, `match` (and `confidence` when measured) in `properties`. `count` is `null`. |
+| `/api/db/?name=…`, `?name_contains=…` | `POST /reconcile` name query: `fc` → `fclasses`, `ccode` → `countries`, `year` → `start` and `end`, `pagesize` → `limit` | As above. `name_contains` was a substring match on the title and is now a name match. `context` is dropped. |
+| `/api/index/?name=…` | `POST /reconcile` name query: `fclass` → `fclasses`, `ccode` → `countries`, `year` → `start` and `end`, `pagesize` → `limit` (at most 1000) | As above. `area` is dropped. |
+| `/api/db/?id=…`, `/api/index/?pid=…`, `/api/place/<id>-<id>-…/` | Entity API place record | A `FeatureCollection` of Linked Places Features, as `GET /entity/place:<id>/api` returns them. |
+| `/api/place/<id>/` | Entity API place record | One Linked Places Feature: the Entity API shape, not the old place serialization. |
+| `/api/place/<dataset label>/<src_id>/` | The place is looked up by its label and `src_id`, then served as `/api/place/<id>/` | One Feature, or a `FeatureCollection` when the `src_id` names several places in that dataset. |
+| `/api/geojson/?id=<dataset id>` | `307` redirect to `/entity/dataset:<id>/api` (your `token` is carried over) | The whole dataset as one Linked Places file, not a paginated list of geometries. |
+| `/api/index/?whgid=…`, `/api/geojson/?coll=…` | Nothing: these have no successor | `410`, as in `gone` mode. |
+
+A `dataset` filter (`/api/spatial/`, `/api/db/`, `/api/index/`) is applied to the successor's
+candidates as described in the table above. Every `compat` response keeps the `Deprecation` and `Link`
+headers and the `deprecation` member, and adds a `compat` member: `successor_request` (the request you
+would send instead), `dropped` (old parameters with no equivalent, and why), `notes`, and for searches
+`no_equivalent`. Without a token the answer is `401`, with that same `successor_request`. A search counts
+as one query against the [query rate limit](#batching-quotas-and-retries), and every request counts
+against the daily allowance of the token's account.
+
+**In `gone` mode**, or for a request that has no successor:
+
+```json
+{
+  "error": "gone",
+  "retired": true,
+  "endpoint": "/api/spatial/",
+  "message": "This endpoint was retired when WHG moved to v4. Switch to the Reconciliation API (POST /reconcile) spatial filters (lat/lng/radius or bounds), which require an API token: generate one on your profile page (https://whgazetteer.org/profile/); see https://docs.whgazetteer.org/content/technical/apis.html#api-tokens.",
+  "replacement": "POST https://whgazetteer.org/reconcile (spatial-only query: lat/lng/radius or bounds)",
+  "docs": "https://docs.whgazetteer.org/content/technical/apis.html#mapping-legacy-spatial-queries",
+  "token_docs": "https://docs.whgazetteer.org/content/technical/apis.html#api-tokens",
+  "token_required": true,
+  "profile": "https://whgazetteer.org/profile/",
+  "successor_request": {
+    "method": "POST",
+    "url": "https://whgazetteer.org/reconcile",
+    "headers": {"Authorization": "Bearer <token>", "Content-Type": "application/json"},
+    "body": {"queries": {"q0": {"lat": 51.0, "lng": -1.0, "radius": 5.0, "relation": "within", "containment": "fuzzy", "limit": 20}}}
+  }
+}
+```
+
+A `410` body has no `deprecation` member, because the body is itself the notice. The `Deprecation` and
+`Link` headers stay. When the old request was malformed, `successor_request` is `null` and
+`translation_error` says why. When the request has no successor, `no_successor` says so.
+
+#### Cutover runbook (WHG staff)
+
+The settings are read on every request. A change needs the web process to see the new value, and no
+migration or bundle rebuild.
+
+| Setting | Values | Default |
+|---|---|---|
+| `LEGACY_API_MODE` | `deprecated`, `compat`, `gone` | `deprecated` |
+| `LEGACY_API_MODE_OVERRIDES` | e.g. `{"geojson": "gone"}`. Keys: `spatial`, `db`, `index`, `place`, `place_src`, `geojson` | `{}` |
+| `LEGACY_API_INAPP_PASSTHROUGH` | `True` / `False` (environment: `0` turns it off) | `True` |
+| `LEGACY_API_COMPAT_ANONYMOUS` | `True` admits callers without a token in `compat` | `False` |
+| `LEGACY_API_COMPAT_ANON_RATE` | requests per minute per IP for those callers | `30` |
+
+`LEGACY_API_MODE` and `LEGACY_API_INAPP_PASSTHROUGH` can be set as environment variables or in
+`local_settings.py`. The other three are `local_settings.py` only. A value that is not a mode is
+treated as `deprecated`, logged as an error, and fails the `api.E101` to `api.E103` system checks
+(`manage.py check`).
+
+1. **Before the switch.** Count the external callers that remain. Every call logs one line, `legacy api
+   call endpoint=… origin=in-app|external … mode=… served=…`, to the `api.deprecation` logger.
+2. **At the switch.** Set `LEGACY_API_MODE=compat` in the production environment. The production
+   `.env` is regenerated from the server's environment template on every deploy, so set it there,
+   not in `.env`. Then recreate the web container (a redeploy with the current image tag), because a
+   plain restart does not re-read environment variables. Check that the variable is set inside the
+   container. Then check one URL with a token and one without: `/api/spatial/?type=bbox&sw=-2,50&ne=0,52&token=…`
+   gives a `200` with a `compat` member, and the same URL without the token gives a `401`. Celery
+   workers do not need to be restarted.
+3. **WHG's own pages.** While `LEGACY_API_INAPP_PASSTHROUGH` is on, requests from WHG's own pages (a
+   same-origin `Referer` or a session cookie) still get the legacy views in `compat` and `gone`. Three
+   pages still call them: the place portal map (`/api/spatial/?geometry=full`), the place popup
+   (`/api/place/<id>/`) and the place page's *Linked Places* link (`/api/db/?id=`). Move those to the
+   successor APIs, check that the log shows no `origin=in-app` calls, then set it to `False`.
+4. **Retirement.** Set `LEGACY_API_MODE=gone` the same way, or retire one endpoint at a time with
+   `LEGACY_API_MODE_OVERRIDES`.
+5. **Rollback** at any stage: set `LEGACY_API_MODE=deprecated` (or remove it) and recreate the
+   container the same way.
 
 ## API Tokens
 
