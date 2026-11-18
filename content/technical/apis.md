@@ -752,6 +752,12 @@ for instance) to be rejected at this step.
 
 **Filtering by place ID (`contained_in`)** is the most convenient way to scope results to a region you can already name — a country (`un:ita`), an administrative area (`osm:r365331`), or any other place with a polygon. For example, `{"contained_in": ["un:ita"], "containment": "exact", "relation": "within"}` (no `query`) returns the places whose geometry lies entirely within Italy. With `relation: "intersects"` (the default) a feature need only overlap the region, so large/historical polygons that straddle the border are included.
 
+```{note}
+The legacy `GET /api/spatial/` (nearby and bounding-box search) is **deprecated**. Use the spatial
+filters above in a spatial-only query instead; see
+[Mapping legacy spatial queries](#mapping-legacy-spatial-queries).
+```
+
 #### Other
 
 | Parameter | Type | Description |
@@ -1589,8 +1595,8 @@ root**.
 | Endpoint | Attribution |
 |---|---|
 | `/reconcile` | `attribution` at the response root; every candidate also carries a `namespace` |
-| `/api/index/`, `/api/db/`, `/api/spatial/` | `attribution` at the response root |
-| `/api/place/…` (single record) | an `attribution` object on the record itself |
+| `/api/index/`, `/api/db/`, `/api/spatial/` (all **[deprecated](#deprecated-legacy-endpoints)**) | `attribution` at the response root, after the `deprecation` notice |
+| `/api/place/…` (single record; **[deprecated](#deprecated-legacy-endpoints)**) | an `attribution` object on the record itself |
 | `/entity/{type}:{id}/api` | an `attribution` object in the LPF body (**new, 2026-09-21** — this representation previously carried none) |
 | `/api/attribution/` | standalone resolver — query terms for arbitrary namespaces or ids |
 
@@ -1750,6 +1756,81 @@ Licence metadata is verified against each upstream source and corrected at inges
 aggregator rather than the rights holder for most of this data. For anything consequential, follow
 `license.url` and `source_url` to the source's own terms.
 ```
+
+## Deprecated legacy endpoints
+
+```{warning}
+The legacy v3 JSON endpoints below are **deprecated** and will be retired when WHG moves to v4. No
+retirement date has been set. Their replacements, the Reconciliation API and the Entity API, **require
+an [API token](#api-tokens)** for these uses; the legacy endpoints did not.
+```
+
+| Legacy endpoint | Replacement | Notice in the body |
+|---|---|---|
+| `GET /api/spatial/` | `POST https://whgazetteer.org/reconcile (spatial-only query: lat/lng/radius or bounds)` | object |
+| `GET /api/db/` | `POST https://whgazetteer.org/reconcile (name search); GET https://whgazetteer.org/entity/place:<id>/api (one place by id)` | object (HTML usage hint: headers only) |
+| `GET /api/index/` | `POST https://whgazetteer.org/reconcile` | object |
+| `GET /api/place/<id>/`, `GET /api/place/<id>-<id>-…/` | `GET https://whgazetteer.org/entity/place:<id>/api` | object |
+| `GET /api/place/<dataset label>/<src_id>/` | `to be confirmed (by WHG id: GET https://whgazetteer.org/entity/place:<id>/api)` | object |
+| `GET /api/geojson/?id=` / `?coll=` | `GET https://whgazetteer.org/entity/dataset:<id>/api (datasets); collections: to be confirmed` | object (paginated `count`/`next`/`previous`/`results`) |
+
+Where the table says *to be confirmed*, no documented API yet does the same job. `/api/place_compare/`
+is an internal endpoint and is not covered here.
+
+**How a response tells you.** Every response of these endpoints, errors included, carries two headers:
+`Deprecation: @1794873600` (the date of deprecation, 2026-11-17, in the RFC 9745 form) and
+`Link: <successor>; rel="successor-version", <docs>; rel="deprecation"`. There is no `Sunset` header
+until a date is set. When the body is a JSON object, its **first key** is a `deprecation` notice with
+the same keys on every endpoint; the `message`, `replacement` and `docs` differ per endpoint. A body
+that is not a JSON object (an HTML hint, for instance) carries the headers only. Every other field is
+unchanged. The notice on `/api/spatial/`:
+
+```json
+"deprecation": {
+  "deprecated": true,
+  "message": "This endpoint is deprecated and will be retired when WHG moves to v4. Switch to the Reconciliation API (POST /reconcile) spatial filters (lat/lng/radius or bounds), which require an API token: generate one on your profile page (https://whgazetteer.org/profile/); see https://docs.whgazetteer.org/content/technical/apis.html#api-tokens.",
+  "replacement": "POST https://whgazetteer.org/reconcile (spatial-only query: lat/lng/radius or bounds)",
+  "docs": "https://docs.whgazetteer.org/content/technical/apis.html#mapping-legacy-spatial-queries",
+  "token_docs": "https://docs.whgazetteer.org/content/technical/apis.html#api-tokens",
+  "token_required": true,
+  "sunset": null
+}
+```
+
+### Mapping legacy spatial queries
+
+`/api/spatial/` searches only the places held in WHG's own database, that is
+contributed datasets. It does not search the gazetteer index this service searches, so moving to
+`/reconcile` returns more places, and different ones.
+
+**Mapping the parameters.** Each old query becomes one query object in a `POST /reconcile` body, e.g.
+`{"queries": {"q0": {"lat": 53.96, "lng": -1.08, "radius": 10, "relation": "within", "limit": 20}}}`.
+
+| `/api/spatial/` | `/reconcile` query object | Notes |
+|---|---|---|
+| `type=nearby&lon=…&lat=…&km=…` | `"lng"`, `"lat"`, `"radius"` (km) | The circle is matched on an H3 cell disc that covers it (`containment` `fuzzy`), so places just beyond the radius can match. `/api/spatial/` used an exact circle. |
+| `type=bbox&sw=W,S&ne=E,N` | `"bounds": {"type": "Polygon", "coordinates": [[[W,S],[E,S],[E,N],[W,N],[W,S]]]}` | Add `"containment": "exact"` for a precise box. |
+| `match=within` / `intersects` | `"relation": "within"` / `"intersects"` | The default differs: `within` on `/api/spatial/`, `intersects` on `/reconcile`. |
+| `fc=P,A` | `"fclasses": ["P","A"]` | |
+| `dataset=<id>` | `"dataset": <id>` | |
+| `pagesize=<n>` | `"limit": <n>` | `/reconcile` allows up to 1000 and pages with `offset`. |
+| `geometry=point` | each candidate's `repr_point` | There is no `bbox`. |
+| `geometry=full` | none | Fetch the geometry per place from `/entity/place:<id>/api` or the gateway's `GET /api/geometry/<place_id>` (see *Exact geometry* above). |
+| `collection=<id>` | none | Filter the candidates yourself. |
+| `count` (response) | none | Page with `limit`/`offset`. |
+
+**What changes in the response.** `/reconcile` returns reconciliation candidates (`id`, `name`,
+`score`, `repr_point`, `ccodes`, `namespace` and so on; see [Result Format](#result-format)), not a
+GeoJSON FeatureCollection of Linked Places Format Features. Candidates carry no `names`, `links` or
+`whens` arrays.
+
+**Until retirement**, `/api/spatial/` keeps working with these defaults, which date from the same
+change. Each place comes back as one representative point (a point that lies on the place's geometry)
+plus a GeoJSON `bbox`. `geometry=full` returns every stored geometry as before, at most 20 places per
+page, and `geometry=none` returns none. By default (`match=within`) a place matches only if all of its
+geometry lies inside the circle or box, so a large polygon that merely contains the centre is no longer
+returned. `match=intersects` restores the earlier `nearby` behaviour. The limits are: `km` at most
+500, a box at most 30 degrees each way, and `pagesize` at most 200.
 
 ## API Tokens
 
