@@ -1952,11 +1952,14 @@ treated as `deprecated`, logged as an error, and fails the `api.E101` to `api.E1
    container. Then check one URL with a token and one without: `/api/spatial/?type=bbox&sw=-2,50&ne=0,52&token=…`
    gives a `200` with a `compat` member, and the same URL without the token gives a `401`. Celery
    workers do not need to be restarted.
-3. **WHG's own pages.** While `LEGACY_API_INAPP_PASSTHROUGH` is on, requests from WHG's own pages (a
-   same-origin `Referer` or a session cookie) still get the legacy views in `compat` and `gone`. Three
-   pages still call them: the place portal map (`/api/spatial/?geometry=full`), the place popup
-   (`/api/place/<id>/`) and the place page's *Linked Places* link (`/api/db/?id=`). Move those to the
-   successor APIs, check that the log shows no `origin=in-app` calls, then set it to `False`.
+3. **WHG's own pages (passthrough).** WHG's own pages no longer call the legacy endpoints (moved
+   in November 2026: the place portal's nearby places now use `/reconcile`, the place side panel uses
+   `/places/<ids>/panel/`, the place page links to the Entity API, and the download progress bars use
+   `/task_progress/`). `LEGACY_API_INAPP_PASSTHROUGH` is deliberately **left on** until the cutover, so
+   that any WHG page still calling a legacy endpoint keeps working in `compat` and `gone`. As the first
+   step at the switch, check that the log shows no `origin=in-app` calls over a few days, then set it
+   to `False`. Also update `server-admin/smoke_test.sh`, which checks `/api/place/88106/` and will fail
+   once that endpoint is `gone`.
 4. **Retirement.** Set `LEGACY_API_MODE=gone` the same way, or retire one endpoint at a time with
    `LEGACY_API_MODE_OVERRIDES`.
 5. **Rollback** at any stage: set `LEGACY_API_MODE=deprecated` (or remove it) and recreate the
