@@ -174,8 +174,8 @@ ways in:
 These counts are shown only to you and your dataset's team. The WHG editors who review your dataset do
 not see them, and they play no part in that review.
 
-**Suggestions are prepared for you** when a beta tester's newly uploaded dataset passes its checks
-(validation), and the dataset's owner receives an email, *"Suggested matches for your WHG dataset are
+**Suggestions are prepared for you** when you choose **Start the review process**, and the dataset's owner
+receives an email, *"Suggested matches for your WHG dataset are
 ready"*, each time a run of suggestions finishes. For a dataset where that has not happened, the page
 says *"No suggestions have been prepared for this dataset yet."*: choose **Prepare suggestions**. You can do this while your dataset is still
 private: nothing of yours becomes visible by doing so. Suggestions are also prepared again, at most once
@@ -637,5 +637,4 @@ less than a Link made by a person.
   decisions, how often **Likely the same place** is right;
 - adopting boundaries or shapes, or adopting names, types or dates, from a matched place;
 - uploading a dataset straight into the review process (for now, **Start the review process** after
-  uploading);
-- a count, on WHG's dashboard, of the datasets waiting for review.
+  uploading).
