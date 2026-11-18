@@ -795,11 +795,41 @@ the placeholder candidates, and with `type` the gazetteer service was never aske
 
 | Parameter | Type | Description |
 |---|---|---|
-| `dataset` | integer | Restrict to a specific dataset ID. |
+| `dataset` | integer or string | Only places of this one WHG dataset. See [Restricting to one dataset](#restricting-to-one-dataset). |
 | `unlocated` | boolean | Include results with no spatial metadata (default: true). |
 | `lang` | string | ISO 639-1 code (case-insensitive, e.g. `en`, `de`, `cy`) for the **language of the query name**. Phonetic and fuzzy matching condition the query's phonetic embedding on it, which can change which similar-sounding names rank highest. Anything that is not a two- or three-letter code is treated as unknown (`und`), never as an error, and omitting it is the same as `und`. A client-supplied query vector, where you send one, takes precedence for its own query. OpenRefine-style property: `whg:lang`. |
 | `limit` | integer | Maximum results per query (default: 100, max: 1000; a larger value is treated as 1000, a value below 1 as 1). This is the standard Reconciliation API v0.2 parameter name. `size` is accepted as an alias. The gazetteer service contributes at most **500** candidates per query, so a query it answers alone (any spatially scoped query, `area_only`, `mode: "familysearch"`) returns at most 500. |
 | `offset` | integer | Skip this many ranked results (default 0, max 2000): page through a long candidate list with `limit` + `offset`. The candidate pool is bounded, so very deep offsets run out. This is FamilySearch's `start`. |
+
+##### Restricting to one dataset
+
+`dataset` keeps only the candidates that are places of one dataset contributed to WHG:
+
+```json
+{"queries": {"q0": {"query": "Sherborne", "dataset": 1234}}}
+```
+
+- **Naming the dataset.** Give its id (`1234`, `"1234"` or `"whg:1234"`) or its label
+  (`"my_dataset"`). Any other value, such as a list or `true`, is refused with a per-query `error`.
+  An empty string counts as no `dataset`.
+- **Only WHG places.** Every candidate has an `id` of the form `place:whg:1234:<src_id>`, whether it
+  came from the older WHG index or from the gazetteer service. `dataset` implies `namespaces: "whg"`.
+  If you also send `namespaces` without `whg`, nothing is searched and `result` is empty.
+- **A dataset you cannot see.** A dataset that does not exist and one that is not visible to you
+  (not public, under embargo, and not one you own or collaborate on) give the same answer: an empty
+  `result`, with no error. Neither is confirmed to exist.
+- **`dataset` may stand alone.** With no `query` it asks for the places of that dataset, taken from
+  the older WHG index (the gazetteer service needs a name or a spatial constraint). They are not
+  ranked, and at most `limit` are returned. Combined with a circle, `bounds` or `contained_in`, the
+  gazetteer service answers and the dataset is applied to what it returns.
+- **Fewer than `limit`.** The gazetteer service has no dataset filter of its own, so for a `dataset`
+  query WHG asks it for its maximum of 500 WHG candidates and keeps those of the dataset. If more than
+  500 WHG places rank above the dataset's own places, some of the dataset's places are missed. The
+  older WHG index filters by dataset inside the search, so there `limit` counts only the dataset's
+  places.
+
+Until 18 November 2026 `dataset` was accepted but filtered nothing: the response held candidates
+from every source.
 
 ### FamilySearch Mode
 
@@ -1845,7 +1875,7 @@ contributed datasets. It does not search the gazetteer index this service search
 | `type=bbox&sw=W,S&ne=E,N` | `"bounds": {"type": "Polygon", "coordinates": [[[W,S],[E,S],[E,N],[W,N],[W,S]]]}` | Add `"containment": "exact"` for a precise box. |
 | `match=within` / `intersects` | `"relation": "within"` / `"intersects"` | The default differs: `within` on `/api/spatial/`, `intersects` on `/reconcile`. |
 | `fc=P,A` | `"fclasses": ["P","A"]` | |
-| `dataset=<id>` | `"dataset": <id>`, `"namespaces": ["whg"]` | `/reconcile` accepts `dataset` but does not currently filter by it. `"namespaces": ["whg"]` keeps the candidates to WHG's own places; keep those whose `id` starts `place:whg:<id>:`. |
+| `dataset=<id>` | `"dataset": <id>` | Only that dataset's places (see [Restricting to one dataset](#restricting-to-one-dataset)). |
 | `pagesize=<n>` | `"limit": <n>` | `/reconcile` allows up to 1000 and pages with `offset`. |
 | `geometry=point` | each candidate's `repr_point` | There is no `bbox`. |
 | `geometry=full` | none | Fetch the geometry per place from `/entity/place:<id>/api` or the gateway's `GET /api/geometry/<place_id>` (see *Exact geometry* above). |
@@ -1870,6 +1900,13 @@ number, `count` is exact and the new `count_capped` field is `false`. When there
 `count` is `1000` and `count_capped` is `true`: read it as "at least 1,000". All other fields are
 unchanged. The endpoint has no offset, so `count` has never been usable for paging. Before this change,
 an exact count of a common name such as `?name=York` took more than a second on every request.
+
+**`count` on `/api/spatial/`.** Since 2026-11-18, `/api/spatial/` counts the same way: exact up to
+1,000 with `count_capped` `false`, and `1000` with `count_capped` `true` beyond that. All other fields
+are unchanged. This endpoint has no offset either. The exact count repeated the whole spatial search.
+With `match=intersects` on a `nearby` circle, that search compares the distance to every stored
+geometry, because no index can serve it. In a test on 2 million synthetic point geometries, the count
+added about 0.9 seconds to a request that took about 3 seconds.
 
 ### At the v4 switch
 
@@ -1897,8 +1934,10 @@ endpoint's data, and parts of it differ:
 | `/api/geojson/?id=<dataset id>` | `307` redirect to `/entity/dataset:<id>/api` (your `token` is carried over) | The whole dataset as one Linked Places file, not a paginated list of geometries. |
 | `/api/index/?whgid=…`, `/api/geojson/?coll=…` | Nothing: these have no successor | `410`, as in `gone` mode. |
 
-A `dataset` filter (`/api/spatial/`, `/api/db/`, `/api/index/`) is applied to the successor's
-candidates as described in the table above. Every `compat` response keeps the `Deprecation` and `Link`
+A `dataset` filter (`/api/spatial/`, `/api/db/`, `/api/index/`) is passed to `/reconcile` as
+`dataset`, which keeps only that dataset's places. `/api/db/` and `/api/index/` take a dataset label,
+which is translated to its id; a label that does not exist, or that names a dataset you cannot see, is
+refused with `400` and the same message either way. Every `compat` response keeps the `Deprecation` and `Link`
 headers and the `deprecation` member, and adds a `compat` member: `successor_request` (the request you
 would send instead), `dropped` (old parameters with no equivalent, and why), `notes`, and for searches
 `no_equivalent`. Without a token the answer is `401`, with that same `successor_request`. A search counts
