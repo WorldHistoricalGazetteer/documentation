@@ -21,10 +21,8 @@ Part of the [Draft v4 User Guide](../userguide_index.md): under review during be
 % licensing/templates/licensing/licenses.html. On-screen wording is quoted from those files.
 % NOT verified, so not stated: which of wd/gn/tgn/pl currently pass the registry-terms gate on prod
 % (the registry licence fields are not exposed by /api/sources/).
-% TODO(place#350): when Atlas popup provenance and the withdrawn/private behaviour of added locations
-% ship, replace the "Not shown yet" subsection and the note under "Publishing and withdrawing".
 
-*Last verified 2026-11-18 against WHG 3.2 (main 693460ee2).*
+*Last verified 2026-11-18 against WHG 3.2 (main 0c3c4d4fa).*
 
 ```{important}
 Linking is in **beta**. It is open to signed-in beta testers, and screens and wording may change. Words
@@ -423,6 +421,10 @@ compared with itself, so no distance is shown or counted for that place).
   *"Location placed on the map 18 Nov 2026 by … (approximate)"*; the record's own geometry is counted
   separately (*"none in the contributed record"*), so an added location is never presented as the
   contributor's own.
+- **The Atlas popup and portal**: the same sentence, read live from WHG's database after the usual
+  visibility check, so removing the location removes the label at once. After an added location is
+  adopted, placed or removed, a published dataset is added to the search index again, which can take a
+  few minutes; until then the dataset page says *"Waiting to be added to the search index"*.
 - **Downloads of the dataset.** In **LPF**, the geometry carries a `citation` (the matched place's
   identifier and source) and a `provenance` block (source, terms and their link, attribution, date,
   and the statement quoted above); a placed point carries `certainty` and a provenance saying it was
@@ -433,12 +435,27 @@ compared with itself, so no distance is shown or counted for that place).
   per source and placed ones, so the editor sees them as added, not as the contributor's own. It is
   information only and never blocks publication.
 
-### Not shown yet
+### When a dataset or a match is withdrawn
 
-These are **in progress**:
-
-- labelling an added location in the **Atlas** popup;
-- what happens to added locations when a dataset is **withdrawn** or made **private** again.
+- **A dataset is made private or withdrawn.** Its Links go back to **pending**. Adopted and placed
+  locations stay on the records unchanged, but only the dataset's own people (the owner, collaborators
+  and WHG staff) can see them: they disappear from the Record page, downloads and the API, and the
+  dataset leaves the search index, exactly as the rest of the dataset does.
+- **It is published again.** The Links become active and the locations reappear. Before that, WHG
+  removes any adopted location whose Link no longer stands, or whose source's terms changed while the
+  dataset was private.
+- **A Link is withdrawn, rejected or replaced.** An adopted location *goes back with its Link*: it is
+  removed from the record and kept in an archive of retracted locations, the download cache is cleared,
+  and a published dataset is added to the index again. It stays while another standing *Same place*
+  Link for the same suggestion remains.
+- **A Link is made again.** The location is **not** brought back automatically, because adopting is a
+  separate act of yours. WHG staff can restore it if the Link stands again, the source's terms still
+  allow it and the record has no location of its own.
+- **Undo, keep the location.** You can still choose to keep an adopted location when you undo its
+  match. That is your explicit choice, so it stays, marked as kept; it is still subject to the source's
+  terms, and the review check counts it.
+- **A placed location** is your own data: it follows the dataset only and never depends on a Link.
+- **A dataset is deleted.** Its locations go with its records; its Links are withdrawn and kept.
 
 ### Licensing
 
@@ -557,7 +574,8 @@ made from its records become public too."* Then:
 **Withdraw** appears once the dataset is published, with an optional reason. Its confirmation says: *"It
 becomes private again: it is removed from the search index and its public page, and the links you made
 from its records stop being public."* Its Links go back to **pending** at once. (What happens to
-locations added to its records is in progress; see [Not shown yet](#not-shown-yet).)
+locations added to its records is described in
+[When a dataset or a match is withdrawn](#when-a-dataset-or-a-match-is-withdrawn).)
 
 **A withdrawn dataset goes back through review before it can be published again.** The panel says *"To
 publish it again, submit it for review again"* and offers **Submit again for review**.
