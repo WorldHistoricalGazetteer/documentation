@@ -980,11 +980,11 @@ Each entry in a query's `result` array is an object with the following fields:
 | `alt_names` | array | Variant toponyms in any language. |
 | `has_geom` | boolean | `true` if the matched place is backed by a full **polygon** geometry — i.e. it can itself serve as a `contained_in` region for a subsequent spatial query. Point/line-only places report `false`. Use this to pick valid parents when reconciling hierarchically (resolve a place, then scope its children with `contained_in: ["place:<id>"]`). |
 | `namespace` | string | The source gazetteer this candidate came from (e.g. `gn`, `tgn`, `whg`). Look it up in the response-root `attribution` object to get that source's licence — see [Source Terms and Attribution](#source-terms-and-attribution). |
-| `type` | array | LPF type objects. |
+| `type` | array | The protocol's **entity type**: `…/whg_schema.jsonld#Place` for a place (`#Period` for a period), identical for every place candidate whatever its source. It does **not** say what kind of place this is; for that use `place_types`. |
 | `confidence` | number | **Absolute** match quality, 0–100, unlike `score` which is relative to the response. ⚠️ **Measures name match only and carries no geographic term** — it cannot tell you the candidate is the right *place*. Omitted entirely when unmeasured, so "not measured" stays distinguishable from "measured badly"; test for presence before thresholding. |
 | `repr_point` | array | `[lon, lat]` representative point, guaranteed to lie within the candidate's own geometry. Useful as a cheap post-filter when a containment scope is coarser than you want. |
 | `ccodes` | array | ISO 3166-1 alpha-2 country codes as the source recorded them. |
-| `place_types` | array | Source-vocabulary place types, where the source supplies them. Frequently `[]`. |
+| `place_types` | array | **What the place is, in the source's own vocabulary**: a list of `{"identifier", "label"}` objects. For Wikidata (`wd`) results `identifier` is a class QID (the entity's P31 values, e.g. `Q149621`) and `label` is `wikidata`; for GeoNames (`gn`) `identifier` is the feature code (e.g. `PPL`) and `label` the feature class (e.g. `P`), as observed on production 2026-11-18. A client that wants settlements, say, filters on this field, not on `type`. Frequently `[]`. |
 | `wikipedia` | array | Wikipedia links, where known. Frequently `[]`. |
 
 ```{versionadded} 2026-10-09
@@ -2057,6 +2057,16 @@ Send as many queries in one request as you have names, up to the manifest's
 
 ```bash
 curl "https://whgazetteer.org/suggest/entity?prefix=Edin&limit=5&countries=GB&fclasses=P&namespaces=whg&token=<token>"
+```
+
+With **no `prefix`** the endpoint answers `{"result": []}`, except when a circle is given (`lat`, `lng` and
+`radius` in km). That asks for "the places in this circle", exactly as a circle-only
+[`/reconcile` query](#circle-only-queries) does: places only (periods have no location), contained in the
+circle by default, radius at most 500 km (a larger one is refused with an error, not an empty list), results
+unranked with `score` 0, `limit` and `cursor` page the list.
+
+```bash
+curl "https://whgazetteer.org/suggest/entity?lat=51.481&lng=-3.18&radius=3&namespaces=wd&limit=20&token=<token>"
 ```
 
 ### Entity API Example
