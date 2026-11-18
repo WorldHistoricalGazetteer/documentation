@@ -6,6 +6,9 @@
 > at [https://whgazetteer.org/api/schema/swagger-ui/](https://whgazetteer.org/api/schema/swagger-ui/)
 >
 
+AI assistants can also search and fetch WHG's public place data, without a token, through the
+read-only [MCP server](mcp.md).
+
 The World Historical Gazetteer (WHG) provides two complementary APIs:
 
 ## Entity API
