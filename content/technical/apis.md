@@ -766,13 +766,6 @@ A query with `lat`, `lng` and `radius` and **no `query`** asks for "the places i
 {"queries": {"q0": {"lat": 51.5074, "lng": -0.1278, "radius": 10, "limit": 50}}}
 ```
 
-```{note}
-**Known limitation (measured 2026-11-18).** The gateway's default `within` test is H3-cell based, so with a
-**small radius (about 5 km or less)** it can return no places even where some exist. A 50 km circle works.
-For small circles send `"relation": "intersects"` explicitly; that also returns larger features that overlap
-the circle, and the circle is matched as an enlarged H3 disc, so some results may lie outside the stated radius.
-```
-
 - **`type` is not needed.** A batch with no `type` is reconciled against places when any query in
   it has `query` text **or** a constraint that stands on its own: a circle, `bbox`/`bounds`,
   `contained_in`, `dataset`, or the `whg:within_radius` / `whg:within_bbox` / `whg:contained_in`
@@ -783,7 +776,7 @@ the circle, and the circle is matched as an enlarged H3 disc, so some results ma
   circle, so a country or empire that merely overlaps it is not returned as a place near its
   centre. Send `"relation": "intersects"` to get those too. A circle *with* a `query` keeps the
   general default, `intersects`.
-- **The circle is approximate.** It is matched as a disc of H3 cells that covers it, grown slightly
+- **The circle is approximate.** It is matched as a disc of H3 cells that covers it, trimmed to reach at most about 1.3 times the radius
   so that nothing inside the radius is lost; places just outside the radius can match.
   `containment` makes no difference to a circle.
 - **The radius is at most 500 km.** A larger nameless circle is refused with a per-query `error`
