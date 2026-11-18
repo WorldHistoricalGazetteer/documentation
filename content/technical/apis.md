@@ -719,8 +719,8 @@ date-filtered gazetteer candidates mixed with unfiltered WHG ones
 | `bounds` | object | GeoJSON geometry for spatial restriction (see formats below). |
 | `contained_in` | array or string | Restrict to places spatially inside the region formed by the **union of one or more existing places' geometries**, given by namespaced place IDs. Format: `["un:ita"]` or `"un:ita,osm:r365331"`. May be used on its own (a spatial-only query, no `query` text) or combined with `query`. Only the IDs are sent — WHG resolves their geometry server-side. |
 | `containment` | string | How `contained_in` / `bounds` membership is tested: `fuzzy` (default — fast, tolerant; uses an H3 cell grid) or `exact` (precise polygon geometry). Use `exact` when boundary precision matters. |
-| `relation` | string | Spatial relation for `contained_in` / `bounds`: `intersects` (default — any overlap with the region) or `within` (the place's whole geometry must lie inside the region; border-straddling features are excluded). Equivalent for point places. Reliable `within` requires `containment=exact`. |
-| `lat`, `lng`, `radius` | float | Circular search: latitude (-90–90), longitude (-180–180), radius in km. All three required together. |
+| `relation` | string | Spatial relation for `contained_in` / `bounds` / a circle: `intersects` (default — any overlap with the region) or `within` (the place's whole geometry must lie inside the region; border-straddling features are excluded). Equivalent for point places. Reliable `within` requires `containment=exact`. **Exception:** a circle with no `query` defaults to `within` (see [Circle-only queries](#circle-only-queries)). |
+| `lat`, `lng`, `radius` | float | Circular search: latitude (-90–90), longitude (-180–180), radius in km. All three required together. With a `query` the circle restricts the name matches; without one it returns the places in the circle (radius at most 500 km): see [Circle-only queries](#circle-only-queries). |
 | `userareas` | array | IDs of user-defined stored areas. |
 | `area_only` | boolean | Return only candidates with at least one **areal (polygon)** geometry, i.e. those whose `is_area` is true. Point-only and line-only places are excluded. Use it when you are looking for a **container** (a region to pass on as `contained_in`), so the candidates you get back can all serve as one. It is a filter, not a re-rank: the `score` and `match` of the candidates that remain are unchanged, and `limit` still returns up to that many areal candidates. Default `false`; omitted, results are exactly as before. OpenRefine-style property: `whg:area_only` (`true`/`false`). When set, the legacy WHG index (which has no geometry-shape flag) is not searched; the gateway answers alone. |
 
@@ -758,6 +758,39 @@ filters above in a spatial-only query instead; see
 [Mapping legacy spatial queries](#mapping-legacy-spatial-queries).
 ```
 
+##### Circle-only queries
+
+A query with `lat`, `lng` and `radius` and **no `query`** asks for "the places in this circle":
+
+```json
+{"queries": {"q0": {"lat": 51.5074, "lng": -0.1278, "radius": 10, "limit": 50}}}
+```
+
+- **`type` is not needed.** A batch with no `type` is reconciled against places when any query in
+  it has `query` text **or** a constraint that stands on its own: a circle, `bbox`/`bounds`,
+  `contained_in`, `dataset`, or the `whg:within_radius` / `whg:within_bbox` / `whg:contained_in`
+  properties. Only a query with none of these (OpenRefine's type-guessing probe) gets the
+  `Guessing Result` placeholder candidates. Sending
+  `"type": "https://whgazetteer.org/static/whg_schema.jsonld#Place"` is still accepted.
+- **"In the circle" means `relation: within` by default**: the place's geometry must lie inside the
+  circle, so a country or empire that merely overlaps it is not returned as a place near its
+  centre. Send `"relation": "intersects"` to get those too. A circle *with* a `query` keeps the
+  general default, `intersects`.
+- **The circle is approximate.** It is matched as a disc of H3 cells that covers it, grown slightly
+  so that nothing inside the radius is lost; places just outside the radius can match.
+  `containment` makes no difference to a circle.
+- **The radius is at most 500 km.** A larger nameless circle is refused with a per-query `error`
+  (the other queries in the batch are still answered). Use `contained_in` or `bbox` for a larger
+  area.
+- **Results are not ranked, and not nearest-first.** With no name there is nothing to score: every
+  candidate has `score` 0 and `match: false`, and which candidates fill `limit` is not decided by
+  distance. Use a smaller circle if you want the places closest to the centre, or sort on
+  `repr_point` yourself.
+- At most 500 candidates are returned per query, whatever `limit` asks for (see `limit` below).
+
+Until the fix of November 2026 this documented query shape returned nothing: without `type` it got
+the placeholder candidates, and with `type` the gazetteer service was never asked about the circle.
+
 #### Other
 
 | Parameter | Type | Description |
@@ -765,7 +798,7 @@ filters above in a spatial-only query instead; see
 | `dataset` | integer | Restrict to a specific dataset ID. |
 | `unlocated` | boolean | Include results with no spatial metadata (default: true). |
 | `lang` | string | ISO 639-1 code (case-insensitive, e.g. `en`, `de`, `cy`) for the **language of the query name**. Phonetic and fuzzy matching condition the query's phonetic embedding on it, which can change which similar-sounding names rank highest. Anything that is not a two- or three-letter code is treated as unknown (`und`), never as an error, and omitting it is the same as `und`. A client-supplied query vector, where you send one, takes precedence for its own query. OpenRefine-style property: `whg:lang`. |
-| `limit` | integer | Maximum results per query (default: 100, max: 1000). This is the standard Reconciliation API v0.2 parameter name. `size` is accepted as an alias. |
+| `limit` | integer | Maximum results per query (default: 100, max: 1000; a larger value is treated as 1000, a value below 1 as 1). This is the standard Reconciliation API v0.2 parameter name. `size` is accepted as an alias. The gazetteer service contributes at most **500** candidates per query, so a query it answers alone (any spatially scoped query, `area_only`, `mode: "familysearch"`) returns at most 500. |
 | `offset` | integer | Skip this many ranked results (default 0, max 2000): page through a long candidate list with `limit` + `offset`. The candidate pool is bounded, so very deep offsets run out. This is FamilySearch's `start`. |
 
 ### FamilySearch Mode
