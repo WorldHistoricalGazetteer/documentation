@@ -548,14 +548,18 @@ date for the sessions is to be agreed with the WHG team.
 
 *How it works, and what is not built yet: [Linking Your Records](../v4/guide/linking-your-records.md).*
 
-- [ ] Your dataset's page shows a **Links** card marked *beta*; **Link your records** opens the
-  suggestions page, and **Prepare suggestions** starts the search for suggestions.
+- [ ] Your dataset's page shows a **Match your places** card marked *beta* (also reached from the link
+  icon beside the dataset on your dashboard). Before any suggestions exist it offers **Find matches**,
+  afterwards **Continue matching**; either opens the **Match your places** page, where, if no
+  suggestions have been prepared yet, **Prepare suggestions** starts the search for them.
 - [ ] While suggestions are being prepared the page says how many records are done, and you can start.
 - [ ] The tabs (**Likely the same place**, **Which one, if any?**, **Weak suggestions**, **Nothing
-  found**, **Later**, **Not yet checked**) each say what they mean, and the counts change as you decide.
-- [ ] **Same place** makes a Link; **Not the same place** passes a suggestion over; **None of these
+  found**, **Not sure yet**, **Waiting for search**) each say what they mean, and the counts change as
+  you decide.
+- [ ] Mark suggestions **Same place**, **Not the same** or **Can't tell**, then **Save decision**: each
+  **Same place** makes a Link and each **Not the same** sets that suggestion aside. **None of these
   fits** and **Not sure yet** move the record on; **Undo** takes your last decision back.
-- [ ] The keys listed under the page do what they say.
+- [ ] With **Keyboard shortcuts** switched on under the page, the keys listed there do what they say.
 - [ ] A search by hand finds a place the suggestions missed, and **Same place** links it.
 - [ ] While your dataset is private, your Links show *"Visible to you and the dataset owners until it is
   published"* and do not appear in **Links made by people** on the other record's page.
